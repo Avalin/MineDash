@@ -3,10 +3,13 @@
 @using MineDash.Models
 @using MineDash.Services
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components
 @using System.Text.Json
 @inject IServerConfigStore ServerStore
+@inject ICommandStore CommandStore
 @inject IRconService Rcon
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
@@ -98,7 +101,7 @@
         @if (_servers is null || !_servers.Any())
         {
             <p class="no-server-text">
-                No servers configured. Go to <strong>Server management</strong> to add one.
+                No servers configured. Go to <strong>Server Management</strong> to add one.
             </p>
         }
         else if (!_openConsoleIds.Any())
@@ -179,22 +182,36 @@
     </div>
 
     <div class="help-panel">
-        <h4>Minecraft Commands (quick ref)</h4>
-        <ul class="help-list">
-            <li><code>/say &lt;message&gt;</code> – Broadcast a message</li>
-            <li><code>/list</code> – List players</li>
-            <li><code>/kick &lt;player&gt; [&lt;reason&gt;]</code></li>
-            <li><code>/ban &lt;player&gt; [&lt;reason&gt;</code>]</li>
-            <li><code>/time set day|night|noon|midnight</code></li>
-            <li><code>/gamemode survival|creative|adventure|spectator [player]</code></li>
-            <li><code>/tp &lt;target&gt; &lt;destination&gt;</code></li>
-            <li><code>/stop</code> – Stop the server</li>
-        </ul>
+        <h4>Minecraft Commands</h4>
+        @if (_commands is null)
+        {
+            <p>Loading commands...</p>
+        }
+        else if (!_commands.Any())
+        {
+            <p class="no-command-text">No commands configured.</p>
+        }
+        else
+        {
+            <ul class="help-list">
+                @foreach (var cmd in _commands)
+                {
+                    <li>
+                        <code>@cmd.Syntax</code>
+                        @if (!string.IsNullOrWhiteSpace(cmd.Description))
+                        {
+                            <text> – @cmd.Description</text>
+                        }
+                    </li>
+                }
+            </ul>
+        }
     </div>
 </div>
 
 @code {
     private List<ServerConfig>? _servers;
+    private List<MinecraftCommand>? _commands;
 
     // Which servers currently have consoles open
     private readonly List<string> _openConsoleIds = new();
@@ -220,6 +237,7 @@
     protected override async Task OnInitializedAsync()
     {
         _servers = (await ServerStore.GetAllAsync()).ToList();
+        await LoadCommands();
 
         // Load persisted state from localStorage
         await LoadPersistedState();
@@ -234,6 +252,32 @@
                 await SavePersistedState();
             }
         }
+
+        // Subscribe to navigation changes to refresh commands when returning to this page
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // Refresh commands when navigating back to the home page
+        var location = new Uri(e.Location);
+        var baseUri = new Uri(Navigation.BaseUri);
+        var relativePath = baseUri.MakeRelativeUri(location).ToString();
+        
+        if (relativePath == "" || relativePath == "/" || relativePath == "index.html")
+        {
+            // Use InvokeAsync to ensure we're on the correct thread
+            _ = InvokeAsync(async () =>
+            {
+                await LoadCommands();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async Task LoadCommands()
+    {
+        _commands = (await CommandStore.GetAllAsync()).ToList();
     }
 
     private async Task AddConsole()
@@ -430,6 +474,9 @@
 
     public async ValueTask DisposeAsync()
     {
+        // Unsubscribe from navigation events
+        Navigation.LocationChanged -= OnLocationChanged;
+        
         // Save state when component is disposed
         await SavePersistedState();
     }

@@ -1,0 +1,248 @@
+@page "/commands"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@inject ICommandStore CommandStore
+
+<PageTitle>Minecraft Commands</PageTitle>
+
+<div class="commands-layout">
+    <div class="commands-header">
+        <div>
+            <h2>Minecraft Commands</h2>
+            <p class="commands-subtitle">
+                Manage the list of Minecraft commands shown in the help panel.
+            </p>
+        </div>
+
+        <div class="commands-header-actions">
+            <button class="btn btn-secondary" @onclick="ResetToDefaults">
+                Reset to Defaults
+            </button>
+            <button class="btn btn-primary" @onclick="NewCommand">
+                + Add Command
+            </button>
+        </div>
+    </div>
+
+    @if (_editCommand is not null)
+    {
+        <div class="command-form-card">
+            <h3 class="command-form-title">
+                @(_isNew ? "Add Command" : "Edit Command")
+            </h3>
+
+            <div class="command-form-grid">
+                <div class="field-row">
+                    <div class="field-label">Command Syntax</div>
+                    <div class="field-hint">
+                        The command syntax (e.g., <code>/say &lt;message&gt;</code> or <code>/list</code>).
+                    </div>
+                    <input class="form-control" value="@_editCommand.Syntax" @oninput="OnSyntaxInput" />
+                    @if (!string.IsNullOrEmpty(_syntaxValidationError))
+                    {
+                        <div class="field-error">@_syntaxValidationError</div>
+                    }
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Description</div>
+                    <div class="field-hint">
+                        Optional description for this command (e.g., "Broadcast a message").
+                    </div>
+                    <input class="form-control" value="@_editCommand.Description" @oninput="OnDescriptionInput" />
+                </div>
+            </div>
+
+            <div class="command-form-actions">
+                <button class="btn btn-success" @onclick="SaveCommand">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                @if (!_isNew && _selectedCommand is not null)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="commands-list-card">
+        @if (_commands is null)
+        {
+            <p>Loading...</p>
+        }
+        else if (_commands.Count == 0)
+        {
+            <p class="no-command-text">
+                No commands configured yet. Click <strong>Add Command</strong> to create one, or <strong>Reset to Defaults</strong> to load the default commands.
+            </p>
+        }
+        else
+        {
+            <div class="commands-scrollable">
+                <ul class="commands-list">
+                    @foreach (var cmd in _commands)
+                    {
+                        <li class="command-item @( _selectedCommand?.Id == cmd.Id ? "selected-command" : "" )">
+                            <div class="command-content" @onclick="@(() => EditCommand(cmd))">
+                                <code class="command-syntax">@cmd.Syntax</code>
+                                @if (!string.IsNullOrWhiteSpace(cmd.Description))
+                                {
+                                    <span class="command-description">– @cmd.Description</span>
+                                }
+                            </div>
+                            <div class="command-actions">
+                                <button class="btn btn-sm btn-secondary"
+                                        @onclick="@(() => EditCommand(cmd))">
+                                    Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        @onclick="@(() => DeleteCommand(cmd))">
+                                    Delete
+                                </button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<MinecraftCommand>? _commands;
+    private MinecraftCommand? _selectedCommand;
+    private MinecraftCommand? _editCommand;
+    private bool _isNew;
+    private string? _syntaxValidationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _commands = (await CommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+    }
+
+    private void NewCommand()
+    {
+        _selectedCommand = null;
+        _editCommand = new MinecraftCommand
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Syntax = "",
+            Description = ""
+        };
+        _isNew = true;
+        _syntaxValidationError = null;
+    }
+
+    private void EditCommand(MinecraftCommand command)
+    {
+        _selectedCommand = command;
+        _editCommand = new MinecraftCommand
+        {
+            Id = command.Id,
+            Syntax = command.Syntax,
+            Description = command.Description
+        };
+        _isNew = false;
+        _syntaxValidationError = null;
+    }
+
+    private void OnSyntaxInput(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+
+        _editCommand.Syntax = e.Value?.ToString() ?? string.Empty;
+        ValidateSyntax();
+    }
+
+    private void OnDescriptionInput(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+
+        _editCommand.Description = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ValidateSyntax()
+    {
+        if (_editCommand is null)
+        {
+            _syntaxValidationError = null;
+            StateHasChanged();
+            return;
+        }
+
+        var trimmedSyntax = _editCommand.Syntax?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedSyntax))
+        {
+            _syntaxValidationError = "Command syntax is required.";
+        }
+        else
+        {
+            _syntaxValidationError = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SaveCommand()
+    {
+        if (_editCommand is null)
+            return;
+
+        ValidateSyntax();
+        if (!string.IsNullOrEmpty(_syntaxValidationError))
+            return;
+
+        await CommandStore.AddOrUpdateAsync(_editCommand);
+
+        _commands = (await CommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault(c => c.Id == _editCommand.Id);
+
+        _editCommand = null;
+        _isNew = false;
+        _syntaxValidationError = null;
+    }
+
+    private async Task DeleteCommand(MinecraftCommand command)
+    {
+        await CommandStore.DeleteAsync(command.Id);
+
+        _commands = (await CommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+        _editCommand = null;
+        _isNew = false;
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (_selectedCommand is null)
+            return;
+
+        await CommandStore.DeleteAsync(_selectedCommand.Id);
+
+        _commands = (await CommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+        _editCommand = null;
+        _isNew = false;
+    }
+
+    private async Task ResetToDefaults()
+    {
+        await CommandStore.ResetToDefaultsAsync();
+
+        _commands = (await CommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+        _editCommand = null;
+        _isNew = false;
+    }
+
+    private void CancelEdit()
+    {
+        _editCommand = null;
+        _isNew = false;
+        _syntaxValidationError = null;
+    }
+}
+

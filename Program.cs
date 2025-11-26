@@ -9,7 +9,8 @@ builder.Services.AddRazorComponents()
 
 // our custom services
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
-builder.Services.AddScoped<IRconService, DummyRconService>();
+builder.Services.AddSingleton<ICommandStore, JsonCommandStore>();
+builder.Services.AddScoped<IRconService, RconService>();
 
 var app = builder.Build();
 

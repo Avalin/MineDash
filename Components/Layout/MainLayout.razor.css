@@ -2,23 +2,63 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+    background-image: 
+        url('/images/minecraft_1.png'),
+        url('/images/minecraft_2.png');
+    background-size: cover, cover;
+    background-position: left top, right bottom;
+    background-repeat: no-repeat, no-repeat;
+    background-blend-mode: overlay, overlay;
+}
+
+.page::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(135deg, rgba(26, 26, 26, 0.85) 0%, rgba(45, 45, 45, 0.75) 50%, rgba(26, 26, 26, 0.85) 100%),
+        radial-gradient(circle at 20% 50%, rgba(124, 179, 66, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(139, 110, 99, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
 }
 
 main {
     flex: 1;
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: linear-gradient(180deg, 
+        rgba(45, 45, 45, 0.95) 0%, 
+        rgba(35, 35, 35, 0.98) 50%,
+        rgba(30, 30, 30, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-right: 2px solid rgba(124, 179, 66, 0.3);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    z-index: 2;
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background: linear-gradient(90deg, 
+        rgba(45, 45, 45, 0.95) 0%, 
+        rgba(35, 35, 35, 0.98) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid rgba(124, 179, 66, 0.2);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 2;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
@@ -73,6 +113,11 @@ main {
     .top-row, article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
+    }
+
+    article {
+        position: relative;
+        z-index: 1;
     }
 }
 

@@ -49,6 +49,12 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "CoreRCON": {
+              "target": "Package",
+              "version": "[5.4.2, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

@@ -1,5 +1,7 @@
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\appsettings.Development.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\appsettings.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\App_Data\commands.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\App_Data\servers.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\MineDash.staticwebassets.runtime.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\MineDash.staticwebassets.endpoints.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\MineDash.exe
@@ -16,9 +18,11 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.so
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Layout\MainLayout.razor.rz.scp.css
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\Home.razor.rz.scp.css
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\MinecraftCommands.razor.rz.scp.css
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\ServerManagement.razor.rz.scp.css
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\bundle\MineDash.styles.css
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\projectbundle\MineDash.bundle.scp.css
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\h4wmpruwub-ubqdjy8uk5.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\h4wmpruwub-kt2fi90vex.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\ax8hx9zno3-bqjiyaj88i.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\mbxyt196db-c2jlpeoesf.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\pplizo0dcz-erw9l3u2r3.gz
@@ -63,6 +67,8 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\k2vhrniu8a-h1s4sie4z3.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\7yun7yjy6m-63fj8s7r0e.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\uej3rij2s1-0j3bgjxly4.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-7iqga3kf58.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-7iqga3kf58.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\staticwebassets.build.json.cache
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\staticwebassets.development.json
@@ -72,7 +78,6 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\refint\Mine
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.pdb
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.genruntimeconfig.cache
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\ref\MineDash.dll
-C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\App_Data\servers.json
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\ServerManagement.razor.rz.scp.css
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-vmjemf4f81.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-vmjemf4f81.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.csproj.AssemblyReference.cache
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\CoreRCON.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.csproj.Up2Date
