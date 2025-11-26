@@ -16,7 +16,7 @@ public class JsonCommandStore : ICommandStore
 
     public JsonCommandStore(IWebHostEnvironment env)
     {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
+        var dir = Path.Combine(env.ContentRootPath, "app_data");
         Directory.CreateDirectory(dir);
         _filePath = Path.Combine(dir, "commands.json");
     }

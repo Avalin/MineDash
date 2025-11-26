@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
 builder.Services.AddSingleton<ICommandStore, JsonCommandStore>();
 builder.Services.AddScoped<IRconService, RconService>();
+builder.Services.AddSingleton<ILogService, LogService>();
 
 var app = builder.Build();
 

@@ -201,6 +201,108 @@
     margin-bottom: 0.35rem;
 }
 
+.console-header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: relative;
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.filter-dropdown-btn {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 80px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-dropdown-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: #888;
+    color: #ddd;
+}
+
+.filter-dropdown-btn.has-filter {
+    background-color: rgba(78, 163, 255, 0.2);
+    border-color: #4ea3ff;
+    color: #4ea3ff;
+}
+
+.filter-dropdown-btn.has-filter:hover {
+    background-color: rgba(78, 163, 255, 0.3);
+    border-color: #5fb0ff;
+}
+
+.filter-badge {
+    background-color: #4ea3ff;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    background-color: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    max-width: 300px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 0.25rem;
+}
+
+.filter-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+    color: #ccc;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+}
+
+.filter-dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.filter-dropdown-item input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.filter-dropdown-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .console-title {
     font-size: 1rem;
     font-weight: 600;
@@ -209,6 +311,44 @@
 .console-endpoint {
     font-size: 0.8rem;
     color: #aaa;
+}
+
+.console-toggle-btn {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    transition: all 0.2s ease;
+}
+
+.console-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: #888;
+    color: #ddd;
+    transform: scale(1.05);
+}
+
+.console-toggle-btn.active {
+    background-color: #4ea3ff;
+    border-color: #4ea3ff;
+    color: #fff;
+}
+
+.console-toggle-btn.active:hover {
+    background-color: #5fb0ff;
+    border-color: #5fb0ff;
+}
+
+.console-toggle-btn:active {
+    transform: scale(0.95);
 }
 
 .console-close-btn {
@@ -274,6 +414,23 @@
     color: #d4d4d4;
     white-space: pre-wrap;
     margin-left: 1rem;
+}
+
+.console-log-entry {
+    color: #d4d4d4;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.console-log-time {
+    color: #888;
+    margin-right: 0.5rem;
+    font-family: Consolas, monospace;
+}
+
+.console-log-message {
+    color: #d4d4d4;
 }
 
 /* input row */

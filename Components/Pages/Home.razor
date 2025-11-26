@@ -8,13 +8,14 @@
 @inject IServerConfigStore ServerStore
 @inject ICommandStore CommandStore
 @inject IRconService Rcon
+@inject ILogService LogService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
 
-<div class="page-layout">
+<div class="page-layout" @onclick="@CloseAllFilterDropdowns">
     <div class="command-panel">
         <!-- Toolbar: Add console + Layout selector + Manage servers -->
         <div class="console-toolbar">
@@ -131,34 +132,155 @@
                                 <div class="console-title">@server.Name</div>
                                 <div class="console-endpoint">@server.Host:@server.RconPort</div>
                             </div>
-                            <button class="console-close-btn" title="Close console"
-                                    type="button"
-                                    @onclick="@(() => CloseConsole(serverId))">
-                                <span class="bi bi-x-lg"></span>
-                            </button>
+                            <div class="console-header-buttons">
+                                @if (state.ShowLogs && state.LiveLogs.Any())
+                                {
+                                    var availableLevels = GetAvailableLogLevels(state);
+                                    var availableThreads = GetAvailableThreads(state);
+                                    
+                                    @if (availableLevels.Any())
+                                    {
+                                        <div class="filter-dropdown">
+                                            <button class="filter-dropdown-btn @(state.SelectedLogLevels.Count > 0 ? "has-filter" : "")"
+                                                    type="button"
+                                                    @onclick="@(() => ToggleFilterDropdown(serverId, "levels"))"
+                                                    @onclick:stopPropagation="true">
+                                                <span class="bi bi-funnel"></span>
+                                                <span>Levels</span>
+                                                @if (state.SelectedLogLevels.Count > 0)
+                                                {
+                                                    <span class="filter-badge">@state.SelectedLogLevels.Count</span>
+                                                }
+                                            </button>
+                                            @if (state.OpenFilterDropdown == "levels")
+                                            {
+                                                <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
+                                                    @foreach (var level in availableLevels.OrderBy(l => l))
+                                                    {
+                                                        var isChecked = state.SelectedLogLevels.Count == 0 || state.SelectedLogLevels.Contains(level);
+                                                        <label class="filter-dropdown-item">
+                                                            <input type="checkbox" 
+                                                                   checked="@isChecked"
+                                                                   @onchange="@((ChangeEventArgs e) => ToggleLogLevel(serverId, level, e.Value?.ToString() == "True"))" />
+                                                            <span>@level</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    
+                                    @if (availableThreads.Any())
+                                    {
+                                        <div class="filter-dropdown">
+                                            <button class="filter-dropdown-btn @(state.SelectedThreads.Count > 0 ? "has-filter" : "")"
+                                                    type="button"
+                                                    @onclick="@(() => ToggleFilterDropdown(serverId, "threads"))"
+                                                    @onclick:stopPropagation="true">
+                                                <span class="bi bi-funnel"></span>
+                                                <span>Threads</span>
+                                                @if (state.SelectedThreads.Count > 0)
+                                                {
+                                                    <span class="filter-badge">@state.SelectedThreads.Count</span>
+                                                }
+                                            </button>
+                                            @if (state.OpenFilterDropdown == "threads")
+                                            {
+                                                <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
+                                                    @foreach (var thread in availableThreads.OrderBy(t => t))
+                                                    {
+                                                        var isChecked = state.SelectedThreads.Count == 0 || state.SelectedThreads.Contains(thread);
+                                                        <label class="filter-dropdown-item">
+                                                            <input type="checkbox" 
+                                                                   checked="@isChecked"
+                                                                   @onchange="@((ChangeEventArgs e) => ToggleThread(serverId, thread, e.Value?.ToString() == "True"))" />
+                                                            <span>@thread</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                
+                                <button class="console-toggle-btn @(state.ShowLogs ? "active" : "")" 
+                                        title="@(state.ShowLogs ? "Hide logs" : "Show logs")"
+                                        type="button"
+                                        @onclick="@(() => ToggleLogs(serverId))">
+                                    <span class="bi bi-journal-text"></span>
+                                </button>
+                                <button class="console-toggle-btn @(state.ShowCommands ? "active" : "")" 
+                                        title="@(state.ShowCommands ? "Hide commands" : "Show commands")"
+                                        type="button"
+                                        @onclick="@(() => ToggleCommands(serverId))">
+                                    <span class="bi bi-terminal"></span>
+                                </button>
+                                <button class="console-close-btn" title="Close console"
+                                        type="button"
+                                        @onclick="@(() => CloseConsole(serverId))">
+                                    <span class="bi bi-x-lg"></span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="console-output">
-                            @if (!state.History.Any())
+                        <div class="console-output" id="@($"console-output-{serverId}")">
+                            @{
+                                var mergedEntries = GetMergedEntries(state);
+                            }
+                            @if (mergedEntries.Any())
                             {
-                                <div class="console-empty">
-                                    No commands sent yet.
-                                </div>
+                                @foreach (var entry in mergedEntries)
+                                {
+                                    @if (entry.IsLog)
+                                    {
+                                        <div class="console-log-entry">
+                                            <span class="console-log-time">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                                            <span class="console-log-message">@entry.LogLine</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="console-entry">
+                                            <div class="console-command">
+                                                <span class="console-prefix">&gt;</span>
+                                                <span>@entry.Command</span>
+                                            </div>
+                                            <div class="console-response">
+                                                @entry.Response
+                                            </div>
+                                        </div>
+                                    }
+                                }
                             }
                             else
                             {
-                                @foreach (var item in state.History)
-                                {
-                                    <div class="console-entry">
-                                        <div class="console-command">
-                                            <span class="console-prefix">&gt;</span>
-                                            <span>@item.Command</span>
-                                        </div>
-                                        <div class="console-response">
-                                            @item.Response
-                                        </div>
-                                    </div>
-                                }
+                                <div class="console-empty">
+                                    @if (!state.ShowLogs && !state.ShowCommands)
+                                    {
+                                        <text>Both logs and commands are hidden. Use the toggle buttons to show them.</text>
+                                    }
+                                    else if (state.ShowLogs && !state.ShowCommands && !state.LiveLogs.Any())
+                                    {
+                                        @if (string.IsNullOrWhiteSpace(server.LogPath))
+                                        {
+                                            <text>No log path configured. Set the log file path in Server Management.<br/>
+                                            <small>Example: <code>/srv/minecraft/cobbleverse/data/logs/latest.log</code></small></text>
+                                        }
+                                        else
+                                        {
+                                            <text>No logs available. Checking path: <code>@server.LogPath</code><br/>
+                                            <small>Make sure the file exists and is readable. Check container logs for details.</small></text>
+                                        }
+                                    }
+                                    else if (!state.ShowLogs && state.ShowCommands && !state.History.Any())
+                                    {
+                                        <text>No commands sent yet.</text>
+                                    }
+                                    else
+                                    {
+                                        <text>No entries to display.</text>
+                                    }
+                                </div>
                             }
                         </div>
 
@@ -253,8 +375,46 @@
             }
         }
 
+        // Start log polling for all open consoles and load recent logs
+        foreach (var serverId in _openConsoleIds)
+        {
+            var state = GetConsoleState(serverId);
+            if (state.ShowLogs)
+            {
+                await LoadRecentLogs(serverId);
+                StartLogPolling(serverId);
+            }
+        }
+
         // Subscribe to navigation changes to refresh commands when returning to this page
         Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Scroll all open consoles to bottom on initial load
+            // Wait a bit longer to ensure all content (logs + commands) is rendered
+            await Task.Delay(300);
+            foreach (var serverId in _openConsoleIds)
+            {
+                await ScrollToBottom(serverId);
+            }
+        }
+    }
+
+    private void CloseAllFilterDropdowns()
+    {
+        foreach (var serverId in _openConsoleIds)
+        {
+            var state = GetConsoleState(serverId);
+            if (state.OpenFilterDropdown != null)
+            {
+                state.OpenFilterDropdown = null;
+            }
+        }
+        StateHasChanged();
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -289,14 +449,31 @@
         {
             _openConsoleIds.Add(_selectedAddServerId);
             await SavePersistedState();
+            
+            // Start log polling if logs are enabled (default is true)
+            var state = GetConsoleState(_selectedAddServerId);
+            if (state.ShowLogs)
+            {
+                await LoadRecentLogs(_selectedAddServerId);
+                StartLogPolling(_selectedAddServerId);
+            }
+            
+            // Scroll to bottom after adding console
+            StateHasChanged();
+            await Task.Delay(100); // Wait for UI to render
+            await ScrollToBottom(_selectedAddServerId);
+        }
+        else
+        {
+            StateHasChanged();
         }
 
         _selectedAddServerId = string.Empty;
-        StateHasChanged();
     }
 
     private async Task CloseConsole(string serverId)
     {
+        StopLogPolling(serverId);
         _openConsoleIds.Remove(serverId);
         await SavePersistedState();
         StateHasChanged();
@@ -360,6 +537,22 @@
 
             state.CommandHistoryOnly.Add(cmd);
             state.HistoryIndex = state.CommandHistoryOnly.Count;
+            
+            // Persist command history after adding
+            await SavePersistedState();
+            
+            // Scroll to last command if commands are visible
+            if (state.ShowCommands)
+            {
+                StateHasChanged();
+                // Wait for UI to update, then scroll to last command
+                await Task.Delay(50);
+                await ScrollToLastCommand(serverId);
+            }
+            else
+            {
+                StateHasChanged();
+            }
         }
         catch (Exception ex)
         {
@@ -369,6 +562,22 @@
                 Command = cmd,
                 Response = $"[ERROR] {ex.Message}"
             });
+            
+            // Persist even on error
+            await SavePersistedState();
+            
+            // Scroll to last command if commands are visible
+            if (state.ShowCommands)
+            {
+                StateHasChanged();
+                // Wait for UI to update, then scroll to last command
+                await Task.Delay(50);
+                await ScrollToLastCommand(serverId);
+            }
+            else
+            {
+                StateHasChanged();
+            }
         }
 
         state.CurrentCommand = string.Empty;
@@ -411,6 +620,11 @@
         public ConsoleState(string serverId)
         {
             ServerId = serverId;
+            ShowLogs = true; // Default to showing logs
+            ShowCommands = true; // Default to showing commands
+            SelectedLogLevels = new HashSet<string>(); // Empty means all levels shown
+            SelectedThreads = new HashSet<string>(); // Empty means all threads shown
+            OpenFilterDropdown = null;
         }
 
         public string ServerId { get; }
@@ -418,6 +632,381 @@
         public string CurrentCommand { get; set; } = string.Empty;
         public List<string> CommandHistoryOnly { get; } = new();
         public int HistoryIndex { get; set; } = -1;
+        public bool ShowLogs { get; set; }
+        public bool ShowCommands { get; set; }
+        public List<LogEntry> LiveLogs { get; } = new();
+        public DateTime LastLogPoll { get; set; } = DateTime.MinValue;
+        public HashSet<string> SelectedLogLevels { get; set; }
+        public HashSet<string> SelectedThreads { get; set; }
+        public string? OpenFilterDropdown { get; set; }
+    }
+
+    // Helper class for merged entries
+    private sealed class MergedEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public bool IsLog { get; set; }
+        public string? LogLine { get; set; }
+        public string? Command { get; set; }
+        public string? Response { get; set; }
+    }
+
+    private List<MergedEntry> GetMergedEntries(ConsoleState state)
+    {
+        var entries = new List<MergedEntry>();
+
+        // Add logs if enabled
+        if (state.ShowLogs)
+        {
+            foreach (var log in state.LiveLogs)
+            {
+                // Apply filters: if filters are set, check if log matches
+                var levelMatches = state.SelectedLogLevels.Count == 0 || 
+                                   (string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains("")) ||
+                                   (!string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains(log.Level));
+                
+                var threadMatches = state.SelectedThreads.Count == 0 || 
+                                    (string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains("")) ||
+                                    (!string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains(log.Thread));
+                
+                if (levelMatches && threadMatches)
+                {
+                    entries.Add(new MergedEntry
+                    {
+                        Timestamp = log.Timestamp,
+                        IsLog = true,
+                        LogLine = log.RawLine
+                    });
+                }
+            }
+        }
+
+        // Add commands if enabled
+        if (state.ShowCommands)
+        {
+            foreach (var cmd in state.History)
+            {
+                entries.Add(new MergedEntry
+                {
+                    Timestamp = cmd.Timestamp,
+                    IsLog = false,
+                    Command = cmd.Command,
+                    Response = cmd.Response
+                });
+            }
+        }
+
+        // Sort by timestamp
+        return entries.OrderBy(e => e.Timestamp).ToList();
+    }
+
+    private HashSet<string> GetAvailableLogLevels(ConsoleState state)
+    {
+        var levels = new HashSet<string>();
+        foreach (var log in state.LiveLogs)
+        {
+            if (!string.IsNullOrEmpty(log.Level))
+            {
+                levels.Add(log.Level);
+            }
+        }
+        return levels;
+    }
+
+    private HashSet<string> GetAvailableThreads(ConsoleState state)
+    {
+        var threads = new HashSet<string>();
+        foreach (var log in state.LiveLogs)
+        {
+            if (!string.IsNullOrEmpty(log.Thread))
+            {
+                threads.Add(log.Thread);
+            }
+        }
+        return threads;
+    }
+
+    private async Task ToggleLogLevel(string serverId, string level, bool isChecked)
+    {
+        var state = GetConsoleState(serverId);
+        var availableLevels = GetAvailableLogLevels(state);
+        
+        if (isChecked)
+        {
+            // If checking and set was empty (showing all), we need to add all others first
+            if (state.SelectedLogLevels.Count == 0)
+            {
+                // Add all levels except the one being checked
+                foreach (var l in availableLevels)
+                {
+                    if (l != level)
+                    {
+                        state.SelectedLogLevels.Add(l);
+                    }
+                }
+            }
+            else
+            {
+                state.SelectedLogLevels.Add(level);
+                // If we now have all levels selected, clear the set (show all)
+                if (state.SelectedLogLevels.Count == availableLevels.Count)
+                {
+                    state.SelectedLogLevels.Clear();
+                }
+            }
+        }
+        else
+        {
+            // If unchecking and set was empty (showing all), add all others
+            if (state.SelectedLogLevels.Count == 0)
+            {
+                foreach (var l in availableLevels)
+                {
+                    if (l != level)
+                    {
+                        state.SelectedLogLevels.Add(l);
+                    }
+                }
+            }
+            else
+            {
+                state.SelectedLogLevels.Remove(level);
+                // If set becomes empty, it means show all (which is the default)
+            }
+        }
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+    private void ToggleFilterDropdown(string serverId, string dropdownType)
+    {
+        var state = GetConsoleState(serverId);
+        if (state.OpenFilterDropdown == dropdownType)
+        {
+            state.OpenFilterDropdown = null;
+        }
+        else
+        {
+            state.OpenFilterDropdown = dropdownType;
+        }
+        StateHasChanged();
+    }
+
+    private async Task ToggleThread(string serverId, string thread, bool isChecked)
+    {
+        var state = GetConsoleState(serverId);
+        var availableThreads = GetAvailableThreads(state);
+        
+        if (isChecked)
+        {
+            // If checking and set was empty (showing all), we need to add all others first
+            if (state.SelectedThreads.Count == 0)
+            {
+                // Add all threads except the one being checked
+                foreach (var t in availableThreads)
+                {
+                    if (t != thread)
+                    {
+                        state.SelectedThreads.Add(t);
+                    }
+                }
+            }
+            else
+            {
+                state.SelectedThreads.Add(thread);
+                // If we now have all threads selected, clear the set (show all)
+                if (state.SelectedThreads.Count == availableThreads.Count)
+                {
+                    state.SelectedThreads.Clear();
+                }
+            }
+        }
+        else
+        {
+            // If unchecking and set was empty (showing all), add all others
+            if (state.SelectedThreads.Count == 0)
+            {
+                foreach (var t in availableThreads)
+                {
+                    if (t != thread)
+                    {
+                        state.SelectedThreads.Add(t);
+                    }
+                }
+            }
+            else
+            {
+                state.SelectedThreads.Remove(thread);
+                // If set becomes empty, it means show all (which is the default)
+            }
+        }
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+    private async Task ToggleCommands(string serverId)
+    {
+        var state = GetConsoleState(serverId);
+        state.ShowCommands = !state.ShowCommands;
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+
+    private readonly Dictionary<string, System.Threading.Timer?> _logPollTimers = new();
+
+    private async Task ToggleLogs(string serverId)
+    {
+        var state = GetConsoleState(serverId);
+        state.ShowLogs = !state.ShowLogs;
+        
+        if (state.ShowLogs)
+        {
+            // Load last 30 minutes of logs
+            await LoadRecentLogs(serverId);
+            // Start polling for new logs
+            StartLogPolling(serverId);
+        }
+        else
+        {
+            // Stop polling
+            StopLogPolling(serverId);
+        }
+        
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+    private async Task LoadRecentLogs(string serverId)
+    {
+        if (_servers is null)
+            return;
+
+        var server = _servers.FirstOrDefault(s => s.Id == serverId);
+        if (server is null)
+            return;
+
+        var state = GetConsoleState(serverId);
+        
+        try
+        {
+            // Reset read position and load last 30 minutes
+            LogService.ResetReadPosition(server);
+            var recentLogs = await LogService.GetRecentLogsAsync(server, minutes: 30);
+            
+            state.LiveLogs.Clear();
+            state.LiveLogs.AddRange(recentLogs);
+            
+            // Keep only last 1000 entries to prevent memory issues
+            if (state.LiveLogs.Count > 1000)
+            {
+                state.LiveLogs.RemoveRange(0, state.LiveLogs.Count - 1000);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Add error message to logs for debugging
+            state.LiveLogs.Add(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                RawLine = $"[ERROR] Failed to load logs: {ex.Message}"
+            });
+        }
+    }
+
+    private void StartLogPolling(string serverId)
+    {
+        // Stop any existing timer
+        StopLogPolling(serverId);
+
+        // Start a new timer to poll every 3 seconds
+        var timer = new System.Threading.Timer(async _ =>
+        {
+            await PollServerLogs(serverId);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+
+        _logPollTimers[serverId] = timer;
+    }
+
+    private void StopLogPolling(string serverId)
+    {
+        if (_logPollTimers.TryGetValue(serverId, out var timer))
+        {
+            timer?.Dispose();
+            _logPollTimers.Remove(serverId);
+        }
+    }
+
+    private async Task PollServerLogs(string serverId)
+    {
+        if (_servers is null)
+            return;
+
+        var server = _servers.FirstOrDefault(s => s.Id == serverId);
+        if (server is null)
+            return;
+
+        var state = GetConsoleState(serverId);
+        if (!state.ShowLogs)
+            return;
+
+        // Only poll every 2 seconds to get new log entries
+        if ((DateTime.Now - state.LastLogPoll).TotalSeconds < 2)
+            return;
+
+        try
+        {
+            // Get new log entries since last read
+            var newLogs = await LogService.GetNewLogsAsync(server);
+            
+            if (newLogs.Any())
+            {
+                state.LiveLogs.AddRange(newLogs);
+                
+                // Keep only last 1000 entries to prevent memory issues
+                if (state.LiveLogs.Count > 1000)
+                {
+                    state.LiveLogs.RemoveRange(0, state.LiveLogs.Count - 1000);
+                }
+            }
+
+            state.LastLogPoll = DateTime.Now;
+            
+            // Use InvokeAsync to update UI on the correct thread
+            // Don't auto-scroll when new logs arrive
+            await InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+        catch
+        {
+            // Silently handle errors - don't spam the UI
+        }
+    }
+
+    private async Task ScrollToBottom(string serverId)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToBottom", $"console-output-{serverId}");
+        }
+        catch
+        {
+            // Ignore JS errors
+        }
+    }
+
+    private async Task ScrollToLastCommand(string serverId)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToLastCommand", $"console-output-{serverId}");
+        }
+        catch
+        {
+            // Ignore JS errors
+        }
     }
 
     // Persistence methods
@@ -445,6 +1034,51 @@
                     {
                         _layoutColumns = state.LayoutColumns;
                     }
+
+                    // Restore command history and toggle states for each server
+                    if (state.CommandHistory != null)
+                    {
+                        foreach (var kvp in state.CommandHistory)
+                        {
+                            var consoleState = GetConsoleState(kvp.Key);
+                            consoleState.History.Clear();
+                            consoleState.History.AddRange(kvp.Value);
+                            
+                            // Restore command history only list
+                            consoleState.CommandHistoryOnly.Clear();
+                            consoleState.CommandHistoryOnly.AddRange(
+                                kvp.Value.Select(h => h.Command).Distinct().ToList()
+                            );
+                        }
+                    }
+
+                    // Restore toggle states
+                    if (state.ConsoleStates != null)
+                    {
+                        foreach (var kvp in state.ConsoleStates)
+                        {
+                            var consoleState = GetConsoleState(kvp.Key);
+                            consoleState.ShowLogs = kvp.Value.ShowLogs;
+                            consoleState.ShowCommands = kvp.Value.ShowCommands;
+                            
+                            // Restore filters
+                            if (kvp.Value.SelectedLogLevels != null)
+                            {
+                                consoleState.SelectedLogLevels = new HashSet<string>(kvp.Value.SelectedLogLevels);
+                            }
+                            if (kvp.Value.SelectedThreads != null)
+                            {
+                                consoleState.SelectedThreads = new HashSet<string>(kvp.Value.SelectedThreads);
+                            }
+                            
+                            // Start log polling if logs are enabled
+                            if (consoleState.ShowLogs)
+                            {
+                                await LoadRecentLogs(kvp.Key);
+                                StartLogPolling(kvp.Key);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -458,12 +1092,37 @@
     {
         try
         {
-            var state = new PersistedState
+            // Save command history for all open consoles
+            var commandHistory = new Dictionary<string, List<CommandHistoryItem>>();
+            var consoleStates = new Dictionary<string, ConsoleToggleState>();
+            
+            foreach (var serverId in _openConsoleIds)
+            {
+                var state = GetConsoleState(serverId);
+                if (state.History.Any())
+                {
+                    // Keep only last 100 commands per server to avoid localStorage size limits
+                    commandHistory[serverId] = state.History.TakeLast(100).ToList();
+                }
+                
+                // Save toggle states
+                consoleStates[serverId] = new ConsoleToggleState
+                {
+                    ShowLogs = state.ShowLogs,
+                    ShowCommands = state.ShowCommands,
+                    SelectedLogLevels = state.SelectedLogLevels.ToList(),
+                    SelectedThreads = state.SelectedThreads.ToList()
+                };
+            }
+
+            var persistedState = new PersistedState
             {
                 OpenConsoleIds = _openConsoleIds.ToList(),
-                LayoutColumns = _layoutColumns
+                LayoutColumns = _layoutColumns,
+                CommandHistory = commandHistory,
+                ConsoleStates = consoleStates
             };
-            var stateJson = JsonSerializer.Serialize(state);
+            var stateJson = JsonSerializer.Serialize(persistedState);
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", "minedash_console_state", stateJson);
         }
         catch
@@ -474,6 +1133,12 @@
 
     public async ValueTask DisposeAsync()
     {
+        // Stop all log polling timers
+        foreach (var serverId in _logPollTimers.Keys.ToList())
+        {
+            StopLogPolling(serverId);
+        }
+        
         // Unsubscribe from navigation events
         Navigation.LocationChanged -= OnLocationChanged;
         
@@ -486,5 +1151,15 @@
     {
         public List<string>? OpenConsoleIds { get; set; }
         public int LayoutColumns { get; set; } = 1;
+        public Dictionary<string, List<CommandHistoryItem>>? CommandHistory { get; set; }
+        public Dictionary<string, ConsoleToggleState>? ConsoleStates { get; set; }
+    }
+
+    private sealed class ConsoleToggleState
+    {
+        public bool ShowLogs { get; set; } = true;
+        public bool ShowCommands { get; set; } = true;
+        public List<string>? SelectedLogLevels { get; set; }
+        public List<string>? SelectedThreads { get; set; }
     }
 }

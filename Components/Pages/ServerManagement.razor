@@ -67,9 +67,18 @@
                 </div>
 
                 <div class="field-row">
+                    <div class="field-label">Log file path</div>
+                    <div class="field-hint">
+                        Path to the Minecraft server log file on the host (e.g., <code>/srv/minecraft/cobbleverse/data/logs/latest.log</code>).
+                        Required for log viewing functionality.
+                    </div>
+                    <input class="form-control" placeholder="/srv/minecraft/cobbleverse/data/logs/latest.log" @bind="_editServer.LogPath" />
+                </div>
+
+                <div class="field-row">
                     <div class="field-label">Notes</div>
                     <div class="field-hint">
-                        Optional description or notes about this server (e.g. “Cobbleverse modpack”).
+                        Optional description or notes about this server (e.g. "Cobbleverse modpack").
                     </div>
                     <textarea class="form-control" rows="2" @bind="_editServer.Notes"></textarea>
                 </div>
@@ -166,6 +175,7 @@
             Host = server.Host,
             RconPort = server.RconPort,
             RconPassword = server.RconPassword,
+            LogPath = server.LogPath,
             Notes = server.Notes
         };
         _isNew = false;

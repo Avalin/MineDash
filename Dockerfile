@@ -19,7 +19,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
 # Create App_Data directory for persistence
-RUN mkdir -p /app/App_Data
+RUN mkdir -p /app/app_data
 
 # Copy published app
 COPY --from=publish /app/publish .

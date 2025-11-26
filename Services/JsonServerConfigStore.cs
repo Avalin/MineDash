@@ -16,7 +16,7 @@ public class JsonServerConfigStore : IServerConfigStore
 
     public JsonServerConfigStore(IWebHostEnvironment env)
     {
-        var dir = Path.Combine(env.ContentRootPath, "App_Data");
+        var dir = Path.Combine(env.ContentRootPath, "app_data");
         Directory.CreateDirectory(dir);
         _filePath = Path.Combine(dir, "servers.json");
     }

@@ -9,5 +9,11 @@ public class ServerConfig
     public int RconPort { get; set; }
     public string RconPassword { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Path to the Minecraft server log file (latest.log).
+    /// For Docker containers, this should be the host path, e.g., /srv/minecraft/server-name/data/logs/latest.log
+    /// </summary>
+    public string? LogPath { get; set; }
+
     public string? Notes { get; set; }
 }

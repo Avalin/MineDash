@@ -6,6 +6,7 @@ services:
       - "8214:8214"
     volumes:
       - /srv/minedash/app_data:/app/app_data
+      - /srv/minecraft:/srv/minecraft:ro
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8214

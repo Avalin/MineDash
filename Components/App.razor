@@ -17,6 +17,29 @@
 <body>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    <script>
+        window.scrollToBottom = (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollTop = element.scrollHeight;
+            }
+        };
+        
+        window.scrollToLastCommand = (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                // Find the last console-entry (command) element
+                const entries = element.querySelectorAll('.console-entry');
+                if (entries.length > 0) {
+                    const lastEntry = entries[entries.length - 1];
+                    lastEntry.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else {
+                    // Fallback to bottom if no commands found
+                    element.scrollTop = element.scrollHeight;
+                }
+            }
+        };
+    </script>
 </body>
 
 </html>
