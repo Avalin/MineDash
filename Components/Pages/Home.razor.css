@@ -364,12 +364,23 @@
 
 @media (max-width: 768px) {
     .console-header {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
         gap: 0.75rem;
         margin-bottom: 0.75rem;
         padding-bottom: 0.75rem;
         border-bottom: 1px solid #333;
+        flex-wrap: wrap;
+        position: relative;
+    }
+    
+    /* Server name/port container - left side, takes available space */
+    .console-header > div:first-child {
+        flex: 1;
+        min-width: 0;
+        padding-right: 50px; /* Space for close button */
+        position: relative;
     }
     
     .console-title {
@@ -383,11 +394,33 @@
         color: #999;
     }
     
+    /* Buttons container - full width below */
     .console-header-buttons {
         width: 100%;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        margin-top: 0;
+        position: relative;
+    }
+    
+    /* Close button - extract from buttons container and position next to server name */
+    .console-header-buttons .console-close-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: auto;
+        min-width: 44px;
+        height: 44px;
+        margin: 0;
+        z-index: 10;
+        /* Move up by button height + gap to align with server name row */
+        transform: translateY(calc(-44px - 0.75rem));
+    }
+    
+    /* Make header relative for absolute positioning */
+    .console-header {
+        position: relative;
     }
     
     /* Filter buttons - full width */
@@ -407,11 +440,6 @@
     
     .toggle-buttons-row .console-toggle-btn {
         flex: 1 1 auto;
-    }
-    
-    /* Close button - full width */
-    .console-close-btn {
-        width: 100%;
     }
 }
 

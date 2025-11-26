@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MineDash")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f76c70d32b26772820b6a47d7b4968c9fe77832f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8c5635a618fc05d0bfa97c091bf6b5d62daf7cc3")]
 [assembly: System.Reflection.AssemblyProductAttribute("MineDash")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MineDash")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
