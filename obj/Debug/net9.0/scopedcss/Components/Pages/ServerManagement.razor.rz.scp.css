@@ -15,6 +15,27 @@
     margin-bottom: 0.25rem;
 }
 
+@media (max-width: 768px) {
+    .server-mgmt-layout[b-itiwke9orw] {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    
+    .server-mgmt-header[b-itiwke9orw] {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .server-mgmt-header h2[b-itiwke9orw] {
+        margin-bottom: 0;
+    }
+    
+    .server-mgmt-header .btn[b-itiwke9orw] {
+        width: 100%;
+    }
+}
+
 .server-mgmt-subtitle[b-itiwke9orw] {
     margin: 0;
     font-size: 0.9rem;
@@ -37,6 +58,23 @@
 .server-table[b-itiwke9orw] {
     margin-bottom: 0;
     width: 100%;
+}
+
+@media (max-width: 768px) {
+    .server-table-card[b-itiwke9orw] {
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+    
+    .server-table[b-itiwke9orw] {
+        font-size: 0.85rem;
+        min-width: 500px;
+    }
+    
+    .server-table th[b-itiwke9orw],
+    .server-table td[b-itiwke9orw] {
+        padding: 0.5rem 0.4rem;
+    }
 }
 
 .server-table thead th[b-itiwke9orw] {
@@ -98,6 +136,24 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .server-form-card[b-itiwke9orw] {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .server-form-actions[b-itiwke9orw] {
+        flex-direction: column;
+    }
+    
+    .server-form-actions .btn[b-itiwke9orw] {
+        width: 100%;
+    }
+    
+    .field-row-half[b-itiwke9orw] {
+        max-width: 100%;
+    }
 }
 
 /* Optional: on wider screens, arrange form in two columns */

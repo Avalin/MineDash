@@ -78,6 +78,6 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\ref\MineDas
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.csproj.AssemblyReference.cache
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\CoreRCON.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.csproj.Up2Date
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\h4wmpruwub-9iz6x8hkb7.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-oti2n971x4.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-oti2n971x4.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\h4wmpruwub-n27oyqudbd.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-cqw7hnw5ou.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-cqw7hnw5ou.gz

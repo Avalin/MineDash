@@ -14,6 +14,14 @@
     background-blend-mode: overlay, overlay;
 }
 
+@media (max-width: 768px) {
+    .page[b-l3n58rr43k] {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+}
+
 .page[b-l3n58rr43k]::before {
     content: '';
     position: fixed;
@@ -36,6 +44,17 @@ main[b-l3n58rr43k] {
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
+}
+
+@media (max-width: 768px) {
+    main[b-l3n58rr43k] {
+        -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+    }
 }
 
 .sidebar[b-l3n58rr43k] {
