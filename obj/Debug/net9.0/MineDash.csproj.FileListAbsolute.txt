@@ -79,5 +79,5 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.cs
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\CoreRCON.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.csproj.Up2Date
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\h4wmpruwub-n27oyqudbd.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-vdjdpw08hu.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-vdjdpw08hu.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-wda0x0hdc3.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-wda0x0hdc3.gz
