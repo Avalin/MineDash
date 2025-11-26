@@ -74,5 +74,5 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\MineDash.ge
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\ref\MineDash.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\App_Data\servers.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\ServerManagement.razor.rz.scp.css
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-7cdeyx9l6i.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-7cdeyx9l6i.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-vmjemf4f81.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-vmjemf4f81.gz

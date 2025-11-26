@@ -55,9 +55,34 @@
             <div class="toolbar-section layout-section">
                 <label class="server-select-label">Layout</label>
                 <div class="btn-group btn-group-sm">
-                    <button class="@GetLayoutButtonClass(1)" @onclick="@(() => SetLayout(1))" type="button">1</button>
-                    <button class="@GetLayoutButtonClass(2)" @onclick="@(() => SetLayout(2))" type="button">2</button>
-                    <button class="@GetLayoutButtonClass(3)" @onclick="@(() => SetLayout(3))" type="button">3</button>
+                    <button class="@GetLayoutButtonClass(1)" @onclick="@(() => SetLayout(1))" type="button">
+                        <div class="layout-icon layout-icon-1">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <button class="@GetLayoutButtonClass(2)" @onclick="@(() => SetLayout(2))" type="button">
+                        <div class="layout-icon layout-icon-2">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <button class="@GetLayoutButtonClass(3)" @onclick="@(() => SetLayout(3))" type="button">
+                        <div class="layout-icon layout-icon-3">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
                 </div>
             </div>
 
