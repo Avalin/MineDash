@@ -3,6 +3,8 @@
 @using MineDash.Models
 @using MineDash.Services
 @inject IServerConfigStore ServerStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
 
 <PageTitle>Server Management</PageTitle>
 
@@ -147,6 +149,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Check authentication (use async version to ensure session is loaded)
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         _servers = (await ServerStore.GetAllAsync()).ToList();
         _selectedServer = _servers.FirstOrDefault();
     }

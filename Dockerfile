@@ -18,7 +18,7 @@ RUN dotnet publish "MineDash.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
-# Create App_Data directory for persistence
+# Create app_data directory for persistence
 RUN mkdir -p /app/app_data
 
 # Copy published app

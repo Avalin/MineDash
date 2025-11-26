@@ -28,6 +28,6 @@ README*
 .DS_Store
 Thumbs.db
 
-# App_Data (will be mounted as volume)
-App_Data/
+# app_data (will be mounted as volume)
+app_data/
 

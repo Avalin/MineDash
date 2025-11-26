@@ -3,6 +3,8 @@
 @using MineDash.Models
 @using MineDash.Services
 @inject ICommandStore CommandStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
 
 <PageTitle>Minecraft Commands</PageTitle>
 
@@ -117,6 +119,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Check authentication (use async version to ensure session is loaded)
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         _commands = (await CommandStore.GetAllAsync()).ToList();
         _selectedCommand = _commands.FirstOrDefault();
     }

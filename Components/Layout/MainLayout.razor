@@ -1,4 +1,12 @@
 ﻿@inherits LayoutComponentBase
+@using MineDash.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Antiforgery
+@using Microsoft.AspNetCore.Http
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IAntiforgery Antiforgery
+@inject IHttpContextAccessor HttpContextAccessor
 
 <div class="page">
     <div class="sidebar">
@@ -7,7 +15,20 @@
 
     <main>
         <div class="top-row px-4">
-            
+            <AuthorizeView>
+                <Authorized>
+                    <div class="d-flex align-items-center gap-3">
+                        @{
+                            var user = AuthService.GetCurrentUser();
+                        }
+                        <span class="text-light">Logged in as: <strong>@(user?.Username ?? "Unknown")</strong></span>
+                        <form method="post" action="/api/logout" style="display: inline;">
+                            <input type="hidden" name="__RequestVerificationToken" value="@_antiforgeryToken" />
+                            <button type="submit" class="btn btn-sm btn-outline-light">Log Out</button>
+                        </form>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
@@ -21,3 +42,18 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private string _antiforgeryToken = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Get antiforgery token
+        var httpContext = HttpContextAccessor.HttpContext;
+        if (httpContext != null)
+        {
+            var tokenSet = Antiforgery.GetAndStoreTokens(httpContext);
+            _antiforgeryToken = tokenSet.RequestToken ?? string.Empty;
+        }
+    }
+}

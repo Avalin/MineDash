@@ -1,0 +1,470 @@
+@page "/users"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@inject IUserStore UserStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>User Management - MineDash</PageTitle>
+
+<div class="server-mgmt-layout">
+    <div class="server-mgmt-header">
+        <div>
+            <h2>User Management</h2>
+            <p class="server-mgmt-subtitle">
+                Manage user accounts and permissions. Administrators can create, edit, and delete users.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" @onclick="NewUser">
+            + Add User
+        </button>
+    </div>
+
+    @if (_editUser is not null)
+    {
+        <div class="server-form-card">
+            <h3 class="server-form-title">
+                @(_isNew ? "Add User" : "Edit User")
+            </h3>
+
+            <div class="server-form-grid">
+                <div class="field-row">
+                    <div class="field-label">Username</div>
+                    <div class="field-hint">
+                        Unique username for this account.
+                    </div>
+                    <input class="form-control" value="@_editUser.Username" @oninput="OnUsernameInput" 
+                           disabled="@(!_isNew)" />
+                    @if (!string.IsNullOrEmpty(_usernameValidationError))
+                    {
+                        <div class="field-error">@_usernameValidationError</div>
+                    }
+                </div>
+
+                @if (_isNew)
+                {
+                    <div class="field-row">
+                        <div class="field-label">Password</div>
+                        <div class="field-hint">
+                            Password must be at least 6 characters long.
+                        </div>
+                        <input class="form-control" type="password" @bind="_newPassword" />
+                        @if (!string.IsNullOrEmpty(_passwordValidationError))
+                        {
+                            <div class="field-error">@_passwordValidationError</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="field-row">
+                        <div class="field-label">New Password (leave blank to keep current)</div>
+                        <div class="field-hint">
+                            Enter a new password to change it, or leave blank to keep the current password.
+                        </div>
+                        <input class="form-control" type="password" @bind="_newPassword" />
+                        @if (!string.IsNullOrEmpty(_passwordValidationError))
+                        {
+                            <div class="field-error">@_passwordValidationError</div>
+                        }
+                    </div>
+                }
+
+                <div class="field-row">
+                    <div class="field-label">
+                        <label class="form-check-label">
+                            <input type="checkbox" class="form-check-input" @bind="_editUser.IsAdmin" 
+                                   disabled="@(_isCurrentUser && _editUser.IsAdmin)" />
+                            Administrator
+                        </label>
+                    </div>
+                    <div class="field-hint">
+                        Administrators can manage users and have full access to all features.
+                        @if (_isCurrentUser && _editUser.IsAdmin)
+                        {
+                            <text>You cannot remove your own admin status.</text>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="server-form-actions">
+                <button class="btn btn-success" @onclick="SaveUser">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                @if (!_isNew && _selectedUser is not null && !_isCurrentUser)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_showChangePassword)
+    {
+        <div class="server-form-card">
+            <h3 class="server-form-title">Change My Password</h3>
+
+            <div class="server-form-grid">
+                <div class="field-row">
+                    <div class="field-label">Current Password</div>
+                    <input class="form-control" type="password" @bind="_currentPassword" />
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">New Password</div>
+                    <div class="field-hint">
+                        Password must be at least 6 characters long.
+                    </div>
+                    <input class="form-control" type="password" @bind="_changePasswordNew" />
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Confirm New Password</div>
+                    <input class="form-control" type="password" @bind="_changePasswordConfirm" />
+                </div>
+            </div>
+
+            <div class="server-form-actions">
+                <button class="btn btn-success" @onclick="ChangePassword">Change Password</button>
+                <button class="btn btn-secondary" @onclick="@(() => _showChangePassword = false)">Cancel</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_changePasswordError))
+            {
+                <div class="field-error">@_changePasswordError</div>
+            }
+        </div>
+    }
+
+    <div class="server-table-card">
+        @if (_users is null)
+        {
+            <p>Loading...</p>
+        }
+        else if (_users.Count == 0)
+        {
+            <p class="no-server-text">
+                No users configured yet.
+            </p>
+        }
+        else
+        {
+            <table class="table table-dark server-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th style="width: 120px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in _users)
+                    {
+                        var isCurrentUser = _currentUser?.Id == u.Id;
+                        <tr class="@( _selectedUser?.Id == u.Id ? "selected-row" : "" )">
+                            <td>
+                                @u.Username
+                                @if (isCurrentUser)
+                                {
+                                    <span class="badge bg-info">You</span>
+                                }
+                            </td>
+                            <td>
+                                @if (u.IsAdmin)
+                                {
+                                    <span class="badge bg-warning">Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">User</span>
+                                }
+                            </td>
+                            <td>@u.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary"
+                                        @onclick="@(() => EditUser(u))">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private List<User>? _users;
+    private User? _selectedUser;
+    private User? _editUser;
+    private User? _currentUser;
+    private bool _isNew;
+    private bool _isCurrentUser;
+    private string? _usernameValidationError;
+    private string? _passwordValidationError;
+    private string _newPassword = string.Empty;
+    private bool _showChangePassword = false;
+    private string _currentPassword = string.Empty;
+    private string _changePasswordNew = string.Empty;
+    private string _changePasswordConfirm = string.Empty;
+    private string? _changePasswordError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if user is authenticated and is admin (use async versions to ensure session is loaded)
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        if (!await AuthService.IsAdminAsync())
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _currentUser = await AuthService.GetCurrentUserAsync();
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _users = (await UserStore.GetAllAsync())
+            .OrderBy(u => u.Username, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void NewUser()
+    {
+        _selectedUser = null;
+        _editUser = new User
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Username = string.Empty,
+            IsAdmin = false
+        };
+        _isNew = true;
+        _isCurrentUser = false;
+        _newPassword = string.Empty;
+        _usernameValidationError = null;
+        _passwordValidationError = null;
+    }
+
+    private void EditUser(User user)
+    {
+        _selectedUser = user;
+        _editUser = new User
+        {
+            Id = user.Id,
+            Username = user.Username,
+            PasswordHash = user.PasswordHash,
+            IsAdmin = user.IsAdmin,
+            CreatedAt = user.CreatedAt
+        };
+        _isNew = false;
+        _isCurrentUser = _currentUser?.Id == user.Id;
+        _newPassword = string.Empty;
+        _usernameValidationError = null;
+        _passwordValidationError = null;
+    }
+
+    private async Task OnUsernameInput(ChangeEventArgs e)
+    {
+        if (_editUser is null)
+            return;
+
+        _editUser.Username = e.Value?.ToString() ?? string.Empty;
+        await ValidateUsername();
+    }
+
+    private Task ValidateUsername()
+    {
+        if (_editUser is null || _users is null)
+        {
+            _usernameValidationError = null;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        var trimmedUsername = _editUser.Username?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedUsername))
+        {
+            _usernameValidationError = "Username is required.";
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        // Check if username already exists (excluding current user if editing)
+        var existingUser = _users.FirstOrDefault(u =>
+            u.Username.Equals(trimmedUsername, StringComparison.OrdinalIgnoreCase) &&
+            (_isNew || u.Id != _editUser.Id));
+
+        if (existingUser is not null)
+        {
+            _usernameValidationError = "Username already exists.";
+        }
+        else
+        {
+            _usernameValidationError = null;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveUser()
+    {
+        if (_editUser is null)
+            return;
+
+        // Trim username before saving
+        _editUser.Username = _editUser.Username?.Trim() ?? string.Empty;
+
+        await ValidateUsername();
+        if (!string.IsNullOrEmpty(_usernameValidationError))
+            return;
+
+        // Validate password
+        if (_isNew)
+        {
+            if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 6)
+            {
+                _passwordValidationError = "Password must be at least 6 characters long.";
+                StateHasChanged();
+                return;
+            }
+            _editUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(_newPassword);
+        }
+        else if (!string.IsNullOrWhiteSpace(_newPassword))
+        {
+            if (_newPassword.Length < 6)
+            {
+                _passwordValidationError = "Password must be at least 6 characters long.";
+                StateHasChanged();
+                return;
+            }
+            // Hash the password - don't trim it as passwords can have leading/trailing spaces
+            _editUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(_newPassword);
+        }
+        // If editing existing user and password is empty, preserve existing password hash
+        else if (!_isNew)
+        {
+            // Password hash is already set from EditUser method, so we keep it
+            // But we need to reload it from the store to ensure we have the latest version
+            var existingUser = await UserStore.GetByIdAsync(_editUser.Id);
+            if (existingUser != null && !string.IsNullOrWhiteSpace(existingUser.PasswordHash))
+            {
+                _editUser.PasswordHash = existingUser.PasswordHash;
+            }
+        }
+
+        // Check admin safeguards
+        if (!_isNew)
+        {
+            var allUsers = await UserStore.GetAllAsync();
+            var adminCount = allUsers.Count(u => u.IsAdmin);
+            
+            // If removing admin status from last admin, prevent it
+            if (!_editUser.IsAdmin && adminCount == 1)
+            {
+                _passwordValidationError = "Cannot remove admin status from the last administrator.";
+                StateHasChanged();
+                return;
+            }
+        }
+
+        await UserStore.AddOrUpdateAsync(_editUser);
+
+        await LoadUsers();
+        _selectedUser = _users?.FirstOrDefault(u => u.Id == _editUser.Id);
+
+        _editUser = null;
+        _isNew = false;
+        _newPassword = string.Empty;
+        _usernameValidationError = null;
+        _passwordValidationError = null;
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (_selectedUser is null)
+            return;
+
+        // Check safeguards
+        if (_selectedUser.Id == _currentUser?.Id)
+        {
+            _passwordValidationError = "You cannot delete your own account.";
+            StateHasChanged();
+            return;
+        }
+
+        var allUsers = await UserStore.GetAllAsync();
+        var adminCount = allUsers.Count(u => u.IsAdmin);
+        
+        if (_selectedUser.IsAdmin && adminCount == 1)
+        {
+            _passwordValidationError = "Cannot delete the last administrator.";
+            StateHasChanged();
+            return;
+        }
+
+        await UserStore.DeleteAsync(_selectedUser.Id);
+
+        await LoadUsers();
+        _selectedUser = _users?.FirstOrDefault();
+        _editUser = null;
+        _isNew = false;
+    }
+
+    private async Task ChangePassword()
+    {
+        if (_currentUser is null)
+            return;
+
+        _changePasswordError = null;
+
+        if (string.IsNullOrWhiteSpace(_changePasswordNew) || _changePasswordNew.Length < 6)
+        {
+            _changePasswordError = "Password must be at least 6 characters long.";
+            StateHasChanged();
+            return;
+        }
+
+        if (_changePasswordNew != _changePasswordConfirm)
+        {
+            _changePasswordError = "Passwords do not match.";
+            StateHasChanged();
+            return;
+        }
+
+        var success = await AuthService.ChangePasswordAsync(_currentUser.Id, _currentPassword, _changePasswordNew);
+        if (success)
+        {
+            _showChangePassword = false;
+            _currentPassword = string.Empty;
+            _changePasswordNew = string.Empty;
+            _changePasswordConfirm = string.Empty;
+        }
+        else
+        {
+            _changePasswordError = "Current password is incorrect.";
+        }
+
+        StateHasChanged();
+    }
+
+    private void CancelEdit()
+    {
+        _editUser = null;
+        _isNew = false;
+        _newPassword = string.Empty;
+        _usernameValidationError = null;
+        _passwordValidationError = null;
+    }
+}
+

@@ -1,0 +1,23 @@
+[
+  {
+    "Id": "cb1e406459604239b36e2057997b994a",
+    "Username": "Avalin",
+    "PasswordHash": "$2a$11$RHQXXPbesIhoHSDy5LO8MOPh5VmycaUSpYTqEAAtd6X3aMoxs.5C2",
+    "IsAdmin": true,
+    "CreatedAt": "2025-11-26T23:48:36.4212369Z"
+  },
+  {
+    "Id": "154daf4af735414083082a51a0d0996f",
+    "Username": "Shalalam",
+    "PasswordHash": "$2a$11$kxZ9CyZWiHP2PoRQZGvsVenK.sTVf6.720RuUSIrqlJ8TJ34M6vzO",
+    "IsAdmin": false,
+    "CreatedAt": "2025-11-26T23:49:18.865936Z"
+  },
+  {
+    "Id": "ac57e2044cf34bb4aca37805528722ce",
+    "Username": "Logan",
+    "PasswordHash": "$2a$11$WIxh8GstW2jWzIPaK5dmI.UE4BJ.OCa2z63MlSmO5iFgNTa25PF5m",
+    "IsAdmin": true,
+    "CreatedAt": "2025-11-26T23:51:01.7566746Z"
+  }
+]

@@ -11,6 +11,7 @@
 @inject ILogService LogService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
+@inject IAuthService AuthService
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
@@ -353,6 +354,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Check authentication (use async version to ensure session is loaded)
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         _servers = (await ServerStore.GetAllAsync()).ToList();
         await LoadCommands();
 
@@ -517,20 +525,26 @@
         if (string.IsNullOrWhiteSpace(state.CurrentCommand))
             return;
 
-        var cmd = state.CurrentCommand.Trim();
+        var originalCmd = state.CurrentCommand.Trim();
+        var currentUser = await AuthService.GetCurrentUserAsync();
+        var username = currentUser?.Username?.ToUpperInvariant() ?? "RCON";
+        
+        // Modify command to inject username for /say commands
+        var cmdToSend = InjectUsernameIntoCommand(originalCmd, username);
 
         try
         {
-            var response = await Rcon.SendCommandAsync(server, cmd);
+            var response = await Rcon.SendCommandAsync(server, cmdToSend);
 
             state.History.Add(new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
-                Command = cmd,
-                Response = response
+                Command = originalCmd,
+                Response = response,
+                ExecutedBy = currentUser?.Username
             });
 
-            state.CommandHistoryOnly.Add(cmd);
+            state.CommandHistoryOnly.Add(originalCmd);
             state.HistoryIndex = state.CommandHistoryOnly.Count;
             
             // Persist command history after adding
@@ -554,8 +568,9 @@
             state.History.Add(new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
-                Command = cmd,
-                Response = $"[ERROR] {ex.Message}"
+                Command = originalCmd,
+                Response = $"[ERROR] {ex.Message}",
+                ExecutedBy = currentUser?.Username
             });
             
             // Persist even on error
@@ -576,6 +591,41 @@
         }
 
         state.CurrentCommand = string.Empty;
+    }
+
+    private string InjectUsernameIntoCommand(string command, string username)
+    {
+        // Inject username into the command
+        // For commands with arguments, prepend [USERNAME] to the first argument
+        // For commands without arguments, append [USERNAME] as a comment-like parameter
+        
+        if (string.IsNullOrWhiteSpace(command))
+            return command;
+        
+        var trimmed = command.Trim();
+        
+        // If command starts with /, it's a Minecraft command
+        if (trimmed.StartsWith("/"))
+        {
+            // Find the first space after the command name
+            var firstSpaceIndex = trimmed.IndexOf(' ');
+            
+            if (firstSpaceIndex > 0)
+            {
+                // Command has arguments - inject username at the start of arguments
+                var cmdName = trimmed.Substring(0, firstSpaceIndex);
+                var args = trimmed.Substring(firstSpaceIndex + 1);
+                return $"{cmdName} [{username}] {args}";
+            }
+            else
+            {
+                // Command has no arguments - append username as a parameter
+                return $"{trimmed} [{username}]";
+            }
+        }
+        
+        // Not a / command, just prepend username
+        return $"[{username}] {trimmed}";
     }
 
     private async Task HandleKeyDown(string serverId, KeyboardEventArgs e)
@@ -644,6 +694,7 @@
         public string? LogLine { get; set; }
         public string? Command { get; set; }
         public string? Response { get; set; }
+        public string? ExecutedBy { get; set; }
     }
 
     private List<MergedEntry> GetMergedEntries(ConsoleState state)
@@ -686,7 +737,8 @@
                     Timestamp = cmd.Timestamp,
                     IsLog = false,
                     Command = cmd.Command,
-                    Response = cmd.Response
+                    Response = cmd.Response,
+                    ExecutedBy = cmd.ExecutedBy
                 });
             }
         }

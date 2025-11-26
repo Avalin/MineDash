@@ -755,6 +755,13 @@
     color: #9cdcfe;
 }
 
+.command-user {
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-left: 0.5rem;
+    font-style: italic;
+}
+
 .console-prefix {
     color: #569cd6;
     margin-right: 0.25rem;

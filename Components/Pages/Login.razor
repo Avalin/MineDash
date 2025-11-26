@@ -1,0 +1,179 @@
+@page "/login"
+@rendermode InteractiveServer
+@layout Layout.EmptyLayout
+@using MineDash.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Antiforgery
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.JSInterop
+@inject IAuthService AuthService
+@inject IUserStore UserStore
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@inject IAntiforgery Antiforgery
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Login - MineDash</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="/images/minedash.png" alt="MineDash" class="login-logo" />
+        </div>
+
+        @if (_errorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @_errorMessage
+            </div>
+        }
+
+        @if (_isFirstUser)
+        {
+            <div class="alert alert-info" role="alert">
+                <strong>First User:</strong> You will automatically become an administrator.
+            </div>
+        }
+
+        <form method="post" action="/api/login" id="loginForm">
+            <input type="hidden" name="__RequestVerificationToken" value="@_antiforgeryToken" />
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="username" 
+                       name="Username"
+                       value="@_username"
+                       @oninput="@((ChangeEventArgs e) => _username = e.Value?.ToString() ?? string.Empty)"
+                       required 
+                       autofocus />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" 
+                       class="form-control" 
+                       id="password" 
+                       name="Password"
+                       value="@_password"
+                       @oninput="@((ChangeEventArgs e) => _password = e.Value?.ToString() ?? string.Empty)"
+                       required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-check-label">
+                    <input type="checkbox" class="form-check-input" @bind="_isNewUser" id="isNewUser" />
+                    Create new account
+                </label>
+            </div>
+
+            @if (_isNewUser)
+            {
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                    <input type="password" 
+                           class="form-control" 
+                           id="confirmPassword" 
+                           name="ConfirmPassword"
+                           @bind="_confirmPassword" 
+                           @bind:event="oninput"
+                           required />
+                </div>
+            }
+
+            <input type="hidden" name="IsNewUser" value="@_isNewUser.ToString().ToLower()" />
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                @(_isNewUser ? "Create Account" : "Login")
+            </button>
+        </form>
+    </div>
+</div>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private bool _isNewUser = false;
+    private bool _isLoading = false;
+    private string? _errorMessage;
+    private bool _isFirstUser = false;
+    private string _antiforgeryToken = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check for error message in query string
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("error", out var errorValues))
+        {
+            _errorMessage = Uri.UnescapeDataString(errorValues.FirstOrDefault() ?? string.Empty);
+        }
+
+        // Check if user is already authenticated (use async version to ensure session is loaded)
+        if (await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        // Check if this is the first user
+        var users = await UserStore.GetAllAsync();
+        _isFirstUser = users.Count == 0;
+
+        // Get antiforgery token
+        var httpContext = HttpContextAccessor.HttpContext;
+        if (httpContext != null)
+        {
+            var tokenSet = Antiforgery.GetAndStoreTokens(httpContext);
+            _antiforgeryToken = tokenSet.RequestToken ?? string.Empty;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Intercept form submission to show loading state and sync checkbox value
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                (function() {
+                    const form = document.getElementById('loginForm');
+                    if (form) {
+                        const checkbox = document.getElementById('isNewUser');
+                        const hiddenInput = form.querySelector('input[name=""IsNewUser""][type=""hidden""]');
+                        
+                        // Update hidden input when checkbox changes
+                        if (checkbox && hiddenInput) {
+                            checkbox.addEventListener('change', function() {
+                                hiddenInput.value = checkbox.checked.toString().toLowerCase();
+                            });
+                        }
+                        
+                        form.addEventListener('submit', function(e) {
+                            // Ensure hidden input is synced before submit
+                            if (checkbox && hiddenInput) {
+                                hiddenInput.value = checkbox.checked.toString().toLowerCase();
+                            }
+                            
+                            const submitBtn = form.querySelector('button[type=""submit""]');
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                const spinner = document.createElement('span');
+                                spinner.className = 'spinner-border spinner-border-sm me-2';
+                                spinner.setAttribute('role', 'status');
+                                spinner.setAttribute('aria-hidden', 'true');
+                                submitBtn.insertBefore(spinner, submitBtn.firstChild);
+                            }
+                        });
+                    }
+                })();
+            ");
+        }
+    }
+}
+

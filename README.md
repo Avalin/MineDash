@@ -2,7 +2,7 @@
 
 A modern web-based dashboard for managing multiple Minecraft servers via RCON. Built with Blazor Server and .NET 9.0.
 
-![MineDash Screenshot](https://github.com/user-attachments/assets/3535af22-d9ce-4c45-b822-bc6367c4d454)
+<img width="600" height="420" alt="image" src="https://github.com/user-attachments/assets/1e4b0c2e-188c-4676-88cf-88eb07affdf2" />
 
 ## Features
 
@@ -111,10 +111,10 @@ To use MineDash, you need to enable RCON on your Minecraft server:
 ### Data Storage
 
 MineDash stores its data in JSON files:
-- **Server configurations**: `App_Data/servers.json`
-- **Command history**: `App_Data/commands.json`
+- **Server configurations**: `app_data/servers.json`
+- **Command history**: `app_data/commands.json`
 
-These files are automatically created on first run. Make sure the `App_Data` directory is writable by the application.
+These files are automatically created on first run. Make sure the `app_data` directory is writable by the application.
 
 ## Usage
 
@@ -177,7 +177,7 @@ Adjust these paths to match your server setup.
 
 ### Data not persisting
 
-- Ensure the `App_Data` directory exists and is writable
+- Ensure the `app_data` directory exists and is writable
 - For Docker, verify the volume mount is correctly configured
 - Check file permissions on the host system
 
@@ -200,5 +200,5 @@ dotnet test
 - `Components/Pages/` - Blazor page components
 - `Services/` - Application services (RCON, storage, logging)
 - `Models/` - Data models
-- `App_Data/` - JSON data storage
+- `app_data/` - JSON data storage
 - `wwwroot/` - Static web assets

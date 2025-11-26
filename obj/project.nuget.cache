@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "HjU5sY/W6/I=",
+  "dgSpecHash": "gzamJfGWWB8=",
   "success": true,
   "projectFilePath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Avalin\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\Avalin\\.nuget\\packages\\corercon\\5.4.2\\corercon.5.4.2.nupkg.sha512",
     "C:\\Users\\Avalin\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\8.0.1\\microsoft.extensions.dependencyinjection.8.0.1.nupkg.sha512",
     "C:\\Users\\Avalin\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
