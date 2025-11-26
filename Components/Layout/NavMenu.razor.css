@@ -167,3 +167,31 @@
         overflow-y: auto;
     }
 }
+
+/* Mobile navigation improvements */
+@media (max-width: 640px) {
+    .navbar-toggler {
+        width: 3rem;
+        height: 3rem;
+        top: 0.75rem;
+        right: 0.75rem;
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .nav-scrollable {
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .nav-item ::deep .nav-link {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .navbar-logo {
+        height: 2rem;
+        max-width: 150px;
+    }
+}

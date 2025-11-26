@@ -38,3 +38,53 @@ html {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(124, 179, 66, 0.6);
 }
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    /* Improve touch targets for interactive elements */
+    button:not(.console-toggle-btn):not(.console-close-btn):not(.filter-dropdown-btn),
+    .btn:not(.btn-sm),
+    a.nav-link,
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-height: 44px;
+    }
+    
+    /* Ensure buttons have adequate touch area */
+    .btn-sm {
+        min-height: 36px;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    /* Better text selection on mobile */
+    * {
+        -webkit-tap-highlight-color: rgba(124, 179, 66, 0.3);
+    }
+    
+    /* Prevent text size adjustment on iOS */
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+    
+    /* Improve form inputs on mobile - 16px prevents zoom on iOS */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="email"],
+    select,
+    textarea {
+        font-size: 16px;
+    }
+    
+    /* Better scrolling on mobile */
+    body {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent horizontal scroll */
+    body, html {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+}

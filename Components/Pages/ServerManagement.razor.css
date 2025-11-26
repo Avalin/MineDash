@@ -15,6 +15,27 @@
     margin-bottom: 0.25rem;
 }
 
+@media (max-width: 768px) {
+    .server-mgmt-layout {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    
+    .server-mgmt-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .server-mgmt-header h2 {
+        margin-bottom: 0;
+    }
+    
+    .server-mgmt-header .btn {
+        width: 100%;
+    }
+}
+
 .server-mgmt-subtitle {
     margin: 0;
     font-size: 0.9rem;
@@ -37,6 +58,23 @@
 .server-table {
     margin-bottom: 0;
     width: 100%;
+}
+
+@media (max-width: 768px) {
+    .server-table-card {
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+    
+    .server-table {
+        font-size: 0.85rem;
+        min-width: 500px;
+    }
+    
+    .server-table th,
+    .server-table td {
+        padding: 0.5rem 0.4rem;
+    }
 }
 
 .server-table thead th {
@@ -98,6 +136,24 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .server-form-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .server-form-actions {
+        flex-direction: column;
+    }
+    
+    .server-form-actions .btn {
+        width: 100%;
+    }
+    
+    .field-row-half {
+        max-width: 100%;
+    }
 }
 
 /* Optional: on wider screens, arrange form in two columns */

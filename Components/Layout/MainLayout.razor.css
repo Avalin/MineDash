@@ -38,6 +38,13 @@ main {
     min-height: 0;
 }
 
+@media (max-width: 768px) {
+    main {
+        -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
+    }
+}
+
 .sidebar {
     background: linear-gradient(180deg, 
         rgba(45, 45, 45, 0.95) 0%, 

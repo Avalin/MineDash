@@ -203,18 +203,20 @@
                                     }
                                 }
                                 
-                                <button class="console-toggle-btn @(state.ShowLogs ? "active" : "")" 
-                                        title="@(state.ShowLogs ? "Hide logs" : "Show logs")"
-                                        type="button"
-                                        @onclick="@(() => ToggleLogs(serverId))">
-                                    <span class="bi bi-journal-text"></span>
-                                </button>
-                                <button class="console-toggle-btn @(state.ShowCommands ? "active" : "")" 
-                                        title="@(state.ShowCommands ? "Hide commands" : "Show commands")"
-                                        type="button"
-                                        @onclick="@(() => ToggleCommands(serverId))">
-                                    <span class="bi bi-terminal"></span>
-                                </button>
+                                <div class="toggle-buttons-row">
+                                    <button class="console-toggle-btn @(state.ShowLogs ? "active" : "")" 
+                                            title="@(state.ShowLogs ? "Hide logs" : "Show logs")"
+                                            type="button"
+                                            @onclick="@(() => ToggleLogs(serverId))">
+                                        <span class="bi bi-journal-text"></span>
+                                    </button>
+                                    <button class="console-toggle-btn @(state.ShowCommands ? "active" : "")" 
+                                            title="@(state.ShowCommands ? "Hide commands" : "Show commands")"
+                                            type="button"
+                                            @onclick="@(() => ToggleCommands(serverId))">
+                                        <span class="bi bi-terminal"></span>
+                                    </button>
+                                </div>
                                 <button class="console-close-btn" title="Close console"
                                         type="button"
                                         @onclick="@(() => CloseConsole(serverId))">
