@@ -1,0 +1,266 @@
+@page "/servers"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@inject IServerConfigStore ServerStore
+
+<PageTitle>Server Management</PageTitle>
+
+<div class="server-mgmt-layout">
+    <div class="server-mgmt-header">
+        <div>
+            <h2>Server Management</h2>
+            <p class="server-mgmt-subtitle">
+                Configure the Minecraft servers available in MineDash.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" @onclick="NewServer">
+            + Add server
+        </button>
+    </div>
+
+    @if (_editServer is not null)
+    {
+        <div class="server-form-card">
+            <h3 class="server-form-title">
+                @(_isNew ? "Add server" : "Edit server")
+            </h3>
+
+            <div class="server-form-grid">
+                <div class="field-row">
+                    <div class="field-label">Name</div>
+                    <div class="field-hint">
+                        Friendly name for this server, shown in the Home dropdown.
+                    </div>
+                    <input class="form-control" value="@_editServer.Name" @oninput="OnNameInput" />
+                    @if (!string.IsNullOrEmpty(_nameValidationError))
+                    {
+                        <div class="field-error">@_nameValidationError</div>
+                    }
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Server host</div>
+                    <div class="field-hint">
+                        IP or hostname where the Minecraft server is reachable from this panel.
+                        For Docker on the same host, <code>localhost</code> usually works.
+                    </div>
+                    <input class="form-control" @bind="_editServer.Host" />
+                </div>
+
+                <div class="field-row field-row-half">
+                    <div class="field-label">RCON port</div>
+                    <div class="field-hint">
+                        The port of the RCON interface (e.g. <code>25575</code>).
+                    </div>
+                    <input class="form-control" type="number" @bind="_editServer.RconPort" />
+                </div>
+
+                <div class="field-row field-row-half">
+                    <div class="field-label">RCON password</div>
+                    <div class="field-hint">
+                        The password set as <code>rcon.password</code> (or the Docker env
+                        <code>RCON_PASSWORD</code>).
+                    </div>
+                    <input class="form-control" type="password" @bind="_editServer.RconPassword" />
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Notes</div>
+                    <div class="field-hint">
+                        Optional description or notes about this server (e.g. “Cobbleverse modpack”).
+                    </div>
+                    <textarea class="form-control" rows="2" @bind="_editServer.Notes"></textarea>
+                </div>
+            </div>
+
+            <div class="server-form-actions">
+                <button class="btn btn-success" @onclick="SaveServer">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                @if (!_isNew && _selectedServer is not null)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="server-table-card">
+        @if (_servers is null)
+        {
+            <p>Loading...</p>
+        }
+        else if (_servers.Count == 0)
+        {
+            <p class="no-server-text">
+                No servers configured yet. Click <strong>Add server</strong> to create one.
+            </p>
+        }
+        else
+        {
+            <table class="table table-dark server-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Host</th>
+                        <th>RCON port</th>
+                        <th style="width: 90px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in _servers)
+                    {
+                        <tr class="@( _selectedServer?.Id == s.Id ? "selected-row" : "" )">
+                            <td>@s.Name</td>
+                            <td>@s.Host</td>
+                            <td>@s.RconPort</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary"
+                                        @onclick="@(() => EditServer(s))">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private List<ServerConfig>? _servers;
+    private ServerConfig? _selectedServer;
+    private ServerConfig? _editServer;
+    private bool _isNew;
+    private string? _nameValidationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+        _selectedServer = _servers.FirstOrDefault();
+    }
+
+    private void NewServer()
+    {
+        _selectedServer = null;
+        _editServer = new ServerConfig
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Name = "New Minecraft Server",
+            Host = "localhost",
+            RconPort = 25575
+        };
+        _isNew = true;
+        _nameValidationError = null;
+    }
+
+    private void EditServer(ServerConfig server)
+    {
+        _selectedServer = server;
+        _editServer = new ServerConfig
+        {
+            Id = server.Id,
+            Name = server.Name,
+            Host = server.Host,
+            RconPort = server.RconPort,
+            RconPassword = server.RconPassword,
+            Notes = server.Notes
+        };
+        _isNew = false;
+        _nameValidationError = null;
+    }
+
+    private async Task OnNameInput(ChangeEventArgs e)
+    {
+        if (_editServer is null)
+            return;
+
+        _editServer.Name = e.Value?.ToString() ?? string.Empty;
+        await ValidateServerName();
+    }
+
+    private Task ValidateServerName()
+    {
+        if (_editServer is null || _servers is null)
+        {
+            _nameValidationError = null;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        // Only validate for new servers, or if editing and name changed
+        if (!_isNew && _selectedServer?.Name == _editServer.Name)
+        {
+            _nameValidationError = null;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        var trimmedName = _editServer.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedName))
+        {
+            _nameValidationError = null;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        // Check if a server with this name already exists (excluding current server if editing)
+        var existingServer = _servers.FirstOrDefault(s => 
+            s.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase) &&
+            (_isNew || s.Id != _editServer.Id));
+
+        if (existingServer is not null)
+        {
+            _nameValidationError = "A server with this name already exists.";
+        }
+        else
+        {
+            _nameValidationError = null;
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveServer()
+    {
+        if (_editServer is null)
+            return;
+
+        // Validate before saving
+        await ValidateServerName();
+        if (!string.IsNullOrEmpty(_nameValidationError))
+            return;
+
+        await ServerStore.AddOrUpdateAsync(_editServer);
+
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+        _selectedServer = _servers.FirstOrDefault(s => s.Id == _editServer.Id);
+
+        _editServer = null;
+        _isNew = false;
+        _nameValidationError = null;
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (_selectedServer is null)
+            return;
+
+        await ServerStore.DeleteAsync(_selectedServer.Id);
+
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+        _selectedServer = _servers.FirstOrDefault();
+        _editServer = null;
+        _isNew = false;
+    }
+
+    private void CancelEdit()
+    {
+        _editServer = null;
+        _isNew = false;
+        _nameValidationError = null;
+    }
+}

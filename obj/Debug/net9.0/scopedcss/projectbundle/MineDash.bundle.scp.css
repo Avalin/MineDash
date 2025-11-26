@@ -203,3 +203,359 @@ main[b-l3n58rr43k] {
         overflow-y: auto;
     }
 }
+/* _content/MineDash/Components/Pages/Home.razor.rz.scp.css */
+.page-layout[b-r3v39eobk4] {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: start;
+}
+
+/* left side: consoles */
+
+.command-panel[b-r3v39eobk4] {
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.75rem;
+    background-color: #1e1e1e;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
+}
+
+/* right side: quick ref */
+
+.help-panel[b-r3v39eobk4] {
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.75rem;
+    background-color: #1e1e1e;
+    color: #eee;
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+/* toolbar */
+
+.console-toolbar[b-r3v39eobk4] {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.toolbar-section[b-r3v39eobk4] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.toolbar-right[b-r3v39eobk4] {
+    align-items: flex-end;
+}
+
+.layout-section[b-r3v39eobk4] {
+    min-width: 130px;
+}
+
+.server-select-label[b-r3v39eobk4] {
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.add-console-row[b-r3v39eobk4] {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* pretty "Manage servers" pill (reused from earlier) */
+
+.manage-link[b-r3v39eobk4] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+
+    border: 1px solid #4ea3ff;
+    color: #4ea3ff;
+    background-color: transparent;
+
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.manage-link:hover[b-r3v39eobk4] {
+    background-color: rgba(78, 163, 255, 0.12);
+    text-decoration: none;
+}
+
+.manage-link .bi[b-r3v39eobk4] {
+    font-size: 0.9rem;
+}
+
+/* console grid */
+
+.console-grid[b-r3v39eobk4] {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-top: 0.5rem;
+
+    display: grid;
+    gap: 0.75rem;
+}
+
+/* single console card */
+
+.console-card[b-r3v39eobk4] {
+    background-color: #111;
+    border-radius: 6px;
+    border: 1px solid #444;
+    padding: 0.5rem 0.5rem 0.6rem 0.5rem;
+
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+}
+
+.console-header[b-r3v39eobk4] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.console-title[b-r3v39eobk4] {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.console-endpoint[b-r3v39eobk4] {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.console-close-btn[b-r3v39eobk4] {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ddd;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    transition: all 0.2s ease;
+}
+
+.console-close-btn:hover[b-r3v39eobk4] {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.console-close-btn:active[b-r3v39eobk4] {
+    transform: scale(0.95);
+}
+
+/* console content */
+
+.console-output[b-r3v39eobk4] {
+    background-color: #050505;
+    border-radius: 4px;
+    padding: 0.5rem;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.console-empty[b-r3v39eobk4] {
+    color: #777;
+    font-size: 0.85rem;
+}
+
+.console-entry[b-r3v39eobk4] {
+    margin-bottom: 0.35rem;
+}
+
+.console-command[b-r3v39eobk4] {
+    color: #9cdcfe;
+}
+
+.console-prefix[b-r3v39eobk4] {
+    color: #569cd6;
+    margin-right: 0.25rem;
+}
+
+.console-response[b-r3v39eobk4] {
+    color: #d4d4d4;
+    white-space: pre-wrap;
+    margin-left: 1rem;
+}
+
+/* input row */
+
+.command-input-row[b-r3v39eobk4] {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.command-input[b-r3v39eobk4] {
+    flex: 1;
+}
+
+/* help ref */
+
+.help-list[b-r3v39eobk4] {
+    font-size: 0.85rem;
+}
+
+.help-list code[b-r3v39eobk4] {
+    font-size: 0.9rem;
+}
+
+/* empty-state text */
+
+.no-server-text[b-r3v39eobk4] {
+    margin-top: 0.5rem;
+    color: #ccc;
+}
+/* _content/MineDash/Components/Pages/ServerManagement.razor.rz.scp.css */
+/* Server management layout */
+
+.server-mgmt-layout[b-itiwke9orw] {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.server-mgmt-header[b-itiwke9orw] {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.server-mgmt-subtitle[b-itiwke9orw] {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+/* Cards */
+
+.server-table-card[b-itiwke9orw],
+.server-form-card[b-itiwke9orw] {
+    background-color: #1e1e1e;
+    border-radius: 6px;
+    border: 1px solid #444;
+    padding: 0.75rem 1rem;
+    color: #eee;
+}
+
+/* Table styling */
+
+.server-table[b-itiwke9orw] {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.server-table thead th[b-itiwke9orw] {
+    border-color: #333;
+    border-bottom-width: 2px;
+    font-weight: 600;
+}
+
+.server-table tbody td[b-itiwke9orw] {
+    border-color: #333;
+}
+
+.server-table tbody tr.selected-row[b-itiwke9orw] {
+    background-color: #2b4a7a;
+}
+
+/* Form styling */
+
+.server-form-title[b-itiwke9orw] {
+    margin-bottom: 0.75rem;
+}
+
+.server-form-grid[b-itiwke9orw] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* “Crafty-style” field rows with vertical accent line */
+
+.field-row[b-itiwke9orw] {
+    border-left: 3px solid #3fbf5b;
+    padding-left: 0.75rem;
+}
+
+.field-row-half[b-itiwke9orw] {
+    max-width: 420px;
+}
+
+.field-label[b-itiwke9orw] {
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.field-hint[b-itiwke9orw] {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 0.35rem;
+}
+
+.field-error[b-itiwke9orw] {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+}
+
+.server-form-actions[b-itiwke9orw] {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Optional: on wider screens, arrange form in two columns */
+
+@media (min-width: 900px) {
+    .server-form-grid[b-itiwke9orw] {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 1.25rem;
+    }
+
+    .field-row[b-itiwke9orw] {
+        margin-bottom: 0.25rem;
+    }
+
+    /* Make Name + Host + Notes span full width */
+    .field-row:nth-child(1)[b-itiwke9orw],
+    .field-row:nth-child(2)[b-itiwke9orw],
+    .field-row:nth-child(5)[b-itiwke9orw] {
+        grid-column: 1 / -1;
+    }
+}

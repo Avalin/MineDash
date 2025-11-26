@@ -1,7 +1,418 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@inject IServerConfigStore ServerStore
+@inject IRconService Rcon
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
-<PageTitle>Home</PageTitle>
+<PageTitle>MineDash</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="page-layout">
+    <div class="command-panel">
+        <!-- Toolbar: Add console + Layout selector + Manage servers -->
+        <div class="console-toolbar">
+            <div class="toolbar-section">
+                <label class="server-select-label">Add console</label>
 
-Welcome to your new app.
+                @if (_servers is null || !_servers.Any())
+                {
+                    <div class="add-console-row">
+                        <select class="form-select form-select-sm" disabled>
+                            <option>No servers registered</option>
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <div class="add-console-row">
+                        <select class="form-select form-select-sm"
+                                @bind="_selectedAddServerId">
+                            <option value="">Select server…</option>
+                            @foreach (var s in _servers)
+                            {
+                                if (!_openConsoleIds.Contains(s.Id))
+                                {
+                                    <option value="@s.Id">
+                                        @s.Name (@s.Host:@s.RconPort)
+                                    </option>
+                                }
+                            }
+                        </select>
+
+                        <button class="btn btn-sm btn-outline-light"
+                                @onclick="AddConsole"
+                                disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
+                            Add
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <div class="toolbar-section layout-section">
+                <label class="server-select-label">Layout</label>
+                <div class="btn-group btn-group-sm">
+                    <button class="@GetLayoutButtonClass(1)" @onclick="@(() => SetLayout(1))" type="button">1</button>
+                    <button class="@GetLayoutButtonClass(2)" @onclick="@(() => SetLayout(2))" type="button">2</button>
+                    <button class="@GetLayoutButtonClass(3)" @onclick="@(() => SetLayout(3))" type="button">3</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section toolbar-right">
+                <a href="servers" class="manage-link">
+                    <span class="bi bi-gear-fill"></span>
+                    <span>Manage servers</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- No servers at all -->
+        @if (_servers is null || !_servers.Any())
+        {
+            <p class="no-server-text">
+                No servers configured. Go to <strong>Server management</strong> to add one.
+            </p>
+        }
+        else if (!_openConsoleIds.Any())
+        {
+            <!-- Servers exist, but no consoles open -->
+            <p class="no-server-text">
+                No consoles open. Use <strong>Add console</strong> to start monitoring a server.
+            </p>
+        }
+        else
+        {
+            <!-- Console grid -->
+            <div class="console-grid" style="grid-template-columns:@GridTemplateColumns">
+                @foreach (var serverId in _openConsoleIds)
+                {
+                    var server = _servers!.FirstOrDefault(s => s.Id == serverId);
+                    if (server is null)
+                    {
+                        continue;
+                    }
+
+                    var state = GetConsoleState(serverId);
+
+                    <div class="console-card">
+                        <div class="console-header">
+                            <div>
+                                <div class="console-title">@server.Name</div>
+                                <div class="console-endpoint">@server.Host:@server.RconPort</div>
+                            </div>
+                            <button class="console-close-btn" title="Close console"
+                                    type="button"
+                                    @onclick="@(() => CloseConsole(serverId))">
+                                <span class="bi bi-x-lg"></span>
+                            </button>
+                        </div>
+
+                        <div class="console-output">
+                            @if (!state.History.Any())
+                            {
+                                <div class="console-empty">
+                                    No commands sent yet.
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var item in state.History)
+                                {
+                                    <div class="console-entry">
+                                        <div class="console-command">
+                                            <span class="console-prefix">&gt;</span>
+                                            <span>@item.Command</span>
+                                        </div>
+                                        <div class="console-response">
+                                            @item.Response
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="command-input-row">
+                            <input class="form-control command-input"
+                                   placeholder="Type a Minecraft command, e.g. /say Hello"
+                                   value="@state.CurrentCommand"
+                                   @oninput="@((ChangeEventArgs e) => OnCommandChanged(serverId, e))"
+                                   @onkeydown="@((KeyboardEventArgs e) => HandleKeyDown(serverId, e))" />
+
+                            <button class="btn btn-primary"
+                                    @onclick="@(() => SendCommand(serverId))"
+                                    disabled="@string.IsNullOrWhiteSpace(state.CurrentCommand)">
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="help-panel">
+        <h4>Minecraft Commands (quick ref)</h4>
+        <ul class="help-list">
+            <li><code>/say &lt;message&gt;</code> – Broadcast a message</li>
+            <li><code>/list</code> – List players</li>
+            <li><code>/kick &lt;player&gt; [&lt;reason&gt;]</code></li>
+            <li><code>/ban &lt;player&gt; [&lt;reason&gt;</code>]</li>
+            <li><code>/time set day|night|noon|midnight</code></li>
+            <li><code>/gamemode survival|creative|adventure|spectator [player]</code></li>
+            <li><code>/tp &lt;target&gt; &lt;destination&gt;</code></li>
+            <li><code>/stop</code> – Stop the server</li>
+        </ul>
+    </div>
+</div>
+
+@code {
+    private List<ServerConfig>? _servers;
+
+    // Which servers currently have consoles open
+    private readonly List<string> _openConsoleIds = new();
+
+    // Per-console state
+    private readonly Dictionary<string, ConsoleState> _consoleStates = new();
+
+    // "Add console" dropdown selection
+    private string? _selectedAddServerId;
+
+    // Layout columns (1 / 2 / 3)
+    private int _layoutColumns = 1;
+
+    private string GridTemplateColumns =>
+        _layoutColumns switch
+        {
+            1 => "1fr",
+            2 => "1fr 1fr",
+            3 => "1fr 1fr 1fr",
+            _ => "1fr"
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+
+        // Load persisted state from localStorage
+        await LoadPersistedState();
+
+        // If no persisted state, open the first server by default (if any)
+        if (!_openConsoleIds.Any() && _servers.Any())
+        {
+            var firstId = _servers.FirstOrDefault()?.Id;
+            if (firstId is not null)
+            {
+                _openConsoleIds.Add(firstId);
+                await SavePersistedState();
+            }
+        }
+    }
+
+    private async Task AddConsole()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedAddServerId))
+            return;
+
+        if (!_openConsoleIds.Contains(_selectedAddServerId))
+        {
+            _openConsoleIds.Add(_selectedAddServerId);
+            await SavePersistedState();
+        }
+
+        _selectedAddServerId = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task CloseConsole(string serverId)
+    {
+        _openConsoleIds.Remove(serverId);
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+    private async Task SetLayout(int columns)
+    {
+        _layoutColumns = Math.Clamp(columns, 1, 3);
+        await SavePersistedState();
+        StateHasChanged();
+    }
+
+    private string GetLayoutButtonClass(int columns)
+    {
+        var isActive = _layoutColumns == columns;
+        return "btn btn-sm " + (isActive ? "btn-primary" : "btn-outline-light");
+    }
+
+    private ConsoleState GetConsoleState(string serverId)
+    {
+        if (!_consoleStates.TryGetValue(serverId, out var state))
+        {
+            state = new ConsoleState(serverId);
+            _consoleStates[serverId] = state;
+        }
+
+        return state;
+    }
+
+    private void OnCommandChanged(string serverId, ChangeEventArgs e)
+    {
+        var state = GetConsoleState(serverId);
+        state.CurrentCommand = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task SendCommand(string serverId)
+    {
+        if (_servers is null)
+            return;
+
+        var server = _servers.FirstOrDefault(s => s.Id == serverId);
+        if (server is null)
+            return;
+
+        var state = GetConsoleState(serverId);
+        if (string.IsNullOrWhiteSpace(state.CurrentCommand))
+            return;
+
+        var cmd = state.CurrentCommand.Trim();
+
+        try
+        {
+            var response = await Rcon.SendCommandAsync(server, cmd);
+
+            state.History.Add(new CommandHistoryItem
+            {
+                Timestamp = DateTime.UtcNow,
+                Command = cmd,
+                Response = response
+            });
+
+            state.CommandHistoryOnly.Add(cmd);
+            state.HistoryIndex = state.CommandHistoryOnly.Count;
+        }
+        catch (Exception ex)
+        {
+            state.History.Add(new CommandHistoryItem
+            {
+                Timestamp = DateTime.UtcNow,
+                Command = cmd,
+                Response = $"[ERROR] {ex.Message}"
+            });
+        }
+
+        state.CurrentCommand = string.Empty;
+    }
+
+    private async Task HandleKeyDown(string serverId, KeyboardEventArgs e)
+    {
+        var state = GetConsoleState(serverId);
+
+        if (e.Key == "Enter")
+        {
+            await SendCommand(serverId);
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (state.CommandHistoryOnly.Count > 0 && state.HistoryIndex > 0)
+            {
+                state.HistoryIndex--;
+                state.CurrentCommand = state.CommandHistoryOnly[state.HistoryIndex];
+            }
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (state.CommandHistoryOnly.Count > 0 && state.HistoryIndex < state.CommandHistoryOnly.Count - 1)
+            {
+                state.HistoryIndex++;
+                state.CurrentCommand = state.CommandHistoryOnly[state.HistoryIndex];
+            }
+            else
+            {
+                state.HistoryIndex = state.CommandHistoryOnly.Count;
+                state.CurrentCommand = string.Empty;
+            }
+        }
+    }
+
+    // Per-server console state
+    private sealed class ConsoleState
+    {
+        public ConsoleState(string serverId)
+        {
+            ServerId = serverId;
+        }
+
+        public string ServerId { get; }
+        public List<CommandHistoryItem> History { get; } = new();
+        public string CurrentCommand { get; set; } = string.Empty;
+        public List<string> CommandHistoryOnly { get; } = new();
+        public int HistoryIndex { get; set; } = -1;
+    }
+
+    // Persistence methods
+    private async Task LoadPersistedState()
+    {
+        try
+        {
+            var stateJson = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "minedash_console_state");
+            if (!string.IsNullOrWhiteSpace(stateJson))
+            {
+                var state = JsonSerializer.Deserialize<PersistedState>(stateJson);
+                if (state != null)
+                {
+                    // Validate that the persisted server IDs still exist
+                    if (_servers != null && state.OpenConsoleIds != null)
+                    {
+                        var validIds = state.OpenConsoleIds
+                            .Where(id => _servers.Any(s => s.Id == id))
+                            .ToList();
+                        _openConsoleIds.Clear();
+                        _openConsoleIds.AddRange(validIds);
+                    }
+
+                    if (state.LayoutColumns >= 1 && state.LayoutColumns <= 3)
+                    {
+                        _layoutColumns = state.LayoutColumns;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If loading fails, just use defaults
+        }
+    }
+
+    private async Task SavePersistedState()
+    {
+        try
+        {
+            var state = new PersistedState
+            {
+                OpenConsoleIds = _openConsoleIds.ToList(),
+                LayoutColumns = _layoutColumns
+            };
+            var stateJson = JsonSerializer.Serialize(state);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "minedash_console_state", stateJson);
+        }
+        catch
+        {
+            // If saving fails, silently continue
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Save state when component is disposed
+        await SavePersistedState();
+    }
+
+    // Persisted state model
+    private sealed class PersistedState
+    {
+        public List<string>? OpenConsoleIds { get; set; }
+        public int LayoutColumns { get; set; } = 1;
+    }
+}

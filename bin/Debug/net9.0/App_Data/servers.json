@@ -1,0 +1,30 @@
+[
+  {
+    "Id": "222c65cd651444f2b6ffc9be14960701",
+    "Name": "New Minecraft Server",
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": ""
+  },
+  {
+    "Id": "d2618909257e423185a21c5f5de50f3e",
+    "Name": "New Minecraft Servera",
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": ""
+  },
+  {
+    "Id": "2fdd145954a64db884460b57321b0d23",
+    "Name": "New Minecraft Serversssss",
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": ""
+  },
+  {
+    "Id": "530d77d4df1c4df0ab0abda413576eb9",
+    "Name": "New Minecraft Serverdasdasdas",
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": ""
+  }
+]
