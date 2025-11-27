@@ -577,7 +577,87 @@
     color: #666;
 }
 
-/* Multi-select styling */
+/* Grid selector styling */
+
+.grid-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.grid-selector-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.grid-selector-header .btn-link {
+    color: #7cb342;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.grid-selector-header .btn-link:hover {
+    color: #9ccc65;
+    background: rgba(124, 179, 66, 0.1);
+}
+
+.grid-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: rgba(26, 26, 26, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.grid-selector-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 0.5rem 0.25rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-selector-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.grid-selector-item.selected {
+    background-color: rgba(124, 179, 66, 0.3);
+    border-color: #7cb342;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.2);
+}
+
+.grid-selector-item.selected:hover {
+    background-color: rgba(124, 179, 66, 0.4);
+    border-color: #9ccc65;
+}
+
+/* Hours grid - 12 columns for better fit */
+.hours-grid-selector .grid-selector-grid {
+    grid-template-columns: repeat(12, 1fr);
+}
+
+/* Multi-select styling (for weekdays) */
 
 select[multiple] {
     min-height: 140px;
@@ -597,6 +677,19 @@ select[multiple] option:checked {
 }
 
 @media (max-width: 768px) {
+    .grid-selector-grid {
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 0.4rem;
+        padding: 0.5rem;
+        max-height: 250px;
+    }
+    
+    .grid-selector-item {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.8rem;
+        min-height: 32px;
+    }
+    
     select[multiple] {
         min-height: 120px;
         font-size: 0.9rem;

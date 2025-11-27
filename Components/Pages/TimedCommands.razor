@@ -65,6 +65,19 @@
                     }
                 </div>
 
+                <div class="field-row">
+                    <div class="field-label">Active</div>
+                    <div class="field-hint">
+                        If disabled, this command will not run.
+                    </div>
+                    <select class="form-select" 
+                            value="@(_editCommand.IsActive.ToString().ToLower())" 
+                            @onchange="@((ChangeEventArgs e) => { if (_editCommand != null) _editCommand.IsActive = e.Value?.ToString() == "true"; })">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+
                 <div class="field-row field-row-full">
                     <div class="field-label">RCON Command</div>
                     <div class="field-hint">
@@ -80,57 +93,77 @@
                 <div class="field-row">
                     <div class="field-label">Minutes</div>
                     <div class="field-hint">
-                        Specify the minutes of an hour (0-59). Leave empty to run every minute. Hold Ctrl/Cmd to select multiple.
+                        Specify the minutes of an hour (0-59). Leave empty to run every minute. Click to select multiple.
                     </div>
-                    <select class="form-select" multiple size="5" id="minutes-select-@_editCommand.Id" @onchange="OnMinutesChanged">
-                        @for (int i = 0; i < 60; i++)
-                        {
-                            var isSelected = _editCommand.Minutes.Contains(i);
-                            <option value="@i" selected="@isSelected">@i</option>
-                        }
-                    </select>
-                    <div class="field-selected-values">
-                        @if (_editCommand.Minutes.Count > 0)
-                        {
-                            <span>Selected: @string.Join(", ", _editCommand.Minutes.OrderBy(m => m))</span>
-                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearMinutes">Clear</button>
-                        }
-                        else
-                        {
-                            <span class="text-muted">All minutes selected (runs every minute)</span>
-                        }
+                    <div class="grid-selector">
+                        <div class="grid-selector-header">
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="SelectAllMinutes">Select All</button>
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="ClearMinutes">Clear</button>
+                        </div>
+                        <div class="grid-selector-grid">
+                            @for (int i = 0; i < 60; i++)
+                            {
+                                var minute = i; // Capture loop variable
+                                var isSelected = _editCommand.Minutes.Contains(minute);
+                                <button type="button" 
+                                        class="grid-selector-item @(isSelected ? "selected" : "")"
+                                        @onclick="@(() => ToggleMinute(minute))">
+                                    @minute
+                                </button>
+                            }
+                        </div>
+                        <div class="field-selected-values">
+                            @if (_editCommand.Minutes.Count > 0)
+                            {
+                                <span>Selected: @string.Join(", ", _editCommand.Minutes.OrderBy(m => m).Take(10))@(_editCommand.Minutes.Count > 10 ? "..." : "") (@_editCommand.Minutes.Count total)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">All minutes selected (runs every minute)</span>
+                            }
+                        </div>
                     </div>
                 </div>
 
                 <div class="field-row">
                     <div class="field-label">Hours</div>
                     <div class="field-hint">
-                        Specify the hours of a day (0-23). Leave empty to run every hour. Hold Ctrl/Cmd to select multiple.
+                        Specify the hours of a day (0-23). Leave empty to run every hour. Click to select multiple.
                     </div>
-                    <select class="form-select" multiple size="5" id="hours-select-@_editCommand.Id" @onchange="OnHoursChanged">
-                        @for (int i = 0; i < 24; i++)
-                        {
-                            var isSelected = _editCommand.Hours.Contains(i);
-                            <option value="@i" selected="@isSelected">@i</option>
-                        }
-                    </select>
-                    <div class="field-selected-values">
-                        @if (_editCommand.Hours.Count > 0)
-                        {
-                            <span>Selected: @string.Join(", ", _editCommand.Hours.OrderBy(h => h))</span>
-                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearHours">Clear</button>
-                        }
-                        else
-                        {
-                            <span class="text-muted">All hours selected (runs every hour)</span>
-                        }
+                    <div class="grid-selector hours-grid-selector">
+                        <div class="grid-selector-header">
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="SelectAllHours">Select All</button>
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="ClearHours">Clear</button>
+                        </div>
+                        <div class="grid-selector-grid">
+                            @for (int i = 0; i < 24; i++)
+                            {
+                                var hour = i; // Capture loop variable
+                                var isSelected = _editCommand.Hours.Contains(hour);
+                                <button type="button" 
+                                        class="grid-selector-item @(isSelected ? "selected" : "")"
+                                        @onclick="@(() => ToggleHour(hour))">
+                                    @hour
+                                </button>
+                            }
+                        </div>
+                        <div class="field-selected-values">
+                            @if (_editCommand.Hours.Count > 0)
+                            {
+                                <span>Selected: @string.Join(", ", _editCommand.Hours.OrderBy(h => h)) (@_editCommand.Hours.Count total)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">All hours selected (runs every hour)</span>
+                            }
+                        </div>
                     </div>
                 </div>
 
                 <div class="field-row">
                     <div class="field-label">Weekdays</div>
                     <div class="field-hint">
-                        Specify the days of the week. Leave empty to run every day. Hold Ctrl/Cmd to select multiple.
+                        Specify the days of the week. Leave empty to run every day. Click to select multiple.
                     </div>
                     <select class="form-select" multiple size="7" id="weekdays-select-@_editCommand.Id" @onchange="OnWeekdaysChanged">
                         @{
@@ -153,19 +186,6 @@
                             <span class="text-muted">All days selected (runs every day)</span>
                         }
                     </div>
-                </div>
-
-                <div class="field-row">
-                    <div class="field-label">Active</div>
-                    <div class="field-hint">
-                        If disabled, this command will not run.
-                    </div>
-                    <select class="form-select" 
-                            value="@(_editCommand.IsActive.ToString().ToLower())" 
-                            @onchange="@((ChangeEventArgs e) => { if (_editCommand != null) _editCommand.IsActive = e.Value?.ToString() == "true"; })">
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                    </select>
                 </div>
             </div>
 
@@ -473,6 +493,62 @@
         }
     }
 
+    private void ToggleMinute(int minute)
+    {
+        if (_editCommand is null)
+            return;
+        
+        if (_editCommand.Minutes.Contains(minute))
+        {
+            _editCommand.Minutes.Remove(minute);
+        }
+        else
+        {
+            _editCommand.Minutes.Add(minute);
+        }
+        StateHasChanged();
+    }
+
+    private void ToggleHour(int hour)
+    {
+        if (_editCommand is null)
+            return;
+        
+        if (_editCommand.Hours.Contains(hour))
+        {
+            _editCommand.Hours.Remove(hour);
+        }
+        else
+        {
+            _editCommand.Hours.Add(hour);
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllMinutes()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Minutes.Clear();
+        for (int i = 0; i < 60; i++)
+        {
+            _editCommand.Minutes.Add(i);
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllHours()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Hours.Clear();
+        for (int i = 0; i < 24; i++)
+        {
+            _editCommand.Hours.Add(i);
+        }
+        StateHasChanged();
+    }
+
     private void ClearMinutes()
     {
         if (_editCommand is null)
@@ -576,11 +652,9 @@
             !string.IsNullOrEmpty(_serverValidationError))
             return;
 
-        // Update multi-select values from the DOM before saving
+        // Update weekdays from the DOM before saving (minutes and hours are now handled by grid buttons)
         try
         {
-            await UpdateMinutesFromSelect();
-            await UpdateHoursFromSelect();
             await UpdateWeekdaysFromSelect();
         }
         catch
