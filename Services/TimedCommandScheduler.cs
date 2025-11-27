@@ -43,7 +43,9 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
         var commandStore = scope.ServiceProvider.GetRequiredService<ITimedCommandStore>();
         var serverStore = scope.ServiceProvider.GetRequiredService<IServerConfigStore>();
         var rconService = scope.ServiceProvider.GetRequiredService<IRconService>();
+        var settingsStore = scope.ServiceProvider.GetRequiredService<IAppSettingsStore>();
 
+        var settings = await settingsStore.GetAsync(cancellationToken);
         var commands = await commandStore.GetAllAsync(cancellationToken);
         var now = DateTime.UtcNow;
         var currentMinute = now.Minute;
@@ -76,6 +78,11 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
                     _logger.LogInformation("Timed command '{CommandName}' executed successfully. Response: {Response}", 
                         command.Name, response);
 
+                    // Reset failure tracking on successful execution
+                    command.FirstFailureAt = null;
+                    command.ConsecutiveFailures = 0;
+                    command.AutoDisabledAt = null;
+
                     // Update last run time and calculate next run time
                     command.LastRunAt = now;
                     command.NextRunAt = CalculateNextRunTime(command, now);
@@ -91,11 +98,34 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
                     
                     if (isConnectionError)
                     {
-                        _logger.LogWarning("Timed command '{CommandName}' skipped - server unavailable: {Error}", 
-                            command.Name, ex.Message);
+                        // Track consecutive failures
+                        if (command.FirstFailureAt == null)
+                        {
+                            command.FirstFailureAt = now;
+                        }
+                        command.ConsecutiveFailures++;
+                        
+                        // Auto-disable after configured timeout (0 = disabled)
+                        var autoDisableMinutes = settings.AutoDisableTimeoutMinutes;
+                        var failureDuration = now - command.FirstFailureAt.Value;
+                        
+                        if (autoDisableMinutes > 0 && failureDuration.TotalMinutes >= autoDisableMinutes && command.IsActive)
+                        {
+                            command.IsActive = false;
+                            command.AutoDisabledAt = now;
+                            _logger.LogWarning(
+                                "Timed command '{CommandName}' auto-disabled after {Minutes} minutes of consecutive connection failures",
+                                command.Name, autoDisableMinutes);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Timed command '{CommandName}' skipped - server unavailable ({Failures} consecutive failures, {Minutes:F1} minutes)",
+                                command.Name, command.ConsecutiveFailures, failureDuration.TotalMinutes);
+                        }
                     }
                     else
                     {
+                        // For non-connection errors, don't track failures (might be temporary issues)
                         _logger.LogError(ex, "Failed to execute timed command '{CommandName}'", command.Name);
                     }
                     

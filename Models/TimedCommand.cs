@@ -17,5 +17,10 @@ public class TimedCommand
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastRunAt { get; set; }
     public DateTime? NextRunAt { get; set; }
+    
+    // Failure tracking for auto-disable
+    public DateTime? FirstFailureAt { get; set; }
+    public int ConsecutiveFailures { get; set; }
+    public DateTime? AutoDisabledAt { get; set; }
 }
 

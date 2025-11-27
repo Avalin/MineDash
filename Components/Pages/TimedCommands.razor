@@ -4,6 +4,7 @@
 @using MineDash.Services
 @inject ITimedCommandStore TimedCommandStore
 @inject IServerConfigStore ServerStore
+@inject IAppSettingsStore AppSettingsStore
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -22,6 +23,39 @@
         <button class="btn btn-primary" @onclick="NewCommand">
             + Add Timed Command
         </button>
+    </div>
+
+    <div class="settings-panel">
+        <div class="settings-panel-header">
+            <span class="bi bi-gear-fill"></span>
+            <span>Settings</span>
+        </div>
+        <div class="settings-panel-body">
+            <div class="settings-row">
+                <label class="settings-label">
+                    Auto-disable timeout (minutes)
+                </label>
+                <div class="settings-input-group">
+                    <input type="number" 
+                           class="form-control settings-input" 
+                           value="@_settings.AutoDisableTimeoutMinutes" 
+                           min="0" 
+                           max="1440"
+                           @onchange="OnAutoDisableTimeoutChanged" />
+                    <span class="settings-unit">min</span>
+                </div>
+                <div class="settings-description">
+                    @if (_settings.AutoDisableTimeoutMinutes == 0)
+                    {
+                        <span>Disabled - Commands will never auto-disable, even if the server is unavailable.</span>
+                    }
+                    else
+                    {
+                        <span>Timed commands will automatically be set to inactive after <strong>@_settings.AutoDisableTimeoutMinutes minute@(_settings.AutoDisableTimeoutMinutes == 1 ? "" : "s")</strong> of consecutive connection failures. This helps reduce log noise when servers are down. Set to 0 to disable this feature.</span>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     @if (_editCommand is not null)
@@ -262,6 +296,10 @@
                                     {
                                         <span class="badge bg-success">Active</span>
                                     }
+                                    else if (cmd.AutoDisabledAt.HasValue)
+                                    {
+                                        <span class="badge bg-warning" title="Auto-disabled at @cmd.AutoDisabledAt.Value.ToString("yyyy-MM-dd HH:mm:ss UTC")">Auto-Disabled</span>
+                                    }
                                     else
                                     {
                                         <span class="badge bg-secondary">Inactive</span>
@@ -306,6 +344,10 @@
                             @if (cmd.IsActive)
                             {
                                 <span class="badge bg-success timed-command-card-badge">Active</span>
+                            }
+                            else if (cmd.AutoDisabledAt.HasValue)
+                            {
+                                <span class="badge bg-warning timed-command-card-badge">Auto-Disabled</span>
                             }
                             else
                             {
@@ -365,6 +407,7 @@
     private string? _nameValidationError;
     private string? _commandValidationError;
     private string? _serverValidationError;
+    private AppSettings _settings = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -378,6 +421,18 @@
         _servers = (await ServerStore.GetAllAsync()).ToList();
         _commands = (await TimedCommandStore.GetAllAsync()).ToList();
         _selectedCommand = _commands.FirstOrDefault();
+        _settings = await AppSettingsStore.GetAsync();
+    }
+
+    private async Task OnAutoDisableTimeoutChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (int.TryParse(value, out var minutes) && minutes >= 0 && minutes <= 1440)
+        {
+            _settings.AutoDisableTimeoutMinutes = minutes;
+            await AppSettingsStore.SaveAsync(_settings);
+            StateHasChanged();
+        }
     }
 
     private void NewCommand()
@@ -415,7 +470,10 @@
             IsActive = command.IsActive,
             CreatedAt = command.CreatedAt,
             LastRunAt = command.LastRunAt,
-            NextRunAt = command.NextRunAt
+            NextRunAt = command.NextRunAt,
+            FirstFailureAt = command.FirstFailureAt,
+            ConsecutiveFailures = command.ConsecutiveFailures,
+            AutoDisabledAt = command.AutoDisabledAt
         };
         _isNew = false;
         _nameValidationError = null;
@@ -631,6 +689,14 @@
             return;
 
         // Weekdays are now handled by button clicks, no need to update from DOM
+
+        // If manually re-enabled, clear auto-disable tracking
+        if (_editCommand.IsActive && _editCommand.AutoDisabledAt.HasValue)
+        {
+            _editCommand.FirstFailureAt = null;
+            _editCommand.ConsecutiveFailures = 0;
+            _editCommand.AutoDisabledAt = null;
+        }
 
         // Calculate next run time
         if (_editCommand.IsActive)

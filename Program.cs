@@ -27,6 +27,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
 builder.Services.AddSingleton<ICommandStore, JsonCommandStore>();
 builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
+builder.Services.AddSingleton<IAppSettingsStore, JsonAppSettingsStore>();
 builder.Services.AddScoped<IRconService, RconService>();
 builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();

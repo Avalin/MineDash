@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "Id": "dd9a7425222d47d9b360fd325b555ea9",
+    "Name": "aaaa",
+    "Command": "/say s",
+    "ServerId": "6d61fd9f6954432b80aa91de74edb747",
+    "Minutes": [],
+    "Hours": [],
+    "Weekdays": [],
+    "IsActive": false,
+    "CreatedAt": "2025-11-27T00:44:40.7170011Z",
+    "NextRunAt": "2025-11-27T00:57:00Z",
+    "FirstFailureAt": "2025-11-27T00:55:18.1560448Z",
+    "ConsecutiveFailures": 2,
+    "AutoDisabledAt": "2025-11-27T00:56:20.2138826Z"
+  }
+]
