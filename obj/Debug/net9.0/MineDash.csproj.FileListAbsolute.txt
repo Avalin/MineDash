@@ -86,5 +86,6 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\app_data\se
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\Pages\TimedCommands.razor.rz.scp.css
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\app_data\timed-commands.json
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net9.0\app_data\settings.json
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-ylj71tkzoi.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-ylj71tkzoi.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\scopedcss\Components\ConfirmationDialog.razor.rz.scp.css
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\z9zv88u0vu-m0brfg013m.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net9.0\compressed\kefnqcba54-m0brfg013m.gz

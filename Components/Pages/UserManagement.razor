@@ -95,11 +95,18 @@
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                 @if (!_isNew && _selectedUser is not null && !_isCurrentUser)
                 {
-                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                    <button class="btn btn-danger" @onclick="ShowDeleteConfirmation">Delete</button>
                 }
             </div>
         </div>
     }
+
+    <ConfirmationDialog Show="@_showDeleteDialog"
+                       Title="Delete User"
+                       Message="@($"Are you sure you want to delete the user '{_selectedUser?.Username}'? This action cannot be undone.")"
+                       ConfirmText="Delete"
+                       OnConfirmCallback="DeleteSelected"
+                       OnCancelCallback="HideDeleteConfirmation" />
 
     @if (_showChangePassword)
     {
@@ -212,6 +219,7 @@
     private string _changePasswordNew = string.Empty;
     private string _changePasswordConfirm = string.Empty;
     private string? _changePasswordError;
+    private bool _showDeleteDialog = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -390,6 +398,16 @@
         _passwordValidationError = null;
     }
 
+    private void ShowDeleteConfirmation()
+    {
+        _showDeleteDialog = true;
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        _showDeleteDialog = false;
+    }
+
     private async Task DeleteSelected()
     {
         if (_selectedUser is null)
@@ -399,6 +417,7 @@
         if (_selectedUser.Id == _currentUser?.Id)
         {
             _passwordValidationError = "You cannot delete your own account.";
+            _showDeleteDialog = false;
             StateHasChanged();
             return;
         }
@@ -409,6 +428,7 @@
         if (_selectedUser.IsAdmin && adminCount == 1)
         {
             _passwordValidationError = "Cannot delete the last administrator.";
+            _showDeleteDialog = false;
             StateHasChanged();
             return;
         }
@@ -419,6 +439,7 @@
         _selectedUser = _users?.FirstOrDefault();
         _editUser = null;
         _isNew = false;
+        _showDeleteDialog = false;
     }
 
     private async Task ChangePassword()

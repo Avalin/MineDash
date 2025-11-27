@@ -91,11 +91,18 @@
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                 @if (!_isNew && _selectedServer is not null)
                 {
-                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                    <button class="btn btn-danger" @onclick="ShowDeleteConfirmation">Delete</button>
                 }
             </div>
         </div>
     }
+
+    <ConfirmationDialog Show="@_showDeleteDialog"
+                       Title="Delete Server"
+                       Message="@($"Are you sure you want to delete the server '{_selectedServer?.Name}'? This action cannot be undone.")"
+                       ConfirmText="Delete"
+                       OnConfirmCallback="DeleteSelected"
+                       OnCancelCallback="HideDeleteConfirmation" />
 
     <div class="server-table-card">
         @if (_servers is null)
@@ -146,6 +153,7 @@
     private ServerConfig? _editServer;
     private bool _isNew;
     private string? _nameValidationError;
+    private bool _showDeleteDialog = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -263,6 +271,16 @@
         _nameValidationError = null;
     }
 
+    private void ShowDeleteConfirmation()
+    {
+        _showDeleteDialog = true;
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        _showDeleteDialog = false;
+    }
+
     private async Task DeleteSelected()
     {
         if (_selectedServer is null)
@@ -274,6 +292,7 @@
         _selectedServer = _servers.FirstOrDefault();
         _editServer = null;
         _isNew = false;
+        _showDeleteDialog = false;
     }
 
     private void CancelEdit()

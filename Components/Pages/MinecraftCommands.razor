@@ -61,11 +61,18 @@
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                 @if (!_isNew && _selectedCommand is not null)
                 {
-                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                    <button class="btn btn-danger" @onclick="ShowDeleteConfirmationForSelected">Delete</button>
                 }
             </div>
         </div>
     }
+
+    <ConfirmationDialog Show="@_showDeleteDialog"
+                       Title="Delete Command"
+                       Message="@($"Are you sure you want to delete the command '{_commandToDelete?.Syntax}'? This action cannot be undone.")"
+                       ConfirmText="Delete"
+                       OnConfirmCallback="ConfirmDelete"
+                       OnCancelCallback="HideDeleteConfirmation" />
 
     <div class="commands-list-card">
         @if (_commands is null)
@@ -98,7 +105,7 @@
                                     Edit
                                 </button>
                                 <button class="btn btn-sm btn-danger"
-                                        @onclick="@(() => DeleteCommand(cmd))">
+                                        @onclick="@(() => ShowDeleteConfirmation(cmd))">
                                     Delete
                                 </button>
                             </div>
@@ -116,6 +123,8 @@
     private MinecraftCommand? _editCommand;
     private bool _isNew;
     private string? _syntaxValidationError;
+    private bool _showDeleteDialog = false;
+    private MinecraftCommand? _commandToDelete;
 
     protected override async Task OnInitializedAsync()
     {
@@ -214,27 +223,39 @@
         _syntaxValidationError = null;
     }
 
-    private async Task DeleteCommand(MinecraftCommand command)
+    private void ShowDeleteConfirmation(MinecraftCommand command)
     {
-        await CommandStore.DeleteAsync(command.Id);
-
-        _commands = (await CommandStore.GetAllAsync()).ToList();
-        _selectedCommand = _commands.FirstOrDefault();
-        _editCommand = null;
-        _isNew = false;
+        _commandToDelete = command;
+        _showDeleteDialog = true;
     }
 
-    private async Task DeleteSelected()
+    private void ShowDeleteConfirmationForSelected()
     {
-        if (_selectedCommand is null)
+        if (_selectedCommand is not null)
+        {
+            ShowDeleteConfirmation(_selectedCommand);
+        }
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        _showDeleteDialog = false;
+        _commandToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_commandToDelete is null)
             return;
 
-        await CommandStore.DeleteAsync(_selectedCommand.Id);
+        await CommandStore.DeleteAsync(_commandToDelete.Id);
 
         _commands = (await CommandStore.GetAllAsync()).ToList();
         _selectedCommand = _commands.FirstOrDefault();
         _editCommand = null;
         _isNew = false;
+        _showDeleteDialog = false;
+        _commandToDelete = null;
     }
 
     private async Task ResetToDefaults()

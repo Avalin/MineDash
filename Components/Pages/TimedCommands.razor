@@ -249,11 +249,18 @@
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                 @if (!_isNew && _selectedCommand is not null)
                 {
-                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                    <button class="btn btn-danger" @onclick="ShowDeleteConfirmationForSelected">Delete</button>
                 }
             </div>
         </div>
     }
+
+    <ConfirmationDialog Show="@_showDeleteDialog"
+                       Title="Delete Timed Command"
+                       Message="@($"Are you sure you want to delete the timed command '{_commandToDelete?.Name}'? This action cannot be undone.")"
+                       ConfirmText="Delete"
+                       OnConfirmCallback="ConfirmDelete"
+                       OnCancelCallback="HideDeleteConfirmation" />
 
     <div class="timed-commands-list-card">
         @if (_commands is null)
@@ -323,7 +330,7 @@
                                         Edit
                                     </button>
                                     <button class="btn btn-sm btn-danger"
-                                            @onclick="@(() => DeleteCommand(cmd))">
+                                            @onclick="@(() => ShowDeleteConfirmation(cmd))">
                                         Delete
                                     </button>
                                 </td>
@@ -387,7 +394,7 @@
                                 Edit
                             </button>
                             <button class="btn btn-danger"
-                                    @onclick="@(() => DeleteCommand(cmd))">
+                                    @onclick="@(() => ShowDeleteConfirmation(cmd))">
                                 Delete
                             </button>
                         </div>
@@ -408,6 +415,8 @@
     private string? _commandValidationError;
     private string? _serverValidationError;
     private AppSettings _settings = new();
+    private bool _showDeleteDialog = false;
+    private TimedCommand? _commandToDelete;
 
     protected override async Task OnInitializedAsync()
     {
@@ -716,27 +725,39 @@
         _serverValidationError = null;
     }
 
-    private async Task DeleteCommand(TimedCommand command)
+    private void ShowDeleteConfirmation(TimedCommand command)
     {
-        await TimedCommandStore.DeleteAsync(command.Id);
-
-        _commands = (await TimedCommandStore.GetAllAsync()).ToList();
-        _selectedCommand = _commands.FirstOrDefault();
-        _editCommand = null;
-        _isNew = false;
+        _commandToDelete = command;
+        _showDeleteDialog = true;
     }
 
-    private async Task DeleteSelected()
+    private void ShowDeleteConfirmationForSelected()
     {
-        if (_selectedCommand is null)
+        if (_selectedCommand is not null)
+        {
+            ShowDeleteConfirmation(_selectedCommand);
+        }
+    }
+
+    private void HideDeleteConfirmation()
+    {
+        _showDeleteDialog = false;
+        _commandToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_commandToDelete is null)
             return;
 
-        await TimedCommandStore.DeleteAsync(_selectedCommand.Id);
+        await TimedCommandStore.DeleteAsync(_commandToDelete.Id);
 
         _commands = (await TimedCommandStore.GetAllAsync()).ToList();
         _selectedCommand = _commands.FirstOrDefault();
         _editCommand = null;
         _isNew = false;
+        _showDeleteDialog = false;
+        _commandToDelete = null;
     }
 
     private void CancelEdit()
