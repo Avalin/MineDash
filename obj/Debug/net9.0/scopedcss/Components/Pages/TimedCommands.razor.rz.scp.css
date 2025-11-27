@@ -294,18 +294,16 @@
 }
 
 .timed-commands-table tbody tr[b-sh18b65bck] {
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .timed-commands-table tbody tr:hover[b-sh18b65bck] {
-    background: linear-gradient(90deg, rgba(124, 179, 66, 0.1) 0%, rgba(124, 179, 66, 0.05) 100%);
-    transform: translateX(4px);
+    background-color: #252525;
 }
 
 .timed-commands-table tbody tr.selected-row[b-sh18b65bck] {
-    background: linear-gradient(90deg, rgba(124, 179, 66, 0.2) 0%, rgba(124, 179, 66, 0.1) 100%);
-    border-left: 3px solid #7cb342;
+    background-color: #2b4a7a;
 }
 
 .timed-commands-table tbody td[b-sh18b65bck] {

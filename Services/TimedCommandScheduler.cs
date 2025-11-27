@@ -83,7 +83,26 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to execute timed command '{CommandName}'", command.Name);
+                    // Log connection failures as warnings (expected when server is down)
+                    // Log other errors as errors
+                    var isConnectionError = ex.Message.Contains("Failed to connect", StringComparison.OrdinalIgnoreCase) ||
+                                           ex.Message.Contains("socket", StringComparison.OrdinalIgnoreCase) ||
+                                           ex.Message.Contains("not connected", StringComparison.OrdinalIgnoreCase);
+                    
+                    if (isConnectionError)
+                    {
+                        _logger.LogWarning("Timed command '{CommandName}' skipped - server unavailable: {Error}", 
+                            command.Name, ex.Message);
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "Failed to execute timed command '{CommandName}'", command.Name);
+                    }
+                    
+                    // Still update next run time to avoid retrying immediately
+                    // This prevents spam when server is down
+                    command.NextRunAt = CalculateNextRunTime(command, now);
+                    await commandStore.AddOrUpdateAsync(command, cancellationToken);
                 }
             }
             else
