@@ -2,7 +2,8 @@
 
 A web-based dashboard for managing multiple Minecraft servers via RCON. Built with Blazor Server and .NET 9.0.
 
-<img width="600" height="420" alt="image" src="https://github.com/user-attachments/assets/1e4b0c2e-188c-4676-88cf-88eb07affdf2" />
+<img width="500" height="420" alt="image" src="https://github.com/user-attachments/assets/1e4b0c2e-188c-4676-88cf-88eb07affdf2" />
+<img width="500" height="420" alt="minedash-showcase-1" src="https://github.com/user-attachments/assets/a28f0a36-36a2-4867-b7ca-a4917aae7ee2" />
 
 ## Features
 
