@@ -595,37 +595,36 @@
 
     private string InjectUsernameIntoCommand(string command, string username)
     {
-        // Inject username into the command
-        // For commands with arguments, prepend [USERNAME] to the first argument
-        // For commands without arguments, append [USERNAME] as a comment-like parameter
+        // Only inject username for /say commands (which accept a message)
+        // All other commands should be sent as-is
         
         if (string.IsNullOrWhiteSpace(command))
             return command;
         
         var trimmed = command.Trim();
         
-        // If command starts with /, it's a Minecraft command
-        if (trimmed.StartsWith("/"))
+        // Only inject username for /say commands
+        if (trimmed.StartsWith("/say", StringComparison.OrdinalIgnoreCase))
         {
             // Find the first space after the command name
             var firstSpaceIndex = trimmed.IndexOf(' ');
             
             if (firstSpaceIndex > 0)
             {
-                // Command has arguments - inject username at the start of arguments
+                // Command has arguments - inject username at the start of the message
                 var cmdName = trimmed.Substring(0, firstSpaceIndex);
-                var args = trimmed.Substring(firstSpaceIndex + 1);
-                return $"{cmdName} [{username}] {args}";
+                var message = trimmed.Substring(firstSpaceIndex + 1);
+                return $"{cmdName} [{username}] {message}";
             }
             else
             {
-                // Command has no arguments - append username as a parameter
+                // /say with no message - just add username as the message
                 return $"{trimmed} [{username}]";
             }
         }
         
-        // Not a / command, just prepend username
-        return $"[{username}] {trimmed}";
+        // For all other commands, don't inject username (return as-is)
+        return trimmed;
     }
 
     private async Task HandleKeyDown(string serverId, KeyboardEventArgs e)
