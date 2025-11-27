@@ -37,7 +37,7 @@
                     <div class="field-hint">
                         A friendly name for this scheduled command. If a command with this name exists, it will be overridden.
                     </div>
-                    <input class="form-control" value="@_editCommand.Name" @oninput="OnNameInput" placeholder="e.g., Daily Backup" />
+                    <input class="form-control" value="@_editCommand.Name" @oninput="OnNameInput" placeholder="e.g., Daily Hello World" />
                     @if (!string.IsNullOrEmpty(_nameValidationError))
                     {
                         <div class="field-error">@_nameValidationError</div>
@@ -160,31 +160,52 @@
                     </div>
                 </div>
 
-                <div class="field-row">
+                <div class="field-row field-row-full">
                     <div class="field-label">Weekdays</div>
                     <div class="field-hint">
                         Specify the days of the week. Leave empty to run every day. Click to select multiple.
                     </div>
-                    <select class="form-select" multiple size="7" id="weekdays-select-@_editCommand.Id" @onchange="OnWeekdaysChanged">
-                        @{
-                            var weekdays = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
-                        }
-                        @for (int i = 0; i < 7; i++)
-                        {
-                            var isSelected = _editCommand.Weekdays.Contains(i);
-                            <option value="@i" selected="@isSelected">@weekdays[i]</option>
-                        }
-                    </select>
-                    <div class="field-selected-values">
-                        @if (_editCommand.Weekdays.Count > 0)
-                        {
-                            <span>Selected: @string.Join(", ", _editCommand.Weekdays.OrderBy(w => w).Select(w => weekdays[w]))</span>
-                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearWeekdays">Clear</button>
-                        }
-                        else
-                        {
-                            <span class="text-muted">All days selected (runs every day)</span>
-                        }
+                    <div class="weekdays-selector">
+                        <div class="weekdays-selector-header">
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="SelectAllWeekdays">Select All</button>
+                            <button type="button" class="btn btn-sm btn-link p-0" @onclick="ClearWeekdays">Clear</button>
+                        </div>
+                        <div class="weekdays-segmented">
+                            @{
+                                // Display order: Monday first
+                                var weekdayDisplay = new[] { 
+                                    ("Mon", "Monday", 1), 
+                                    ("Tue", "Tuesday", 2), 
+                                    ("Wed", "Wednesday", 3), 
+                                    ("Thu", "Thursday", 4), 
+                                    ("Fri", "Friday", 5), 
+                                    ("Sat", "Saturday", 6), 
+                                    ("Sun", "Sunday", 0) 
+                                };
+                            }
+                            @foreach (var (shortName, fullName, dayIndex) in weekdayDisplay)
+                            {
+                                var isSelected = _editCommand.Weekdays.Contains(dayIndex);
+                                <button type="button" 
+                                        class="weekday-segment @(isSelected ? "selected" : "")"
+                                        @onclick="@(() => ToggleWeekday(dayIndex))"
+                                        title="@fullName">
+                                    <span class="weekday-short">@shortName</span>
+                                    <span class="weekday-full">@fullName</span>
+                                </button>
+                            }
+                        </div>
+                        <div class="field-selected-values">
+                            @if (_editCommand.Weekdays.Count > 0)
+                            {
+                                var fullWeekdays = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+                                <span>Selected: @string.Join(", ", _editCommand.Weekdays.OrderBy(w => w == 0 ? 7 : w).Select(w => fullWeekdays[w]))</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">All days selected (runs every day)</span>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -420,78 +441,7 @@
         ValidateCommand();
     }
 
-    private async Task OnMinutesChanged(ChangeEventArgs e)
-    {
-        if (_editCommand is null)
-            return;
 
-        await UpdateMinutesFromSelect();
-    }
-
-    private async Task OnHoursChanged(ChangeEventArgs e)
-    {
-        if (_editCommand is null)
-            return;
-        await UpdateHoursFromSelect();
-    }
-
-    private async Task OnWeekdaysChanged(ChangeEventArgs e)
-    {
-        if (_editCommand is null)
-            return;
-        await UpdateWeekdaysFromSelect();
-    }
-
-    private async Task UpdateMinutesFromSelect()
-    {
-        if (_editCommand is null)
-            return;
-
-        try
-        {
-            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"minutes-select-{_editCommand.Id}");
-            _editCommand.Minutes = selectedValues?.ToList() ?? new List<int>();
-            StateHasChanged();
-        }
-        catch
-        {
-            // If JS interop fails, keep existing values
-        }
-    }
-
-    private async Task UpdateHoursFromSelect()
-    {
-        if (_editCommand is null)
-            return;
-
-        try
-        {
-            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"hours-select-{_editCommand.Id}");
-            _editCommand.Hours = selectedValues?.ToList() ?? new List<int>();
-            StateHasChanged();
-        }
-        catch
-        {
-            // If JS interop fails, keep existing values
-        }
-    }
-
-    private async Task UpdateWeekdaysFromSelect()
-    {
-        if (_editCommand is null)
-            return;
-
-        try
-        {
-            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"weekdays-select-{_editCommand.Id}");
-            _editCommand.Weekdays = selectedValues?.ToList() ?? new List<int>();
-            StateHasChanged();
-        }
-        catch
-        {
-            // If JS interop fails, keep existing values
-        }
-    }
 
     private void ToggleMinute(int minute)
     {
@@ -562,6 +512,34 @@
         if (_editCommand is null)
             return;
         _editCommand.Hours.Clear();
+        StateHasChanged();
+    }
+
+    private void ToggleWeekday(int weekday)
+    {
+        if (_editCommand is null)
+            return;
+        
+        if (_editCommand.Weekdays.Contains(weekday))
+        {
+            _editCommand.Weekdays.Remove(weekday);
+        }
+        else
+        {
+            _editCommand.Weekdays.Add(weekday);
+        }
+        StateHasChanged();
+    }
+
+    private void SelectAllWeekdays()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Weekdays.Clear();
+        for (int i = 0; i < 7; i++)
+        {
+            _editCommand.Weekdays.Add(i);
+        }
         StateHasChanged();
     }
 
@@ -652,15 +630,7 @@
             !string.IsNullOrEmpty(_serverValidationError))
             return;
 
-        // Update weekdays from the DOM before saving (minutes and hours are now handled by grid buttons)
-        try
-        {
-            await UpdateWeekdaysFromSelect();
-        }
-        catch
-        {
-            // If JS interop fails, use existing values
-        }
+        // Weekdays are now handled by button clicks, no need to update from DOM
 
         // Calculate next run time
         if (_editCommand.IsActive)
