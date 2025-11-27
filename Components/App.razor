@@ -47,6 +47,12 @@
         window.navigateToHome = () => {
             window.location.replace('/');
         };
+        
+        window.getSelectedValues = (selectId) => {
+            const select = document.getElementById(selectId);
+            if (!select) return [];
+            return Array.from(select.selectedOptions).map(option => parseInt(option.value));
+        };
     </script>
 </body>
 

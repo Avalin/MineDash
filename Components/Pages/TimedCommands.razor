@@ -1,0 +1,674 @@
+@page "/timed-commands"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@inject ITimedCommandStore TimedCommandStore
+@inject IServerConfigStore ServerStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Timed Commands</PageTitle>
+
+<div class="timed-commands-layout">
+    <div class="timed-commands-header">
+        <div>
+            <h2>Timed Commands</h2>
+            <p class="timed-commands-subtitle">
+                Schedule RCON commands to run automatically at specified times.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" @onclick="NewCommand">
+            + Add Timed Command
+        </button>
+    </div>
+
+    @if (_editCommand is not null)
+    {
+        <div class="timed-command-form-card">
+            <h3 class="timed-command-form-title">
+                @(_isNew ? "Create Timed Command" : "Edit Timed Command")
+            </h3>
+
+            <div class="timed-command-form-grid">
+                <div class="field-row field-row-full">
+                    <div class="field-label">Name</div>
+                    <div class="field-hint">
+                        A friendly name for this scheduled command. If a command with this name exists, it will be overridden.
+                    </div>
+                    <input class="form-control" value="@_editCommand.Name" @oninput="OnNameInput" placeholder="e.g., Daily Backup" />
+                    @if (!string.IsNullOrEmpty(_nameValidationError))
+                    {
+                        <div class="field-error">@_nameValidationError</div>
+                    }
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Server</div>
+                    <div class="field-hint">
+                        Select the server where this command will be executed.
+                    </div>
+                    <select class="form-select" @bind="_editCommand.ServerId">
+                        <option value="">Select a server...</option>
+                        @if (_servers != null)
+                        {
+                            @foreach (var server in _servers)
+                            {
+                                <option value="@server.Id">@server.Name</option>
+                            }
+                        }
+                    </select>
+                    @if (!string.IsNullOrEmpty(_serverValidationError))
+                    {
+                        <div class="field-error">@_serverValidationError</div>
+                    }
+                </div>
+
+                <div class="field-row field-row-full">
+                    <div class="field-label">RCON Command</div>
+                    <div class="field-hint">
+                        The server command you want to execute (e.g., <code>/say Hello World</code>).
+                    </div>
+                    <input class="form-control" value="@_editCommand.Command" @oninput="OnCommandInput" placeholder="/say Server restarting in 5 minutes" />
+                    @if (!string.IsNullOrEmpty(_commandValidationError))
+                    {
+                        <div class="field-error">@_commandValidationError</div>
+                    }
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Minutes</div>
+                    <div class="field-hint">
+                        Specify the minutes of an hour (0-59). Leave empty to run every minute. Hold Ctrl/Cmd to select multiple.
+                    </div>
+                    <select class="form-select" multiple size="5" id="minutes-select-@_editCommand.Id" @onchange="OnMinutesChanged">
+                        @for (int i = 0; i < 60; i++)
+                        {
+                            var isSelected = _editCommand.Minutes.Contains(i);
+                            <option value="@i" selected="@isSelected">@i</option>
+                        }
+                    </select>
+                    <div class="field-selected-values">
+                        @if (_editCommand.Minutes.Count > 0)
+                        {
+                            <span>Selected: @string.Join(", ", _editCommand.Minutes.OrderBy(m => m))</span>
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearMinutes">Clear</button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">All minutes selected (runs every minute)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Hours</div>
+                    <div class="field-hint">
+                        Specify the hours of a day (0-23). Leave empty to run every hour. Hold Ctrl/Cmd to select multiple.
+                    </div>
+                    <select class="form-select" multiple size="5" id="hours-select-@_editCommand.Id" @onchange="OnHoursChanged">
+                        @for (int i = 0; i < 24; i++)
+                        {
+                            var isSelected = _editCommand.Hours.Contains(i);
+                            <option value="@i" selected="@isSelected">@i</option>
+                        }
+                    </select>
+                    <div class="field-selected-values">
+                        @if (_editCommand.Hours.Count > 0)
+                        {
+                            <span>Selected: @string.Join(", ", _editCommand.Hours.OrderBy(h => h))</span>
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearHours">Clear</button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">All hours selected (runs every hour)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Weekdays</div>
+                    <div class="field-hint">
+                        Specify the days of the week. Leave empty to run every day. Hold Ctrl/Cmd to select multiple.
+                    </div>
+                    <select class="form-select" multiple size="7" id="weekdays-select-@_editCommand.Id" @onchange="OnWeekdaysChanged">
+                        @{
+                            var weekdays = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+                        }
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var isSelected = _editCommand.Weekdays.Contains(i);
+                            <option value="@i" selected="@isSelected">@weekdays[i]</option>
+                        }
+                    </select>
+                    <div class="field-selected-values">
+                        @if (_editCommand.Weekdays.Count > 0)
+                        {
+                            <span>Selected: @string.Join(", ", _editCommand.Weekdays.OrderBy(w => w).Select(w => weekdays[w]))</span>
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" @onclick="ClearWeekdays">Clear</button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">All days selected (runs every day)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">Active</div>
+                    <div class="field-hint">
+                        If disabled, this command will not run.
+                    </div>
+                    <select class="form-select" 
+                            value="@(_editCommand.IsActive.ToString().ToLower())" 
+                            @onchange="@((ChangeEventArgs e) => { if (_editCommand != null) _editCommand.IsActive = e.Value?.ToString() == "true"; })">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="timed-command-form-actions">
+                <button class="btn btn-success" @onclick="SaveCommand">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                @if (!_isNew && _selectedCommand is not null)
+                {
+                    <button class="btn btn-danger" @onclick="DeleteSelected">Delete</button>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="timed-commands-list-card">
+        @if (_commands is null)
+        {
+            <p>Loading...</p>
+        }
+        else if (_commands.Count == 0)
+        {
+            <p class="no-command-text">
+                No timed commands configured yet. Click <strong>Add Timed Command</strong> to create one.
+            </p>
+        }
+        else
+        {
+            <!-- Desktop Table View -->
+            <div class="timed-commands-scrollable">
+                <table class="table table-dark timed-commands-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Server</th>
+                            <th>Command</th>
+                            <th>Schedule</th>
+                            <th>Status</th>
+                            <th>Next Run</th>
+                            <th style="width: 140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cmd in _commands)
+                        {
+                            var server = _servers?.FirstOrDefault(s => s.Id == cmd.ServerId);
+                            <tr class="@( _selectedCommand?.Id == cmd.Id ? "selected-row" : "" )">
+                                <td>@cmd.Name</td>
+                                <td>@(server?.Name ?? "Unknown")</td>
+                                <td><code>@cmd.Command</code></td>
+                                <td>@GetScheduleSummary(cmd)</td>
+                                <td>
+                                    @if (cmd.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (cmd.NextRunAt.HasValue)
+                                    {
+                                        <span title="@cmd.NextRunAt.Value.ToString("yyyy-MM-dd HH:mm:ss UTC")">
+                                            @cmd.NextRunAt.Value.ToString("MM/dd HH:mm")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Calculating...</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary"
+                                            @onclick="@(() => EditCommand(cmd))">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+                                            @onclick="@(() => DeleteCommand(cmd))">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="timed-commands-mobile-list">
+                @foreach (var cmd in _commands)
+                {
+                    var server = _servers?.FirstOrDefault(s => s.Id == cmd.ServerId);
+                    <div class="timed-command-card">
+                        <div class="timed-command-card-header">
+                            <h4 class="timed-command-card-title">@cmd.Name</h4>
+                            @if (cmd.IsActive)
+                            {
+                                <span class="badge bg-success timed-command-card-badge">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary timed-command-card-badge">Inactive</span>
+                            }
+                        </div>
+                        <div class="timed-command-card-body">
+                            <div class="timed-command-card-row">
+                                <div class="timed-command-card-label">Server</div>
+                                <div class="timed-command-card-value">@(server?.Name ?? "Unknown")</div>
+                            </div>
+                            <div class="timed-command-card-row">
+                                <div class="timed-command-card-label">Command</div>
+                                <div class="timed-command-card-value"><code>@cmd.Command</code></div>
+                            </div>
+                            <div class="timed-command-card-row">
+                                <div class="timed-command-card-label">Schedule</div>
+                                <div class="timed-command-card-value">@GetScheduleSummary(cmd)</div>
+                            </div>
+                            <div class="timed-command-card-row">
+                                <div class="timed-command-card-label">Next Run</div>
+                                <div class="timed-command-card-value">
+                                    @if (cmd.NextRunAt.HasValue)
+                                    {
+                                        <span>@cmd.NextRunAt.Value.ToString("MM/dd HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Calculating...</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timed-command-card-actions">
+                            <button class="btn btn-secondary"
+                                    @onclick="@(() => EditCommand(cmd))">
+                                Edit
+                            </button>
+                            <button class="btn btn-danger"
+                                    @onclick="@(() => DeleteCommand(cmd))">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<TimedCommand>? _commands;
+    private List<ServerConfig>? _servers;
+    private TimedCommand? _selectedCommand;
+    private TimedCommand? _editCommand;
+    private bool _isNew;
+    private string? _nameValidationError;
+    private string? _commandValidationError;
+    private string? _serverValidationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check authentication
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+        _commands = (await TimedCommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+    }
+
+    private void NewCommand()
+    {
+        _selectedCommand = null;
+        _editCommand = new TimedCommand
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Name = "",
+            Command = "",
+            ServerId = "",
+            Minutes = new List<int>(),
+            Hours = new List<int>(),
+            Weekdays = new List<int>(),
+            IsActive = true
+        };
+        _isNew = true;
+        _nameValidationError = null;
+        _commandValidationError = null;
+        _serverValidationError = null;
+    }
+
+    private void EditCommand(TimedCommand command)
+    {
+        _selectedCommand = command;
+        _editCommand = new TimedCommand
+        {
+            Id = command.Id,
+            Name = command.Name,
+            Command = command.Command,
+            ServerId = command.ServerId,
+            Minutes = new List<int>(command.Minutes),
+            Hours = new List<int>(command.Hours),
+            Weekdays = new List<int>(command.Weekdays),
+            IsActive = command.IsActive,
+            CreatedAt = command.CreatedAt,
+            LastRunAt = command.LastRunAt,
+            NextRunAt = command.NextRunAt
+        };
+        _isNew = false;
+        _nameValidationError = null;
+        _commandValidationError = null;
+        _serverValidationError = null;
+    }
+
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+
+        _editCommand.Name = e.Value?.ToString() ?? string.Empty;
+        ValidateName();
+    }
+
+    private void OnCommandInput(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+
+        _editCommand.Command = e.Value?.ToString() ?? string.Empty;
+        ValidateCommand();
+    }
+
+    private async Task OnMinutesChanged(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+
+        await UpdateMinutesFromSelect();
+    }
+
+    private async Task OnHoursChanged(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+        await UpdateHoursFromSelect();
+    }
+
+    private async Task OnWeekdaysChanged(ChangeEventArgs e)
+    {
+        if (_editCommand is null)
+            return;
+        await UpdateWeekdaysFromSelect();
+    }
+
+    private async Task UpdateMinutesFromSelect()
+    {
+        if (_editCommand is null)
+            return;
+
+        try
+        {
+            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"minutes-select-{_editCommand.Id}");
+            _editCommand.Minutes = selectedValues?.ToList() ?? new List<int>();
+            StateHasChanged();
+        }
+        catch
+        {
+            // If JS interop fails, keep existing values
+        }
+    }
+
+    private async Task UpdateHoursFromSelect()
+    {
+        if (_editCommand is null)
+            return;
+
+        try
+        {
+            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"hours-select-{_editCommand.Id}");
+            _editCommand.Hours = selectedValues?.ToList() ?? new List<int>();
+            StateHasChanged();
+        }
+        catch
+        {
+            // If JS interop fails, keep existing values
+        }
+    }
+
+    private async Task UpdateWeekdaysFromSelect()
+    {
+        if (_editCommand is null)
+            return;
+
+        try
+        {
+            var selectedValues = await JSRuntime.InvokeAsync<int[]>("getSelectedValues", $"weekdays-select-{_editCommand.Id}");
+            _editCommand.Weekdays = selectedValues?.ToList() ?? new List<int>();
+            StateHasChanged();
+        }
+        catch
+        {
+            // If JS interop fails, keep existing values
+        }
+    }
+
+    private void ClearMinutes()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Minutes.Clear();
+        StateHasChanged();
+    }
+
+    private void ClearHours()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Hours.Clear();
+        StateHasChanged();
+    }
+
+    private void ClearWeekdays()
+    {
+        if (_editCommand is null)
+            return;
+        _editCommand.Weekdays.Clear();
+        StateHasChanged();
+    }
+
+    private void ValidateName()
+    {
+        if (_editCommand is null)
+        {
+            _nameValidationError = null;
+            StateHasChanged();
+            return;
+        }
+
+        var trimmedName = _editCommand.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedName))
+        {
+            _nameValidationError = "Name is required.";
+        }
+        else
+        {
+            _nameValidationError = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private void ValidateCommand()
+    {
+        if (_editCommand is null)
+        {
+            _commandValidationError = null;
+            StateHasChanged();
+            return;
+        }
+
+        var trimmedCommand = _editCommand.Command?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedCommand))
+        {
+            _commandValidationError = "Command is required.";
+        }
+        else
+        {
+            _commandValidationError = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private void ValidateServer()
+    {
+        if (_editCommand is null)
+        {
+            _serverValidationError = null;
+            StateHasChanged();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editCommand.ServerId))
+        {
+            _serverValidationError = "Server selection is required.";
+        }
+        else
+        {
+            _serverValidationError = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SaveCommand()
+    {
+        if (_editCommand is null)
+            return;
+
+        ValidateName();
+        ValidateCommand();
+        ValidateServer();
+
+        if (!string.IsNullOrEmpty(_nameValidationError) || 
+            !string.IsNullOrEmpty(_commandValidationError) || 
+            !string.IsNullOrEmpty(_serverValidationError))
+            return;
+
+        // Update multi-select values from the DOM before saving
+        try
+        {
+            await UpdateMinutesFromSelect();
+            await UpdateHoursFromSelect();
+            await UpdateWeekdaysFromSelect();
+        }
+        catch
+        {
+            // If JS interop fails, use existing values
+        }
+
+        // Calculate next run time
+        if (_editCommand.IsActive)
+        {
+            _editCommand.NextRunAt = CalculateNextRunTime(_editCommand, DateTime.UtcNow);
+        }
+
+        await TimedCommandStore.AddOrUpdateAsync(_editCommand);
+
+        _commands = (await TimedCommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault(c => c.Id == _editCommand.Id);
+
+        _editCommand = null;
+        _isNew = false;
+        _nameValidationError = null;
+        _commandValidationError = null;
+        _serverValidationError = null;
+    }
+
+    private async Task DeleteCommand(TimedCommand command)
+    {
+        await TimedCommandStore.DeleteAsync(command.Id);
+
+        _commands = (await TimedCommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+        _editCommand = null;
+        _isNew = false;
+    }
+
+    private async Task DeleteSelected()
+    {
+        if (_selectedCommand is null)
+            return;
+
+        await TimedCommandStore.DeleteAsync(_selectedCommand.Id);
+
+        _commands = (await TimedCommandStore.GetAllAsync()).ToList();
+        _selectedCommand = _commands.FirstOrDefault();
+        _editCommand = null;
+        _isNew = false;
+    }
+
+    private void CancelEdit()
+    {
+        _editCommand = null;
+        _isNew = false;
+        _nameValidationError = null;
+        _commandValidationError = null;
+        _serverValidationError = null;
+    }
+
+    private string GetScheduleSummary(TimedCommand command)
+    {
+        var parts = new List<string>();
+
+        if (command.Minutes.Count > 0)
+            parts.Add($"Min: {string.Join(",", command.Minutes.OrderBy(m => m).Take(5))}{(command.Minutes.Count > 5 ? "..." : "")}");
+        else
+            parts.Add("Every minute");
+
+        if (command.Hours.Count > 0)
+            parts.Add($"Hour: {string.Join(",", command.Hours.OrderBy(h => h).Take(5))}{(command.Hours.Count > 5 ? "..." : "")}");
+        else
+            parts.Add("Every hour");
+
+        if (command.Weekdays.Count > 0)
+        {
+            var weekdays = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+            parts.Add($"Days: {string.Join(",", command.Weekdays.OrderBy(w => w).Select(w => weekdays[w]))}");
+        }
+        else
+            parts.Add("Every day");
+
+        return string.Join(" | ", parts);
+    }
+
+    private DateTime CalculateNextRunTime(TimedCommand command, DateTime fromTime)
+    {
+        // Simplified version - the scheduler will calculate this more accurately
+        var next = fromTime.AddMinutes(1);
+        next = new DateTime(next.Year, next.Month, next.Day, next.Hour, next.Minute, 0, DateTimeKind.Utc);
+        return next;
+    }
+}
+

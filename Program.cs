@@ -26,11 +26,15 @@ builder.Services.AddHttpContextAccessor();
 // our custom services
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
 builder.Services.AddSingleton<ICommandStore, JsonCommandStore>();
+builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
 builder.Services.AddScoped<IRconService, RconService>();
 builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, SessionAuthenticationStateProvider>();
+
+// Background service for timed commands
+builder.Services.AddHostedService<TimedCommandScheduler>();
 
 var app = builder.Build();
 
