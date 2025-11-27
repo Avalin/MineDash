@@ -329,10 +329,6 @@
                                             @onclick="@(() => EditCommand(cmd))">
                                         Edit
                                     </button>
-                                    <button class="btn btn-sm btn-danger"
-                                            @onclick="@(() => ShowDeleteConfirmation(cmd))">
-                                        Delete
-                                    </button>
                                 </td>
                             </tr>
                         }
@@ -392,10 +388,6 @@
                             <button class="btn btn-secondary"
                                     @onclick="@(() => EditCommand(cmd))">
                                 Edit
-                            </button>
-                            <button class="btn btn-danger"
-                                    @onclick="@(() => ShowDeleteConfirmation(cmd))">
-                                Delete
                             </button>
                         </div>
                     </div>
