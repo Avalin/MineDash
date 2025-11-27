@@ -7,9 +7,10 @@ A modern web-based dashboard for managing multiple Minecraft servers via RCON. B
 ## Features
 
 - 🎮 **Multi-Server Management**: Connect to and manage multiple Minecraft servers from a single interface
-- 💻 **Interactive Console**: Execute commands and view real-time responses
-- 📊 **Server Logs**: View and monitor server logs in real-time
-- 📝 **Command History**: Save and reuse frequently executed commands
+- 💻 **Interactive Console**: Execute commands and view real-time responses with command history
+- 📊 **Server Logs**: View and monitor server logs in real-time with filtering by log level and thread
+- ⏰ **Scheduled Commands**: Automate server commands with flexible scheduling (minutes, hours, weekdays)
+- 👥 **User Management**: Multi-user support with admin/non-admin roles
 - 🎨 **Customizable Layouts**: Choose from multiple console layout options (1, 2, or 9 consoles)
 - 🔒 **Secure RCON**: Connect securely to your Minecraft servers using RCON protocol
 - 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
@@ -113,6 +114,9 @@ To use MineDash, you need to enable RCON on your Minecraft server:
 MineDash stores its data in JSON files:
 - **Server configurations**: `app_data/servers.json`
 - **Command history**: `app_data/commands.json`
+- **Timed commands**: `app_data/timed-commands.json`
+- **Users**: `app_data/users.json`
+- **Settings**: `app_data/settings.json`
 
 These files are automatically created on first run. Make sure the `app_data` directory is writable by the application.
 
@@ -136,6 +140,15 @@ If you've configured a log path for your server:
 1. Open a console for the server
 2. The logs will automatically appear in the log viewer panel
 3. Logs update in real-time as they're written to the file
+4. Use the filter buttons to filter by log level or thread
+
+### Scheduled Commands
+
+Create automated commands that run on a schedule:
+1. Navigate to **Timed Commands** page
+2. Click **Add Timed Command**
+3. Configure the command, server, and schedule (minutes, hours, weekdays)
+4. Commands automatically disable if the server is unavailable (configurable timeout)
 
 ### Layout Options
 
