@@ -8,6 +8,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
 ## Features
 
 - 🎮 **Multi-Server Management**: Connect to and manage multiple Minecraft servers from a single interface
+- 🧩 Custom Command Palette: Add your own frequently used Minecraft commands for quick copy-paste access
 - 💻 **Interactive Console**: Execute commands and view real-time responses with command history
 - 📊 **Server Logs**: View and monitor server logs in real-time with filtering by log level and thread
 - ⏰ **Scheduled Commands**: Automate server commands with flexible scheduling (minutes, hours, weekdays)
