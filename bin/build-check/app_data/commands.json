@@ -1,0 +1,42 @@
+[
+  {
+    "Id": "f67247386d45432a92eb351bfcc8e21a",
+    "Syntax": "/say \u003Cmessage\u003E",
+    "Description": "Broadcast a message"
+  },
+  {
+    "Id": "a60ddbc5148d4412ae490572f1af2e21",
+    "Syntax": "/list",
+    "Description": "List players"
+  },
+  {
+    "Id": "6b5481fdbdb6431b92728baa2fafb6c8",
+    "Syntax": "/kick \u003Cplayer\u003E [\u003Creason\u003E]",
+    "Description": ""
+  },
+  {
+    "Id": "0b74bda69d52412ab61fdbc9e9c85576",
+    "Syntax": "/ban \u003Cplayer\u003E [\u003Creason\u003E]",
+    "Description": ""
+  },
+  {
+    "Id": "a0c31d5ae74749c09680eb6c3e8760f6",
+    "Syntax": "/time set day|night|noon|midnight",
+    "Description": ""
+  },
+  {
+    "Id": "025c1135fb9749118e83ad3570f03822",
+    "Syntax": "/gamemode survival|creative|adventure|spectator [player]",
+    "Description": ""
+  },
+  {
+    "Id": "def71e861e634f479ab4a65c6d61ebc4",
+    "Syntax": "/tp \u003Ctarget\u003E \u003Cdestination\u003E",
+    "Description": ""
+  },
+  {
+    "Id": "b9b2c63c9d5e45aaa876ece0d2715d71",
+    "Syntax": "/stop",
+    "Description": "Stop the server"
+  }
+]

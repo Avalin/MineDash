@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "6d61fd9f6954432b80aa91de74edb747",
+    "Name": "minecraft-creatamon",
+    "Host": "minecraft-creatamon",
+    "RconPort": 25575,
+    "RconPassword": "minecraft-creatamon",
+    "LogPath": "/srv/minecraft/creatamon/data/logs/latest.log"
+  }
+]

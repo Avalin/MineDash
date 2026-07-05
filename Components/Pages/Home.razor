@@ -280,16 +280,37 @@
                             }
                         </div>
 
+                        @{
+                            var selectedCmd = GetSelectedCommand(state);
+                            var argsHint = selectedCmd is not null ? GetArgumentsHint(selectedCmd) : string.Empty;
+                            var acceptsArgs = selectedCmd is not null && CommandAcceptsArguments(selectedCmd);
+                        }
                         <div class="command-input-row">
+                            <div class="command-select-wrap"
+                                 data-value="@(selectedCmd is not null ? GetCommandDisplayName(selectedCmd) : "say")">
+                                <select class="form-select command-select"
+                                        value="@GetSelectedCommandId(state)"
+                                        @onchange="@((ChangeEventArgs e) => OnCommandTypeChanged(serverId, e))">
+                                    @if (_commands is not null)
+                                    {
+                                        @foreach (var cmd in GetOrderedCommands())
+                                        {
+                                            <option value="@cmd.Id" title="@cmd.Description">@GetCommandDisplayName(cmd)</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
                             <input class="form-control command-input"
-                                   placeholder="Type a Minecraft command, e.g. /say Hello"
-                                   value="@state.CurrentCommand"
-                                   @oninput="@((ChangeEventArgs e) => OnCommandChanged(serverId, e))"
+                                   placeholder="@(acceptsArgs ? argsHint : "No arguments needed")"
+                                   value="@state.CommandArguments"
+                                   disabled="@(!acceptsArgs)"
+                                   @oninput="@((ChangeEventArgs e) => OnCommandArgumentsChanged(serverId, e))"
                                    @onkeydown="@((KeyboardEventArgs e) => HandleKeyDown(serverId, e))" />
 
-                            <button class="btn btn-primary"
+                            <button class="btn btn-primary command-send-btn"
                                     @onclick="@(() => SendCommand(serverId))"
-                                    disabled="@string.IsNullOrWhiteSpace(state.CurrentCommand)">
+                                    disabled="@(!CanSendCommand(state))">
                                 Send
                             </button>
                         </div>
@@ -330,6 +351,7 @@
 @code {
     private List<ServerConfig>? _servers;
     private List<MinecraftCommand>? _commands;
+    private string? _defaultSayCommandId;
 
     // Which servers currently have consoles open
     private readonly List<string> _openConsoleIds = new();
@@ -441,6 +463,15 @@
     private async Task LoadCommands()
     {
         _commands = (await CommandStore.GetAllAsync()).ToList();
+        _defaultSayCommandId = _commands
+            .FirstOrDefault(c => GetCommandName(c).Equals("say", StringComparison.OrdinalIgnoreCase))?.Id
+            ?? _commands.FirstOrDefault()?.Id;
+
+        foreach (var state in _consoleStates.Values)
+        {
+            if (string.IsNullOrEmpty(state.SelectedCommandId))
+                state.SelectedCommandId = _defaultSayCommandId ?? string.Empty;
+        }
     }
 
     private async Task AddConsole()
@@ -500,16 +531,25 @@
         if (!_consoleStates.TryGetValue(serverId, out var state))
         {
             state = new ConsoleState(serverId);
+            if (!string.IsNullOrEmpty(_defaultSayCommandId))
+                state.SelectedCommandId = _defaultSayCommandId;
             _consoleStates[serverId] = state;
         }
 
         return state;
     }
 
-    private void OnCommandChanged(string serverId, ChangeEventArgs e)
+    private void OnCommandTypeChanged(string serverId, ChangeEventArgs e)
     {
         var state = GetConsoleState(serverId);
-        state.CurrentCommand = e.Value?.ToString() ?? string.Empty;
+        state.SelectedCommandId = e.Value?.ToString() ?? _defaultSayCommandId ?? string.Empty;
+        state.CommandArguments = string.Empty;
+    }
+
+    private void OnCommandArgumentsChanged(string serverId, ChangeEventArgs e)
+    {
+        var state = GetConsoleState(serverId);
+        state.CommandArguments = e.Value?.ToString() ?? string.Empty;
     }
 
     private async Task SendCommand(string serverId)
@@ -522,14 +562,13 @@
             return;
 
         var state = GetConsoleState(serverId);
-        if (string.IsNullOrWhiteSpace(state.CurrentCommand))
+        if (!CanSendCommand(state))
             return;
 
-        var originalCmd = state.CurrentCommand.Trim();
+        var originalCmd = BuildCommandFromState(state);
         var currentUser = await AuthService.GetCurrentUserAsync();
         var username = currentUser?.Username?.ToUpperInvariant() ?? "RCON";
         
-        // Modify command to inject username for /say commands
         var cmdToSend = InjectUsernameIntoCommand(originalCmd, username);
 
         try
@@ -590,41 +629,151 @@
             }
         }
 
-        state.CurrentCommand = string.Empty;
+        state.CommandArguments = string.Empty;
     }
 
     private string InjectUsernameIntoCommand(string command, string username)
     {
-        // Only inject username for /say commands (which accept a message)
-        // All other commands should be sent as-is
-        
         if (string.IsNullOrWhiteSpace(command))
             return command;
-        
+
         var trimmed = command.Trim();
-        
-        // Only inject username for /say commands
-        if (trimmed.StartsWith("/say", StringComparison.OrdinalIgnoreCase))
+        if (trimmed.StartsWith('/'))
+            trimmed = trimmed[1..];
+
+        if (trimmed.StartsWith("say ", StringComparison.OrdinalIgnoreCase))
         {
-            // Find the first space after the command name
-            var firstSpaceIndex = trimmed.IndexOf(' ');
-            
-            if (firstSpaceIndex > 0)
+            var message = trimmed[4..].TrimStart();
+            return $"say [{username}] {message}";
+        }
+
+        if (trimmed.Equals("say", StringComparison.OrdinalIgnoreCase))
+            return $"say [{username}]";
+
+        return trimmed;
+    }
+
+    private static string GetCommandName(MinecraftCommand cmd)
+    {
+        var syntax = cmd.Syntax.Trim();
+        if (syntax.StartsWith('/'))
+            syntax = syntax[1..];
+
+        var delimiter = syntax.IndexOfAny([' ', '<']);
+        return delimiter > 0 ? syntax[..delimiter] : syntax;
+    }
+
+    private static string GetArgumentsHint(MinecraftCommand cmd)
+    {
+        var syntax = cmd.Syntax.Trim();
+        if (syntax.StartsWith('/'))
+            syntax = syntax[1..];
+
+        var space = syntax.IndexOf(' ');
+        return space < 0 ? string.Empty : syntax[(space + 1)..];
+    }
+
+    private static string GetCommandDisplayName(MinecraftCommand cmd) => GetCommandName(cmd);
+
+    private static bool CommandAcceptsArguments(MinecraftCommand cmd)
+    {
+        var syntax = cmd.Syntax.Trim();
+        if (syntax.StartsWith('/'))
+            syntax = syntax[1..];
+
+        return syntax.Contains(' ');
+    }
+
+    private IEnumerable<MinecraftCommand> GetOrderedCommands()
+    {
+        if (_commands is null)
+            return Enumerable.Empty<MinecraftCommand>();
+
+        return _commands
+            .OrderBy(c => GetCommandName(c).Equals("say", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(c => GetCommandName(c), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private MinecraftCommand? GetSelectedCommand(ConsoleState state)
+    {
+        if (_commands is null || _commands.Count == 0)
+            return null;
+
+        var id = GetSelectedCommandId(state);
+        return _commands.FirstOrDefault(c => c.Id == id) ?? _commands.FirstOrDefault();
+    }
+
+    private string GetSelectedCommandId(ConsoleState state)
+    {
+        if (!string.IsNullOrEmpty(state.SelectedCommandId) &&
+            _commands?.Any(c => c.Id == state.SelectedCommandId) == true)
+        {
+            return state.SelectedCommandId;
+        }
+
+        return _defaultSayCommandId ?? _commands?.FirstOrDefault()?.Id ?? string.Empty;
+    }
+
+    private string BuildCommandFromState(ConsoleState state)
+    {
+        var cmd = GetSelectedCommand(state);
+        if (cmd is null)
+            return string.Empty;
+
+        var name = GetCommandName(cmd);
+        var args = state.CommandArguments.Trim();
+
+        return string.IsNullOrEmpty(args) ? name : $"{name} {args}";
+    }
+
+    private bool CanSendCommand(ConsoleState state)
+    {
+        var cmd = GetSelectedCommand(state);
+        if (cmd is null)
+            return false;
+
+        if (!CommandAcceptsArguments(cmd))
+            return true;
+
+        return !string.IsNullOrWhiteSpace(state.CommandArguments);
+    }
+
+    private void ApplyHistoryCommand(ConsoleState state, string historyCmd)
+    {
+        historyCmd = historyCmd.Trim();
+        if (historyCmd.StartsWith('/'))
+            historyCmd = historyCmd[1..];
+
+        MinecraftCommand? best = null;
+        if (_commands is not null)
+        {
+            foreach (var cmd in _commands.OrderByDescending(c => GetCommandName(c).Length))
             {
-                // Command has arguments - inject username at the start of the message
-                var cmdName = trimmed.Substring(0, firstSpaceIndex);
-                var message = trimmed.Substring(firstSpaceIndex + 1);
-                return $"{cmdName} [{username}] {message}";
-            }
-            else
-            {
-                // /say with no message - just add username as the message
-                return $"{trimmed} [{username}]";
+                var name = GetCommandName(cmd);
+                if (historyCmd.Equals(name, StringComparison.OrdinalIgnoreCase) ||
+                    historyCmd.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase))
+                {
+                    best = cmd;
+                    break;
+                }
             }
         }
-        
-        // For all other commands, don't inject username (return as-is)
-        return trimmed;
+
+        if (best is not null)
+        {
+            state.SelectedCommandId = best.Id;
+            var name = GetCommandName(best);
+            state.CommandArguments = historyCmd.Equals(name, StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : historyCmd[(name.Length + 1)..];
+            return;
+        }
+
+        if (_defaultSayCommandId is not null)
+        {
+            state.SelectedCommandId = _defaultSayCommandId;
+            state.CommandArguments = historyCmd;
+        }
     }
 
     private async Task HandleKeyDown(string serverId, KeyboardEventArgs e)
@@ -640,7 +789,7 @@
             if (state.CommandHistoryOnly.Count > 0 && state.HistoryIndex > 0)
             {
                 state.HistoryIndex--;
-                state.CurrentCommand = state.CommandHistoryOnly[state.HistoryIndex];
+                ApplyHistoryCommand(state, state.CommandHistoryOnly[state.HistoryIndex]);
             }
         }
         else if (e.Key == "ArrowDown")
@@ -648,12 +797,12 @@
             if (state.CommandHistoryOnly.Count > 0 && state.HistoryIndex < state.CommandHistoryOnly.Count - 1)
             {
                 state.HistoryIndex++;
-                state.CurrentCommand = state.CommandHistoryOnly[state.HistoryIndex];
+                ApplyHistoryCommand(state, state.CommandHistoryOnly[state.HistoryIndex]);
             }
             else
             {
                 state.HistoryIndex = state.CommandHistoryOnly.Count;
-                state.CurrentCommand = string.Empty;
+                state.CommandArguments = string.Empty;
             }
         }
     }
@@ -673,7 +822,8 @@
 
         public string ServerId { get; }
         public List<CommandHistoryItem> History { get; } = new();
-        public string CurrentCommand { get; set; } = string.Empty;
+        public string SelectedCommandId { get; set; } = string.Empty;
+        public string CommandArguments { get; set; } = string.Empty;
         public List<string> CommandHistoryOnly { get; } = new();
         public int HistoryIndex { get; set; } = -1;
         public bool ShowLogs { get; set; }

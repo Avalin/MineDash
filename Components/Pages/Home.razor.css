@@ -795,6 +795,73 @@
 .command-input-row {
     display: flex;
     gap: 0.5rem;
+    align-items: stretch;
+}
+
+.command-select-wrap {
+    display: inline-grid;
+    flex: 0 0 auto;
+    vertical-align: top;
+}
+
+.command-select-wrap::after {
+    content: attr(data-value);
+    visibility: hidden;
+    white-space: pre;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    grid-area: 1 / 1;
+    pointer-events: none;
+}
+
+.command-select {
+    grid-area: 1 / 1;
+    width: 100%;
+    min-width: 0;
+    background-color: #2a2a2a;
+    border-color: #555;
+    color: #eee;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.command-select:focus {
+    background-color: #2a2a2a;
+    border-color: #4ea3ff;
+    color: #eee;
+    box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
+}
+
+.command-input {
+    flex: 1;
+    min-width: 0;
+    background-color: #2a2a2a;
+    border-color: #555;
+    color: #eee;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.command-input:focus {
+    background-color: #2a2a2a;
+    border-color: #4ea3ff;
+    color: #eee;
+    box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
+}
+
+.command-input:disabled {
+    background-color: #1a1a1a;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.command-send-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -803,28 +870,38 @@
         margin-top: 0.5rem;
         flex-direction: column;
     }
+
+    .command-select-wrap {
+        width: 100%;
+    }
+
+    .command-select-wrap::after {
+        display: none;
+    }
+
+    .command-select {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 16px; /* Prevent iOS zoom */
+        min-height: 44px;
+        border-radius: 6px;
+    }
     
     .command-input {
         width: 100%;
         padding: 0.6rem;
         font-size: 16px; /* Prevent iOS zoom */
-        min-height: 40px;
-        max-height: 40px;
+        min-height: 44px;
         border-radius: 6px;
     }
     
-    .command-input-row .btn {
+    .command-send-btn {
         width: 100%;
         padding: 0.6rem;
         min-height: 44px;
         font-size: 0.95rem;
         font-weight: 500;
-        margin-top: 0.25rem;
     }
-}
-
-.command-input {
-    flex: 1;
 }
 
 /* help ref */
