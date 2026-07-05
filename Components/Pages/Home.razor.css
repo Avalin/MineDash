@@ -908,10 +908,49 @@
 
 .help-list {
     font-size: 0.85rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.help-list code {
+.help-list li {
+    margin-bottom: 0.35rem;
+}
+
+.help-command-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #eee;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.help-command-btn:hover {
+    background-color: rgba(78, 163, 255, 0.12);
+    border-color: rgba(78, 163, 255, 0.35);
+}
+
+.help-command-btn.selected {
+    background-color: rgba(78, 163, 255, 0.2);
+    border-color: #4ea3ff;
+}
+
+.help-command-btn code {
     font-size: 0.9rem;
+    color: #f8a8c8;
+}
+
+.help-command-btn.selected code {
+    color: #ffb8d0;
+}
+
+.help-command-desc {
+    color: #bbb;
 }
 
 /* empty-state text */

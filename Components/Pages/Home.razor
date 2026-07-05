@@ -333,14 +333,19 @@
         else
         {
             <ul class="help-list">
-                @foreach (var cmd in _commands)
+                @foreach (var cmd in GetOrderedCommands())
                 {
                     <li>
-                        <code>@cmd.Syntax</code>
-                        @if (!string.IsNullOrWhiteSpace(cmd.Description))
-                        {
-                            <text> – @cmd.Description</text>
-                        }
+                        <button type="button"
+                                class="help-command-btn @(IsCommandSelectedInConsoles(cmd) ? "selected" : "")"
+                                title="Use this command"
+                                @onclick="@(() => SelectCommand(cmd))">
+                            <code>@cmd.Syntax</code>
+                            @if (!string.IsNullOrWhiteSpace(cmd.Description))
+                            {
+                                <span class="help-command-desc"> – @cmd.Description</span>
+                            }
+                        </button>
                     </li>
                 }
             </ul>
@@ -544,6 +549,29 @@
         var state = GetConsoleState(serverId);
         state.SelectedCommandId = e.Value?.ToString() ?? _defaultSayCommandId ?? string.Empty;
         state.CommandArguments = string.Empty;
+    }
+
+    private void SelectCommand(MinecraftCommand cmd)
+    {
+        if (!_openConsoleIds.Any())
+            return;
+
+        foreach (var serverId in _openConsoleIds)
+        {
+            var state = GetConsoleState(serverId);
+            state.SelectedCommandId = cmd.Id;
+            state.CommandArguments = string.Empty;
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsCommandSelectedInConsoles(MinecraftCommand cmd)
+    {
+        if (!_openConsoleIds.Any())
+            return false;
+
+        return _openConsoleIds.All(id => GetSelectedCommandId(GetConsoleState(id)) == cmd.Id);
     }
 
     private void OnCommandArgumentsChanged(string serverId, ChangeEventArgs e)
