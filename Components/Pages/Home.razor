@@ -225,6 +225,18 @@
                             @{
                                 var mergedEntries = GetMergedEntries(state);
                             }
+                            @if (state.ShowLogs && state.LiveLogs.Any() && !mergedEntries.Any(e => e.IsLog) && HasActiveLogFilters(state))
+                            {
+                                <div class="console-hint">
+                                    Log lines are hidden by your level/thread filters. Clear filters to see chat and server output.
+                                </div>
+                            }
+                            @if (state.ShowLogs && !state.LiveLogs.Any() && !string.IsNullOrWhiteSpace(server.LogPath))
+                            {
+                                <div class="console-hint">
+                                    Watching <code>@server.LogPath</code> — waiting for log lines. Toggle the journal icon off/on to reload.
+                                </div>
+                            }
                             @if (mergedEntries.Any())
                             {
                                 @foreach (var entry in mergedEntries)
@@ -412,15 +424,10 @@
             }
         }
 
-        // Start log polling for all open consoles and load recent logs
+        // Start log watching for all open consoles that have a log path
         foreach (var serverId in _openConsoleIds)
         {
-            var state = GetConsoleState(serverId);
-            if (state.ShowLogs)
-            {
-                await LoadRecentLogs(serverId);
-                StartLogPolling(serverId);
-            }
+            await EnsureLogWatchingAsync(serverId);
         }
 
         // Subscribe to navigation changes to refresh commands when returning to this page
@@ -497,13 +504,7 @@
             _openConsoleIds.Add(_selectedAddServerId);
             await SavePersistedState();
             
-            // Start log polling if logs are enabled (default is true)
-            var state = GetConsoleState(_selectedAddServerId);
-            if (state.ShowLogs)
-            {
-                await LoadRecentLogs(_selectedAddServerId);
-                StartLogPolling(_selectedAddServerId);
-            }
+            await EnsureLogWatchingAsync(_selectedAddServerId);
             
             // Scroll to bottom after adding console
             StateHasChanged();
@@ -610,12 +611,13 @@
         try
         {
             var response = await Rcon.SendCommandAsync(server, cmdToSend);
+            var displayResponse = FormatCommandResponse(originalCmd, response);
 
             await RecordCommandAsync(serverId, new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
                 Command = originalCmd,
-                Response = response,
+                Response = displayResponse,
                 ExecutedBy = currentUser?.Username
             });
             
@@ -688,6 +690,40 @@
             await Task.Delay(50);
             await ScrollToBottom(serverId);
         });
+    }
+
+    private static string FormatCommandResponse(string command, string response)
+    {
+        if (!string.IsNullOrWhiteSpace(response))
+            return response;
+
+        var name = command.Trim();
+        if (name.StartsWith('/'))
+            name = name[1..];
+
+        if (name.StartsWith("say ", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("say", StringComparison.OrdinalIgnoreCase))
+        {
+            return "(broadcast — look for it in the log stream below)";
+        }
+
+        return response;
+    }
+
+    private static bool HasActiveLogFilters(ConsoleState state) =>
+        state.SelectedLogLevels.Count > 0 || state.SelectedThreads.Count > 0;
+
+    private async Task EnsureLogWatchingAsync(string serverId)
+    {
+        if (_servers is null)
+            return;
+
+        var server = _servers.FirstOrDefault(s => s.Id == serverId);
+        if (server is null || string.IsNullOrWhiteSpace(server.LogPath?.Trim()))
+            return;
+
+        await LoadRecentLogs(serverId);
+        StartLogPolling(serverId);
     }
 
     private string InjectUsernameIntoCommand(string command, string username)
@@ -1123,16 +1159,10 @@
         
         if (state.ShowLogs)
         {
-            // Load last 30 minutes of logs
             await LoadRecentLogs(serverId);
-            // Start polling for new logs
-            StartLogPolling(serverId);
         }
-        else
-        {
-            // Stop polling
-            StopLogPolling(serverId);
-        }
+
+        StartLogPolling(serverId);
         
         await SavePersistedState();
         StateHasChanged();
@@ -1151,7 +1181,7 @@
         
         try
         {
-            var (recentLogs, endPosition) = await LogService.GetRecentLogsAsync(server, minutes: 30);
+            var (recentLogs, endPosition) = await LogService.GetRecentLogsAsync(server, tailLines: 500);
 
             state.LiveLogs.Clear();
             state.LiveLogs.AddRange(recentLogs);
@@ -1216,16 +1246,14 @@
             return;
 
         var server = _servers.FirstOrDefault(s => s.Id == serverId);
-        if (server is null)
+        if (server is null || string.IsNullOrWhiteSpace(server.LogPath?.Trim()))
             return;
 
         var state = GetConsoleState(serverId);
-        if (!state.ShowLogs)
-            return;
 
         try
         {
-            var logPath = server.LogPath?.Trim();
+            var logPath = server.LogPath!.Trim();
             if (!string.IsNullOrEmpty(logPath) && File.Exists(logPath))
             {
                 var fileLength = new FileInfo(logPath).Length;
@@ -1254,9 +1282,10 @@
 
             await InvokeAsync(async () =>
             {
-                StateHasChanged();
+                if (state.ShowLogs)
+                    StateHasChanged();
 
-                if (hadNewLogs && scrollToBottom)
+                if (hadNewLogs && scrollToBottom && state.ShowLogs)
                 {
                     await Task.Delay(50);
                     await ScrollToBottom(serverId);
@@ -1342,8 +1371,9 @@
                             if (consoleState.ShowLogs)
                             {
                                 await LoadRecentLogs(kvp.Key);
-                                StartLogPolling(kvp.Key);
                             }
+
+                            StartLogPolling(kvp.Key);
                         }
                     }
                 }

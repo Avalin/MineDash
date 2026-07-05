@@ -771,6 +771,19 @@
     margin-right: 0.25rem;
 }
 
+.console-hint {
+    color: #c9a227;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #333;
+}
+
+.console-hint code {
+    color: #9cdcfe;
+    font-size: 0.75rem;
+}
+
 .console-response {
     color: #d4d4d4;
     white-space: pre-wrap;

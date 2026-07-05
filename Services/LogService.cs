@@ -7,8 +7,10 @@ namespace MineDash.Services;
 
 public class LogService : ILogService
 {
+    private const int TailReadBytes = 512 * 1024;
+
     private static readonly Regex DatedLogRegex = new(
-        @"^\[(?<day>\d{2})(?<mon>[A-Za-z]{3})(?<year>\d{4})\s+(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})(?:\.(?<ms>\d{1,3}))?\]\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
+        @"^\[(?<day>\d{2})(?<mon>[A-Za-z]{3})(?<year>\d{4})\s+(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})(?:\.(?<ms>\d{1,3}))?\](?:\s+\[\d{2}:\d{2}:\d{2}\]){0,2}\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
         RegexOptions.Compiled);
 
     private static readonly Regex TimeOnlyLogRegex = new(
@@ -23,9 +25,8 @@ public class LogService : ILogService
     }
 
     public async Task<(List<LogEntry> Entries, long EndPosition)> GetRecentLogsAsync(
-        ServerConfig server, int minutes = 30, CancellationToken ct = default)
+        ServerConfig server, int tailLines = 500, CancellationToken ct = default)
     {
-        var cutoffUtc = DateTime.UtcNow.AddMinutes(-minutes);
         var entries = new List<LogEntry>();
         long endPosition = 0;
 
@@ -39,13 +40,16 @@ public class LogService : ILogService
             }
 
             if (!await CanReadLogFileAsync(logPath))
+            {
+                _logger.LogWarning("Cannot read log file for {ServerName} at {LogPath}", server.Name, logPath);
                 return (entries, endPosition);
+            }
 
-            entries = await ReadLogFileAsync(server, logPath, cutoffUtc, ct);
+            entries = await ReadLogFileTailAsync(server, logPath, tailLines, ct);
             endPosition = await GetFileLengthAsync(logPath, ct);
 
             _logger.LogInformation(
-                "Loaded {Count} log entries for {ServerName} from {LogPath}",
+                "Loaded {Count} tail log entries for {ServerName} from {LogPath}",
                 entries.Count, server.Name, logPath);
         }
         catch (Exception ex)
@@ -85,7 +89,7 @@ public class LogService : ILogService
             fileStream.Position = fromPosition;
 
             using var reader = new StreamReader(fileStream);
-            entries = ReadLines(server, () => reader.ReadLine(), ct, cutoffUtc: null, out var lastTimestampUtc);
+            entries = ReadLines(server, () => reader.ReadLine(), ct, out _);
 
             endPosition = fileStream.Position;
         }
@@ -123,43 +127,34 @@ public class LogService : ILogService
         return fileStream.Length;
     }
 
-    private async Task<List<LogEntry>> ReadLogFileAsync(
-        ServerConfig server, string logPath, DateTime cutoffUtc, CancellationToken ct)
+    private static async Task<List<LogEntry>> ReadLogFileTailAsync(
+        ServerConfig server, string logPath, int tailLines, CancellationToken ct)
     {
-        var entries = new List<LogEntry>();
-
         if (!File.Exists(logPath))
+            return new List<LogEntry>();
+
+        await using var fileStream = new FileStream(
+            logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+        var start = Math.Max(0, fileStream.Length - TailReadBytes);
+        fileStream.Seek(start, SeekOrigin.Begin);
+
+        using var reader = new StreamReader(fileStream);
+        if (start > 0)
+            await reader.ReadLineAsync(ct);
+
+        var entries = ReadLines(server, () => reader.ReadLine(), ct, out _);
+
+        if (entries.Count <= tailLines)
             return entries;
 
-        try
-        {
-            await using var fileStream = new FileStream(
-                logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(fileStream);
-
-            entries = ReadLines(server, () => reader.ReadLine(), ct, cutoffUtc, out _);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogError(ex, "Permission denied reading log file {LogPath}", logPath);
-        }
-        catch (IOException ex)
-        {
-            _logger.LogError(ex, "IO error reading log file {LogPath}", logPath);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error reading log file {LogPath}", logPath);
-        }
-
-        return entries;
+        return entries.Skip(entries.Count - tailLines).ToList();
     }
 
     private static List<LogEntry> ReadLines(
         ServerConfig server,
         Func<string?> readLine,
         CancellationToken ct,
-        DateTime? cutoffUtc,
         out DateTime? lastTimestampUtc)
     {
         var entries = new List<LogEntry>();
@@ -178,9 +173,7 @@ public class LogService : ILogService
             if (entry.HasParsedTimestamp)
                 lastTimestampUtc = entry.Timestamp;
 
-            if (cutoffUtc is null || entry.Timestamp >= cutoffUtc.Value)
-                entries.Add(entry);
-
+            entries.Add(entry);
             sequence++;
         }
 
