@@ -753,6 +753,10 @@
 
 .console-command {
     color: #9cdcfe;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
 }
 
 .command-user {

@@ -15,5 +15,10 @@ public class ServerConfig
     /// </summary>
     public string? LogPath { get; set; }
 
+    /// <summary>
+    /// Timezone used in latest.log timestamps. Docker Minecraft servers usually log in UTC.
+    /// </summary>
+    public string? LogTimeZoneId { get; set; }
+
     public string? Notes { get; set; }
 }

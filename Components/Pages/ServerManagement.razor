@@ -77,6 +77,14 @@
                     <input class="form-control" placeholder="/srv/minecraft/cobbleverse/data/logs/latest.log" @bind="_editServer.LogPath" />
                 </div>
 
+                <div class="field-row field-row-half">
+                    <div class="field-label">Log timezone</div>
+                    <div class="field-hint">
+                        Timezone of timestamps inside <code>latest.log</code>. Docker servers usually use <code>UTC</code>.
+                    </div>
+                    <input class="form-control" placeholder="UTC" @bind="_editServer.LogTimeZoneId" />
+                </div>
+
                 <div class="field-row">
                     <div class="field-label">Notes</div>
                     <div class="field-hint">
@@ -176,7 +184,8 @@
             Id = Guid.NewGuid().ToString("N"),
             Name = "New Minecraft Server",
             Host = "localhost",
-            RconPort = 25575
+            RconPort = 25575,
+            LogTimeZoneId = "UTC"
         };
         _isNew = true;
         _nameValidationError = null;
@@ -193,6 +202,7 @@
             RconPort = server.RconPort,
             RconPassword = server.RconPassword,
             LogPath = server.LogPath,
+            LogTimeZoneId = server.LogTimeZoneId,
             Notes = server.Notes
         };
         _isNew = false;

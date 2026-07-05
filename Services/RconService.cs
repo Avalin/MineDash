@@ -21,6 +21,10 @@ public class RconService : IRconService
         if (string.IsNullOrWhiteSpace(server.Host))
             throw new ArgumentException("Server host cannot be null or empty", nameof(server));
 
+        command = command.Trim();
+        if (command.StartsWith('/'))
+            command = command[1..];
+
         try
         {
             IPEndPoint endpoint;

@@ -1228,6 +1228,10 @@ main[b-l3n58rr43k] {
 
 .console-command[b-r3v39eobk4] {
     color: #9cdcfe;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
 }
 
 .command-user[b-r3v39eobk4] {

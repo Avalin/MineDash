@@ -10,6 +10,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8214
+      - MineDash__DisplayTimeZoneId=Europe/Oslo
     restart: unless-stopped
     networks:
       - your-minecraft-net

@@ -30,6 +30,7 @@ builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
 builder.Services.AddSingleton<IAppSettingsStore, JsonAppSettingsStore>();
 builder.Services.AddScoped<IRconService, RconService>();
 builder.Services.AddSingleton<ILogService, LogService>();
+builder.Services.AddSingleton<ITimeDisplayService, TimeDisplayService>();
 builder.Services.AddSingleton<IConsoleActivityStore, JsonConsoleActivityStore>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();
 builder.Services.AddScoped<IAuthService, AuthService>();

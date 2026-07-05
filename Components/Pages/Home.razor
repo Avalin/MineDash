@@ -13,6 +13,7 @@
 @inject NavigationManager Navigation
 @inject IAuthService AuthService
 @inject IConsoleActivityStore ConsoleActivity
+@inject ITimeDisplayService TimeDisplay
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
@@ -231,7 +232,7 @@
                                     @if (entry.IsLog)
                                     {
                                         <div class="console-log-entry">
-                                            <span class="console-log-time">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                                            <span class="console-log-time">[@TimeDisplay.FormatTime(entry.Timestamp)]</span>
                                             <span class="console-log-message">@entry.LogLine</span>
                                         </div>
                                     }
@@ -239,6 +240,7 @@
                                     {
                                         <div class="console-entry">
                                             <div class="console-command">
+                                                <span class="console-log-time">[@TimeDisplay.FormatTime(entry.Timestamp)]</span>
                                                 <span class="console-prefix">&gt;</span>
                                                 <span>@entry.Command</span>
                                                 @if (!string.IsNullOrWhiteSpace(entry.ExecutedBy))
@@ -918,7 +920,7 @@
                     {
                         Timestamp = log.Timestamp,
                         IsLog = true,
-                        LogLine = log.RawLine
+                        LogLine = string.IsNullOrWhiteSpace(log.Message) ? log.RawLine : log.Message
                     });
                 }
             }
@@ -940,8 +942,11 @@
             }
         }
 
-        // Sort by timestamp
-        return entries.OrderBy(e => e.Timestamp).ToList();
+        // Oldest first, newest at bottom. Commands after logs at the same second.
+        return entries
+            .OrderBy(e => TimeDisplay.NormalizeForSort(e.Timestamp))
+            .ThenBy(e => e.IsLog ? 0 : 1)
+            .ToList();
     }
 
     private HashSet<string> GetAvailableLogLevels(ConsoleState state)
@@ -1151,7 +1156,7 @@
             // Add error message to logs for debugging
             state.LiveLogs.Add(new LogEntry
             {
-                Timestamp = DateTime.Now,
+                Timestamp = DateTime.UtcNow,
                 RawLine = $"[ERROR] Failed to load logs: {ex.Message}"
             });
         }
@@ -1166,7 +1171,7 @@
         var timer = new System.Threading.Timer(async _ =>
         {
             await PollServerLogs(serverId);
-        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
 
         _logPollTimers[serverId] = timer;
     }
@@ -1193,12 +1198,20 @@
         if (!state.ShowLogs)
             return;
 
-        // Only poll every 2 seconds to get new log entries
-        if ((DateTime.Now - state.LastLogPoll).TotalSeconds < 2)
-            return;
-
         try
         {
+            var logPath = server.LogPath?.Trim();
+            if (!string.IsNullOrEmpty(logPath) && File.Exists(logPath))
+            {
+                var fileLength = new FileInfo(logPath).Length;
+                if (fileLength < state.LogFilePosition)
+                {
+                    await LoadRecentLogs(serverId);
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+            }
+
             var (newLogs, endPosition) = await LogService.ReadLogsFromPositionAsync(
                 server, state.LogFilePosition);
 

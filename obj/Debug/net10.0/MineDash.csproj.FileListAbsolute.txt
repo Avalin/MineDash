@@ -112,5 +112,5 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\MineDash.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\MineDash.pdb
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\BCrypt.Net-Next.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\CoreRCON.dll
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-gy67akvs3v-gy67akvs3v.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-gy67akvs3v-gy67akvs3v.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-6ztm33vave-6ztm33vave.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-6ztm33vave-6ztm33vave.gz
