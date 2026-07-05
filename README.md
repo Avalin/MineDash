@@ -1,6 +1,6 @@
 # MineDash
 
-A web-based dashboard for managing multiple Minecraft servers via RCON. Built with Blazor Server and .NET 9.0.
+A web-based dashboard for managing multiple Minecraft servers via RCON. Built with Blazor Server and .NET 10.
 
 <img width="400" height="420" alt="image" src="https://github.com/user-attachments/assets/1e4b0c2e-188c-4676-88cf-88eb07affdf2" />
 <img width="600" height="420" alt="minedash-showcase-1" src="https://github.com/user-attachments/assets/a28f0a36-36a2-4867-b7ca-a4917aae7ee2" />
@@ -24,7 +24,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
   - Access to your Minecraft server's RCON port
 
 - **For manual deployment:**
-  - .NET 9.0 SDK installed
+  - .NET 10 SDK installed
   - Access to your Minecraft server's RCON port
 
 ## Quick Start
@@ -33,7 +33,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Avalin/MineDash.git
    cd MineDash
    ```
 

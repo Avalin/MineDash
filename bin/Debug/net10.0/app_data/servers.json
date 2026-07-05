@@ -1,0 +1,9 @@
+[
+  {
+    "Id": "6d61fd9f6954432b80aa91de74edb747",
+    "Name": "New Minecraft Server",
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": ""
+  }
+]

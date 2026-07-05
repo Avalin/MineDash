@@ -1,0 +1,100 @@
+.confirmation-dialog-overlay[b-n79qo6ws3x] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    backdrop-filter: blur(2px);
+}
+
+.confirmation-dialog[b-n79qo6ws3x] {
+    background-color: var(--bs-dark);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: dialogFadeIn-b-n79qo6ws3x 0.2s ease-out;
+}
+
+@keyframes dialogFadeIn-b-n79qo6ws3x {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.confirmation-dialog-header[b-n79qo6ws3x] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.confirmation-dialog-title[b-n79qo6ws3x] {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.confirmation-dialog-close[b-n79qo6ws3x] {
+    background: none;
+    border: none;
+    color: #adb5bd;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.confirmation-dialog-close:hover[b-n79qo6ws3x] {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.confirmation-dialog-body[b-n79qo6ws3x] {
+    padding: 1.25rem;
+    color: #e9ecef;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.confirmation-dialog-body p[b-n79qo6ws3x] {
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.confirmation-dialog-footer[b-n79qo6ws3x] {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.confirmation-dialog-footer .btn[b-n79qo6ws3x] {
+    min-width: 80px;
+}
+

@@ -1,0 +1,17 @@
+[
+  {
+    "Id": "28c50b224c2047a0b528b48b21d5337d",
+    "Name": "KICK",
+    "Command": "/kick Lmao",
+    "ServerId": "6d61fd9f6954432b80aa91de74edb747",
+    "Minutes": [
+      31
+    ],
+    "Hours": [],
+    "Weekdays": [],
+    "IsActive": true,
+    "CreatedAt": "2025-11-27T01:27:49.4472145Z",
+    "NextRunAt": "2025-11-27T01:29:00Z",
+    "ConsecutiveFailures": 0
+  }
+]
