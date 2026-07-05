@@ -12,6 +12,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @inject IAuthService AuthService
+@inject IConsoleActivityStore ConsoleActivity
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
@@ -240,6 +241,10 @@
                                             <div class="console-command">
                                                 <span class="console-prefix">&gt;</span>
                                                 <span>@entry.Command</span>
+                                                @if (!string.IsNullOrWhiteSpace(entry.ExecutedBy))
+                                                {
+                                                    <span class="command-user">(@entry.ExecutedBy)</span>
+                                                }
                                             </div>
                                             <div class="console-response">
                                                 @entry.Response
@@ -268,7 +273,7 @@
                                             <small>Make sure the file exists and is readable. Check container logs for details.</small></text>
                                         }
                                     }
-                                    else if (!state.ShowLogs && state.ShowCommands && !state.History.Any())
+                                    else if (!state.ShowLogs && state.ShowCommands && !ConsoleActivity.GetHistory(serverId).Any())
                                     {
                                         <text>No commands sent yet.</text>
                                     }
@@ -418,6 +423,7 @@
 
         // Subscribe to navigation changes to refresh commands when returning to this page
         Navigation.LocationChanged += OnLocationChanged;
+        ConsoleActivity.HistoryChanged += OnConsoleActivityChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -603,25 +609,18 @@
         {
             var response = await Rcon.SendCommandAsync(server, cmdToSend);
 
-            state.History.Add(new CommandHistoryItem
+            await RecordCommandAsync(serverId, new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
                 Command = originalCmd,
                 Response = response,
                 ExecutedBy = currentUser?.Username
             });
-
-            state.CommandHistoryOnly.Add(originalCmd);
-            state.HistoryIndex = state.CommandHistoryOnly.Count;
-            
-            // Persist command history after adding
-            await SavePersistedState();
             
             // Scroll to last command if commands are visible
             if (state.ShowCommands)
             {
                 StateHasChanged();
-                // Wait for UI to update, then scroll to last command
                 await Task.Delay(50);
                 await ScrollToLastCommand(serverId);
             }
@@ -632,7 +631,7 @@
         }
         catch (Exception ex)
         {
-            state.History.Add(new CommandHistoryItem
+            await RecordCommandAsync(serverId, new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
                 Command = originalCmd,
@@ -640,14 +639,9 @@
                 ExecutedBy = currentUser?.Username
             });
             
-            // Persist even on error
-            await SavePersistedState();
-            
-            // Scroll to last command if commands are visible
             if (state.ShowCommands)
             {
                 StateHasChanged();
-                // Wait for UI to update, then scroll to last command
                 await Task.Delay(50);
                 await ScrollToLastCommand(serverId);
             }
@@ -658,6 +652,32 @@
         }
 
         state.CommandArguments = string.Empty;
+    }
+
+    private async Task RecordCommandAsync(string serverId, CommandHistoryItem item)
+    {
+        var state = GetConsoleState(serverId);
+        await ConsoleActivity.AppendAsync(serverId, item);
+        state.CommandHistoryOnly.Add(item.Command);
+        state.HistoryIndex = state.CommandHistoryOnly.Count;
+    }
+
+    private void OnConsoleActivityChanged(string serverId)
+    {
+        if (!_openConsoleIds.Contains(serverId))
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            StateHasChanged();
+
+            var state = GetConsoleState(serverId);
+            if (state.ShowCommands)
+            {
+                await Task.Delay(50);
+                await ScrollToLastCommand(serverId);
+            }
+        });
     }
 
     private string InjectUsernameIntoCommand(string command, string username)
@@ -849,7 +869,6 @@
         }
 
         public string ServerId { get; }
-        public List<CommandHistoryItem> History { get; } = new();
         public string SelectedCommandId { get; set; } = string.Empty;
         public string CommandArguments { get; set; } = string.Empty;
         public List<string> CommandHistoryOnly { get; } = new();
@@ -857,6 +876,7 @@
         public bool ShowLogs { get; set; }
         public bool ShowCommands { get; set; }
         public List<LogEntry> LiveLogs { get; } = new();
+        public long LogFilePosition { get; set; }
         public DateTime LastLogPoll { get; set; } = DateTime.MinValue;
         public HashSet<string> SelectedLogLevels { get; set; }
         public HashSet<string> SelectedThreads { get; set; }
@@ -907,7 +927,7 @@
         // Add commands if enabled
         if (state.ShowCommands)
         {
-            foreach (var cmd in state.History)
+            foreach (var cmd in ConsoleActivity.GetHistory(state.ServerId))
             {
                 entries.Add(new MergedEntry
                 {
@@ -1114,12 +1134,11 @@
         
         try
         {
-            // Reset read position and load last 30 minutes
-            LogService.ResetReadPosition(server);
-            var recentLogs = await LogService.GetRecentLogsAsync(server, minutes: 30);
-            
+            var (recentLogs, endPosition) = await LogService.GetRecentLogsAsync(server, minutes: 30);
+
             state.LiveLogs.Clear();
             state.LiveLogs.AddRange(recentLogs);
+            state.LogFilePosition = endPosition;
             
             // Keep only last 1000 entries to prevent memory issues
             if (state.LiveLogs.Count > 1000)
@@ -1180,28 +1199,23 @@
 
         try
         {
-            // Get new log entries since last read
-            var newLogs = await LogService.GetNewLogsAsync(server);
-            
-            if (newLogs.Any())
+            var (newLogs, endPosition) = await LogService.ReadLogsFromPositionAsync(
+                server, state.LogFilePosition);
+
+            var hadNewLogs = newLogs.Count > 0;
+            if (hadNewLogs)
             {
                 state.LiveLogs.AddRange(newLogs);
-                
-                // Keep only last 1000 entries to prevent memory issues
+
                 if (state.LiveLogs.Count > 1000)
-                {
                     state.LiveLogs.RemoveRange(0, state.LiveLogs.Count - 1000);
-                }
             }
 
+            state.LogFilePosition = endPosition;
             state.LastLogPoll = DateTime.Now;
-            
-            // Use InvokeAsync to update UI on the correct thread
-            // Don't auto-scroll when new logs arrive
-            await InvokeAsync(() =>
-            {
-                StateHasChanged();
-            });
+
+            if (hadNewLogs)
+                await InvokeAsync(StateHasChanged);
         }
         catch
         {
@@ -1259,23 +1273,6 @@
                         _layoutColumns = state.LayoutColumns;
                     }
 
-                    // Restore command history and toggle states for each server
-                    if (state.CommandHistory != null)
-                    {
-                        foreach (var kvp in state.CommandHistory)
-                        {
-                            var consoleState = GetConsoleState(kvp.Key);
-                            consoleState.History.Clear();
-                            consoleState.History.AddRange(kvp.Value);
-                            
-                            // Restore command history only list
-                            consoleState.CommandHistoryOnly.Clear();
-                            consoleState.CommandHistoryOnly.AddRange(
-                                kvp.Value.Select(h => h.Command).Distinct().ToList()
-                            );
-                        }
-                    }
-
                     // Restore toggle states
                     if (state.ConsoleStates != null)
                     {
@@ -1316,18 +1313,11 @@
     {
         try
         {
-            // Save command history for all open consoles
-            var commandHistory = new Dictionary<string, List<CommandHistoryItem>>();
             var consoleStates = new Dictionary<string, ConsoleToggleState>();
             
             foreach (var serverId in _openConsoleIds)
             {
                 var state = GetConsoleState(serverId);
-                if (state.History.Any())
-                {
-                    // Keep only last 100 commands per server to avoid localStorage size limits
-                    commandHistory[serverId] = state.History.TakeLast(100).ToList();
-                }
                 
                 // Save toggle states
                 consoleStates[serverId] = new ConsoleToggleState
@@ -1343,7 +1333,6 @@
             {
                 OpenConsoleIds = _openConsoleIds.ToList(),
                 LayoutColumns = _layoutColumns,
-                CommandHistory = commandHistory,
                 ConsoleStates = consoleStates
             };
             var stateJson = JsonSerializer.Serialize(persistedState);
@@ -1365,6 +1354,7 @@
         
         // Unsubscribe from navigation events
         Navigation.LocationChanged -= OnLocationChanged;
+        ConsoleActivity.HistoryChanged -= OnConsoleActivityChanged;
         
         // Save state when component is disposed
         await SavePersistedState();
@@ -1375,7 +1365,6 @@
     {
         public List<string>? OpenConsoleIds { get; set; }
         public int LayoutColumns { get; set; } = 1;
-        public Dictionary<string, List<CommandHistoryItem>>? CommandHistory { get; set; }
         public Dictionary<string, ConsoleToggleState>? ConsoleStates { get; set; }
     }
 

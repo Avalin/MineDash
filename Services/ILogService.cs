@@ -5,19 +5,16 @@ namespace MineDash.Services;
 public interface ILogService
 {
     /// <summary>
-    /// Gets log entries from the last N minutes
+    /// Gets log entries from the last N minutes and the file position after reading.
     /// </summary>
-    Task<List<LogEntry>> GetRecentLogsAsync(ServerConfig server, int minutes = 30, CancellationToken ct = default);
+    Task<(List<LogEntry> Entries, long EndPosition)> GetRecentLogsAsync(
+        ServerConfig server, int minutes = 30, CancellationToken ct = default);
 
     /// <summary>
-    /// Gets new log entries since the last read position
+    /// Reads new log lines starting at <paramref name="fromPosition"/>.
     /// </summary>
-    Task<List<LogEntry>> GetNewLogsAsync(ServerConfig server, CancellationToken ct = default);
-
-    /// <summary>
-    /// Resets the read position for a server (used when toggling logs on)
-    /// </summary>
-    void ResetReadPosition(ServerConfig server);
+    Task<(List<LogEntry> Entries, long EndPosition)> ReadLogsFromPositionAsync(
+        ServerConfig server, long fromPosition, CancellationToken ct = default);
 }
 
 public class LogEntry

@@ -44,6 +44,7 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
         var serverStore = scope.ServiceProvider.GetRequiredService<IServerConfigStore>();
         var rconService = scope.ServiceProvider.GetRequiredService<IRconService>();
         var settingsStore = scope.ServiceProvider.GetRequiredService<IAppSettingsStore>();
+        var consoleActivity = scope.ServiceProvider.GetRequiredService<IConsoleActivityStore>();
 
         var settings = await settingsStore.GetAsync(cancellationToken);
         var commands = await commandStore.GetAllAsync(cancellationToken);
@@ -77,6 +78,14 @@ public class TimedCommandScheduler : BackgroundService, ITimedCommandScheduler
                     
                     _logger.LogInformation("Timed command '{CommandName}' executed successfully. Response: {Response}", 
                         command.Name, response);
+
+                    await consoleActivity.AppendAsync(command.ServerId, new CommandHistoryItem
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        Command = command.Command,
+                        Response = response,
+                        ExecutedBy = $"scheduled: {command.Name}"
+                    }, cancellationToken);
 
                     // Reset failure tracking on successful execution
                     command.FirstFailureAt = null;
