@@ -21,6 +21,7 @@ public class LogEntry
 {
     public DateTime Timestamp { get; set; }
     public bool HasParsedTimestamp { get; set; }
+    public int Sequence { get; set; }
     public string RawLine { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public string Thread { get; set; } = string.Empty;

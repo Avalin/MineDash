@@ -1,3 +1,4 @@
+using System.Globalization;
 using MineDash.Models;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -6,6 +7,14 @@ namespace MineDash.Services;
 
 public class LogService : ILogService
 {
+    private static readonly Regex DatedLogRegex = new(
+        @"^\[(?<day>\d{2})(?<mon>[A-Za-z]{3})(?<year>\d{4})\s+(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})(?:\.(?<ms>\d{1,3}))?\]\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
+        RegexOptions.Compiled);
+
+    private static readonly Regex TimeOnlyLogRegex = new(
+        @"^\[(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})\](?:\s+\[(?<hour2>\d{2}):(?<min2>\d{2}):(?<sec2>\d{2})\])?\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
+        RegexOptions.Compiled);
+
     private readonly ILogger<LogService> _logger;
 
     public LogService(ILogger<LogService> logger)
@@ -65,7 +74,6 @@ public class LogService : ILogService
 
             var fileLength = await GetFileLengthAsync(logPath, ct);
 
-            // latest.log was rotated or truncated
             if (fileLength < fromPosition)
                 fromPosition = 0;
 
@@ -77,19 +85,7 @@ public class LogService : ILogService
             fileStream.Position = fromPosition;
 
             using var reader = new StreamReader(fileStream);
-            DateTime? lastTimestampUtc = null;
-            string? line;
-            while ((line = await reader.ReadLineAsync(ct)) != null)
-            {
-                var entry = ParseLogLine(line, server, lastTimestampUtc);
-                if (entry is null)
-                    continue;
-
-                if (entry.HasParsedTimestamp)
-                    lastTimestampUtc = entry.Timestamp;
-
-                entries.Add(entry);
-            }
+            entries = ReadLines(server, () => reader.ReadLine(), ct, cutoffUtc: null, out var lastTimestampUtc);
 
             endPosition = fileStream.Position;
         }
@@ -141,22 +137,7 @@ public class LogService : ILogService
                 logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using var reader = new StreamReader(fileStream);
 
-            DateTime? lastTimestampUtc = null;
-            string? line;
-            while ((line = await reader.ReadLineAsync(ct)) != null)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var entry = ParseLogLine(line, server, lastTimestampUtc);
-                if (entry is null)
-                    continue;
-
-                if (entry.HasParsedTimestamp)
-                    lastTimestampUtc = entry.Timestamp;
-
-                if (entry.Timestamp >= cutoffUtc)
-                    entries.Add(entry);
-            }
+            entries = ReadLines(server, () => reader.ReadLine(), ct, cutoffUtc, out _);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -174,43 +155,103 @@ public class LogService : ILogService
         return entries;
     }
 
-    private static LogEntry? ParseLogLine(string line, ServerConfig server, DateTime? fallbackUtc)
+    private static List<LogEntry> ReadLines(
+        ServerConfig server,
+        Func<string?> readLine,
+        CancellationToken ct,
+        DateTime? cutoffUtc,
+        out DateTime? lastTimestampUtc)
+    {
+        var entries = new List<LogEntry>();
+        lastTimestampUtc = null;
+        var sequence = 0;
+
+        string? line;
+        while ((line = readLine()) != null)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var entry = ParseLogLine(line, server, lastTimestampUtc, sequence);
+            if (entry is null)
+                continue;
+
+            if (entry.HasParsedTimestamp)
+                lastTimestampUtc = entry.Timestamp;
+
+            if (cutoffUtc is null || entry.Timestamp >= cutoffUtc.Value)
+                entries.Add(entry);
+
+            sequence++;
+        }
+
+        return entries;
+    }
+
+    private static LogEntry? ParseLogLine(
+        string line, ServerConfig server, DateTime? fallbackUtc, int sequence)
     {
         if (string.IsNullOrWhiteSpace(line))
             return null;
 
-        // [HH:mm:ss] [HH:mm:ss] [thread/LEVEL]: message
-        var match = Regex.Match(line,
-            @"^\[(\d{2}):(\d{2}):(\d{2})\](?:\s+\[(\d{2}):(\d{2}):(\d{2})\])?\s+\[(.*?)/(.*?)\]:\s*(.*)$");
-
-        if (match.Success)
+        var dated = DatedLogRegex.Match(line);
+        if (dated.Success)
         {
-            var hour = int.Parse(match.Groups[1].Value);
-            var minute = int.Parse(match.Groups[2].Value);
-            var second = int.Parse(match.Groups[3].Value);
-            var thread = match.Groups[7].Value.Trim();
-            var level = match.Groups[8].Value.Trim();
-            var message = match.Groups[9].Value;
+            var timestamp = BuildLogTimestampUtc(
+                int.Parse(dated.Groups["year"].Value),
+                ParseMonth(dated.Groups["mon"].Value),
+                int.Parse(dated.Groups["day"].Value),
+                int.Parse(dated.Groups["hour"].Value),
+                int.Parse(dated.Groups["min"].Value),
+                int.Parse(dated.Groups["sec"].Value),
+                ParseMilliseconds(dated.Groups["ms"].Value),
+                server);
 
             return new LogEntry
             {
-                Timestamp = BuildLogTimestampUtc(hour, minute, second, server),
+                Timestamp = timestamp,
                 HasParsedTimestamp = true,
+                Sequence = sequence,
                 RawLine = line,
-                Message = message,
-                Thread = thread,
-                Level = level
+                Message = dated.Groups["msg"].Value,
+                Thread = dated.Groups["thread"].Value.Trim(),
+                Level = dated.Groups["level"].Value.Trim()
+            };
+        }
+
+        var timeOnly = TimeOnlyLogRegex.Match(line);
+        if (timeOnly.Success)
+        {
+            var timestamp = BuildLogTimestampUtc(
+                DateTime.UtcNow.Year,
+                DateTime.UtcNow.Month,
+                DateTime.UtcNow.Day,
+                int.Parse(timeOnly.Groups["hour"].Value),
+                int.Parse(timeOnly.Groups["min"].Value),
+                int.Parse(timeOnly.Groups["sec"].Value),
+                0,
+                server,
+                inferDate: true);
+
+            return new LogEntry
+            {
+                Timestamp = timestamp,
+                HasParsedTimestamp = true,
+                Sequence = sequence,
+                RawLine = line,
+                Message = timeOnly.Groups["msg"].Value,
+                Thread = timeOnly.Groups["thread"].Value.Trim(),
+                Level = timeOnly.Groups["level"].Value.Trim()
             };
         }
 
         if (fallbackUtc is null)
             return null;
 
-        // Stack traces and wrapped lines inherit the previous log line's time
         return new LogEntry
         {
             Timestamp = fallbackUtc.Value,
             HasParsedTimestamp = false,
+            Sequence = sequence,
             RawLine = line,
             Message = line.Trim(),
             Thread = string.Empty,
@@ -218,18 +259,35 @@ public class LogService : ILogService
         };
     }
 
-    private static DateTime BuildLogTimestampUtc(int hour, int minute, int second, ServerConfig server)
+    private static int ParseMonth(string month) =>
+        DateTime.ParseExact(month, "MMM", CultureInfo.InvariantCulture).Month;
+
+    private static int ParseMilliseconds(string value) =>
+        string.IsNullOrEmpty(value) ? 0 : int.Parse(value.PadRight(3, '0'));
+
+    private static DateTime BuildLogTimestampUtc(
+        int year, int month, int day, int hour, int minute, int second, int millisecond,
+        ServerConfig server, bool inferDate = false)
     {
         var tzId = string.IsNullOrWhiteSpace(server.LogTimeZoneId) ? "UTC" : server.LogTimeZoneId;
         var tz = TimeDisplayService.ResolveTimeZone(tzId);
 
-        var nowInLogTz = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
-        var date = nowInLogTz.Date;
-        var localTime = new DateTime(date.Year, date.Month, date.Day, hour, minute, second);
+        if (inferDate)
+        {
+            var nowInLogTz = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            var date = nowInLogTz.Date;
+            year = date.Year;
+            month = date.Month;
+            day = date.Day;
 
-        if (localTime > nowInLogTz)
-            localTime = localTime.AddDays(-1);
+            var localTime = new DateTime(year, month, day, hour, minute, second, millisecond);
+            if (localTime > nowInLogTz)
+                localTime = localTime.AddDays(-1);
 
-        return TimeZoneInfo.ConvertTimeToUtc(localTime, tz);
+            return TimeZoneInfo.ConvertTimeToUtc(localTime, tz);
+        }
+
+        var exact = new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(exact, tz);
     }
 }

@@ -624,7 +624,7 @@
             {
                 StateHasChanged();
                 await Task.Delay(50);
-                await ScrollToLastCommand(serverId);
+                await ScrollToBottom(serverId);
             }
             else
             {
@@ -645,7 +645,7 @@
             {
                 StateHasChanged();
                 await Task.Delay(50);
-                await ScrollToLastCommand(serverId);
+                await ScrollToBottom(serverId);
             }
             else
             {
@@ -654,6 +654,18 @@
         }
 
         state.CommandArguments = string.Empty;
+
+        if (state.ShowLogs)
+            _ = RefreshLogsAfterCommandAsync(serverId);
+    }
+
+    private async Task RefreshLogsAfterCommandAsync(string serverId)
+    {
+        for (var i = 0; i < 6; i++)
+        {
+            await Task.Delay(500);
+            await PollServerLogs(serverId, scrollToBottom: true);
+        }
     }
 
     private async Task RecordCommandAsync(string serverId, CommandHistoryItem item)
@@ -671,14 +683,10 @@
 
         _ = InvokeAsync(async () =>
         {
+            await PollServerLogs(serverId, scrollToBottom: false);
             StateHasChanged();
-
-            var state = GetConsoleState(serverId);
-            if (state.ShowCommands)
-            {
-                await Task.Delay(50);
-                await ScrollToLastCommand(serverId);
-            }
+            await Task.Delay(50);
+            await ScrollToBottom(serverId);
         });
     }
 
@@ -889,6 +897,7 @@
     private sealed class MergedEntry
     {
         public DateTime Timestamp { get; set; }
+        public int Sequence { get; set; }
         public bool IsLog { get; set; }
         public string? LogLine { get; set; }
         public string? Command { get; set; }
@@ -919,6 +928,7 @@
                     entries.Add(new MergedEntry
                     {
                         Timestamp = log.Timestamp,
+                        Sequence = log.Sequence,
                         IsLog = true,
                         LogLine = string.IsNullOrWhiteSpace(log.Message) ? log.RawLine : log.Message
                     });
@@ -929,11 +939,13 @@
         // Add commands if enabled
         if (state.ShowCommands)
         {
+            var commandIndex = 0;
             foreach (var cmd in ConsoleActivity.GetHistory(state.ServerId))
             {
                 entries.Add(new MergedEntry
                 {
                     Timestamp = cmd.Timestamp,
+                    Sequence = commandIndex++,
                     IsLog = false,
                     Command = cmd.Command,
                     Response = cmd.Response,
@@ -942,10 +954,10 @@
             }
         }
 
-        // Oldest first, newest at bottom. Commands after logs at the same second.
         return entries
             .OrderBy(e => TimeDisplay.NormalizeForSort(e.Timestamp))
             .ThenBy(e => e.IsLog ? 0 : 1)
+            .ThenBy(e => e.Sequence)
             .ToList();
     }
 
@@ -1102,7 +1114,7 @@
     }
 
 
-    private readonly Dictionary<string, System.Threading.Timer?> _logPollTimers = new();
+    private readonly Dictionary<string, CancellationTokenSource> _logPollCts = new();
 
     private async Task ToggleLogs(string serverId)
     {
@@ -1157,6 +1169,8 @@
             state.LiveLogs.Add(new LogEntry
             {
                 Timestamp = DateTime.UtcNow,
+                HasParsedTimestamp = true,
+                Message = $"[ERROR] Failed to load logs: {ex.Message}",
                 RawLine = $"[ERROR] Failed to load logs: {ex.Message}"
             });
         }
@@ -1164,28 +1178,39 @@
 
     private void StartLogPolling(string serverId)
     {
-        // Stop any existing timer
         StopLogPolling(serverId);
 
-        // Start a new timer to poll every 3 seconds
-        var timer = new System.Threading.Timer(async _ =>
-        {
-            await PollServerLogs(serverId);
-        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+        var cts = new CancellationTokenSource();
+        _logPollCts[serverId] = cts;
+        _ = PollLogsLoopAsync(serverId, cts.Token);
+    }
 
-        _logPollTimers[serverId] = timer;
+    private async Task PollLogsLoopAsync(string serverId, CancellationToken ct)
+    {
+        try
+        {
+            await PollServerLogs(serverId, scrollToBottom: false);
+
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            while (await timer.WaitForNextTickAsync(ct))
+                await PollServerLogs(serverId, scrollToBottom: false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private void StopLogPolling(string serverId)
     {
-        if (_logPollTimers.TryGetValue(serverId, out var timer))
+        if (_logPollCts.TryGetValue(serverId, out var cts))
         {
-            timer?.Dispose();
-            _logPollTimers.Remove(serverId);
+            cts.Cancel();
+            cts.Dispose();
+            _logPollCts.Remove(serverId);
         }
     }
 
-    private async Task PollServerLogs(string serverId)
+    private async Task PollServerLogs(string serverId, bool scrollToBottom = false)
     {
         if (_servers is null)
             return;
@@ -1225,10 +1250,18 @@
             }
 
             state.LogFilePosition = endPosition;
-            state.LastLogPoll = DateTime.Now;
+            state.LastLogPoll = DateTime.UtcNow;
 
-            if (hadNewLogs)
-                await InvokeAsync(StateHasChanged);
+            await InvokeAsync(async () =>
+            {
+                StateHasChanged();
+
+                if (hadNewLogs && scrollToBottom)
+                {
+                    await Task.Delay(50);
+                    await ScrollToBottom(serverId);
+                }
+            });
         }
         catch
         {
@@ -1359,8 +1392,8 @@
 
     public async ValueTask DisposeAsync()
     {
-        // Stop all log polling timers
-        foreach (var serverId in _logPollTimers.Keys.ToList())
+        // Stop all log polling loops
+        foreach (var serverId in _logPollCts.Keys.ToList())
         {
             StopLogPolling(serverId);
         }
