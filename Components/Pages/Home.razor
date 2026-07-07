@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components
 @using System.Text.Json
+@using System.Text.RegularExpressions
 @inject IServerConfigStore ServerStore
 @inject ICommandStore CommandStore
 @inject IRconService Rcon
@@ -701,6 +702,31 @@
     private static bool HasActiveLogFilters(ConsoleState state) =>
         state.LevelFilterActive || state.ThreadFilterActive;
 
+    private static readonly Regex AsyncChatThreadRegex = new(
+        @"^Async\s+Chat\s+Thread(?:\s*-\s*)?\s*#\d+$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static string GetThreadFilterKey(string thread)
+    {
+        if (string.IsNullOrWhiteSpace(thread))
+            return string.Empty;
+
+        return AsyncChatThreadRegex.IsMatch(thread.Trim())
+            ? "Async Chat Thread"
+            : thread.Trim();
+    }
+
+    private static bool ThreadMatchesFilter(string rawThread, ConsoleState state)
+    {
+        if (!state.ThreadFilterActive)
+            return true;
+
+        if (string.IsNullOrEmpty(rawThread))
+            return state.SelectedThreads.Contains(string.Empty);
+
+        return state.SelectedThreads.Contains(GetThreadFilterKey(rawThread));
+    }
+
     private static void EnsureExplicitLevelFilter(ConsoleState state, HashSet<string> availableLevels)
     {
         if (state.LevelFilterActive)
@@ -970,9 +996,7 @@
                                    (string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains("")) ||
                                    (!string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains(log.Level));
                 
-                var threadMatches = !state.ThreadFilterActive ||
-                                    (string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains("")) ||
-                                    (!string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains(log.Thread));
+                var threadMatches = ThreadMatchesFilter(log.Thread, state);
                 
                 if (levelMatches && threadMatches)
                 {
@@ -1032,7 +1056,7 @@
         {
             if (!string.IsNullOrEmpty(log.Thread))
             {
-                threads.Add(log.Thread);
+                threads.Add(GetThreadFilterKey(log.Thread));
             }
         }
         return threads;
@@ -1347,7 +1371,8 @@
                             }
                             if (kvp.Value.SelectedThreads != null)
                             {
-                                consoleState.SelectedThreads = new HashSet<string>(kvp.Value.SelectedThreads);
+                                consoleState.SelectedThreads = new HashSet<string>(
+                                    kvp.Value.SelectedThreads.Select(GetThreadFilterKey));
                                 consoleState.ThreadFilterActive = kvp.Value.ThreadFilterActive ||
                                     kvp.Value.SelectedThreads.Count > 0;
                             }
