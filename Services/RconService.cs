@@ -7,6 +7,8 @@ namespace MineDash.Services;
 
 public class RconService : IRconService
 {
+    private static readonly TimeSpan PingTimeout = TimeSpan.FromSeconds(2);
+
     public async Task<ServerOnlineStatus> PingAsync(
         ServerConfig server,
         CancellationToken ct = default)
@@ -21,7 +23,12 @@ public class RconService : IRconService
         {
             var endpoint = await ResolveEndpointAsync(server, ct);
             using var rcon = new RCON(endpoint, server.RconPassword);
-            await rcon.ConnectAsync();
+
+            var connectTask = rcon.ConnectAsync();
+            if (await Task.WhenAny(connectTask, Task.Delay(PingTimeout, ct)) != connectTask)
+                return ServerOnlineStatus.Offline;
+
+            await connectTask;
             return ServerOnlineStatus.Online;
         }
         catch (Exception ex) when (IsAuthFailure(ex))

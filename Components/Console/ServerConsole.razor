@@ -296,7 +296,8 @@
     private CancellationTokenSource? _pollCts;
     private CancellationTokenSource? _statusCts;
     private long _lastCloseFiltersTick;
-    private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(45);
+    private int _statusCheckRunning;
+    private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(1);
     private string OutputElementId => $"console-output-{State.ServerId}";
 
     protected override async Task OnInitializedAsync()
@@ -394,11 +395,11 @@
     {
         try
         {
-            await CheckServerStatusAsync(force: true);
+            await CheckServerStatusAsync(initial: true);
 
             using var timer = new PeriodicTimer(StatusCheckInterval);
             while (await timer.WaitForNextTickAsync(ct))
-                await CheckServerStatusAsync(force: true);
+                await CheckServerStatusAsync(initial: false);
         }
         catch (OperationCanceledException)
         {
@@ -585,6 +586,8 @@
 
         if (State.ShowLogs)
             _ = RefreshLogsAfterCommandAsync();
+
+        _ = CheckServerStatusAsync(initial: false);
     }
 
     private async Task RecordCommandAsync(CommandHistoryItem item)
@@ -605,25 +608,43 @@
         }
     }
 
-    private async Task CheckServerStatusAsync(bool force = false)
+    private async Task CheckServerStatusAsync(bool initial)
     {
-        if (!force && DateTime.UtcNow - State.LastStatusCheckUtc < StatusCheckInterval)
+        if (Interlocked.CompareExchange(ref _statusCheckRunning, 1, 0) != 0)
             return;
-
-        State.OnlineStatus = ServerOnlineStatus.Checking;
-        await InvokeAsync(StateHasChanged);
 
         try
         {
-            State.OnlineStatus = await Rcon.PingAsync(Server);
-        }
-        catch
-        {
-            State.OnlineStatus = ServerOnlineStatus.Offline;
-        }
+            var previous = State.OnlineStatus;
 
-        State.LastStatusCheckUtc = DateTime.UtcNow;
-        await InvokeAsync(StateHasChanged);
+            if (initial && previous == ServerOnlineStatus.Unknown)
+            {
+                State.OnlineStatus = ServerOnlineStatus.Checking;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            ServerOnlineStatus next;
+            try
+            {
+                next = await Rcon.PingAsync(Server);
+            }
+            catch
+            {
+                next = ServerOnlineStatus.Offline;
+            }
+
+            State.LastStatusCheckUtc = DateTime.UtcNow;
+
+            if (next != previous || previous == ServerOnlineStatus.Checking)
+            {
+                State.OnlineStatus = next;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _statusCheckRunning, 0);
+        }
     }
 
     private static ServerOnlineStatus ClassifyCommandFailure(Exception ex)
