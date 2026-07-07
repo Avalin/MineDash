@@ -260,9 +260,12 @@
                                                     <span class="command-user">(@entry.ExecutedBy)</span>
                                                 }
                                             </div>
-                                            <div class="console-response">
-                                                @entry.Response
-                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(entry.Response))
+                                            {
+                                                <div class="console-response">
+                                                    @entry.Response
+                                                </div>
+                                            }
                                         </div>
                                     }
                                 }
@@ -692,23 +695,8 @@
         });
     }
 
-    private static string FormatCommandResponse(string command, string response)
-    {
-        if (!string.IsNullOrWhiteSpace(response))
-            return response;
-
-        var name = command.Trim();
-        if (name.StartsWith('/'))
-            name = name[1..];
-
-        if (name.StartsWith("say ", StringComparison.OrdinalIgnoreCase) ||
-            name.Equals("say", StringComparison.OrdinalIgnoreCase))
-        {
-            return "(broadcast — look for it in the log stream below)";
-        }
-
-        return response;
-    }
+    private static string FormatCommandResponse(string command, string response) =>
+        response?.Trim() ?? string.Empty;
 
     private static bool HasActiveLogFilters(ConsoleState state) =>
         state.SelectedLogLevels.Count > 0 || state.SelectedThreads.Count > 0;
