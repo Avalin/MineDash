@@ -1,7 +1,8 @@
 #Requires -Version 5.1
 param(
     [string]$Image = "maoraw/minedash:latest",
-    [switch]$Push
+    [switch]$Push,
+    [switch]$NoCache
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,11 +26,38 @@ function Test-DockerRunning {
     }
 }
 
+function Invoke-DockerBuild {
+    param([string[]]$BuildArgs)
+
+    $output = & docker @BuildArgs 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($output) {
+        Write-Host ($output | Out-String)
+    }
+    return @{
+        ExitCode = $exitCode
+        Output = ($output | Out-String)
+    }
+}
+
 Test-DockerRunning
 
+$buildArgs = @("build", "-t", $Image, ".")
+if ($NoCache) {
+    $buildArgs = @("build", "--no-cache", "-t", $Image, ".")
+}
+
 Write-Host "Building $Image ..." -ForegroundColor Cyan
-docker build -t $Image .
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$result = Invoke-DockerBuild -BuildArgs $buildArgs
+
+if ($result.ExitCode -ne 0 -and $result.Output -match 'parent snapshot.*does not exist') {
+    Write-Host "Docker build cache looks corrupted. Pruning builder cache and retrying..." -ForegroundColor Yellow
+    docker builder prune -f | Out-Null
+    $buildArgs = @("build", "--no-cache", "-t", $Image, ".")
+    $result = Invoke-DockerBuild -BuildArgs $buildArgs
+}
+
+if ($result.ExitCode -ne 0) { exit $result.ExitCode }
 
 if ($Push) {
     Write-Host "Pushing $Image ..." -ForegroundColor Cyan
