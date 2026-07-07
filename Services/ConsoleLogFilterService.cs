@@ -20,14 +20,6 @@ public interface IConsoleLogFilterService
 
 public sealed class ConsoleLogFilterService : IConsoleLogFilterService
 {
-    private static readonly Regex AsyncChatThreadRegex = new(
-        @"^Async\s+Chat\s+Thread(?:\s*-\s*)?\s*#\d+$",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-    private static readonly Regex RconThreadRegex = new(
-        @"^RCON\b",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
     // RCON client lines parse as e.g. "172.21.0.2 #12/INFO" — treat as INFO.
     private static readonly Regex RconIpLevelRegex = new(
         @"^(?:\d{1,3}\.){3}\d{1,3}\s+#\d+/(?:INFO|WARN|ERROR|DEBUG|TRACE)$",
@@ -125,20 +117,8 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         return RconIpLevelRegex.IsMatch(trimmed) ? "INFO" : trimmed;
     }
 
-    public string GetThreadFilterKey(string thread)
-    {
-        if (string.IsNullOrWhiteSpace(thread))
-            return string.Empty;
-
-        var trimmed = thread.Trim();
-        if (AsyncChatThreadRegex.IsMatch(trimmed))
-            return "Async Chat Thread";
-
-        if (RconThreadRegex.IsMatch(trimmed))
-            return "RCON";
-
-        return trimmed;
-    }
+    public string GetThreadFilterKey(string thread) =>
+        ConsoleThreadNormalizer.Normalize(thread);
 
     public HashSet<string> NormalizeLevelSelections(IEnumerable<string> selections) =>
         new(selections.Select(GetLevelFilterKey));
@@ -166,11 +146,8 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         state.SelectedThreads.Clear();
         foreach (var thread in availableThreads)
         {
-            if (!IsDefaultOffThread(thread))
+            if (!ConsoleThreadNormalizer.IsDefaultOff(thread))
                 state.SelectedThreads.Add(thread);
         }
     }
-
-    private static bool IsDefaultOffThread(string threadKey) =>
-        threadKey.Equals("RCON", StringComparison.OrdinalIgnoreCase);
 }
