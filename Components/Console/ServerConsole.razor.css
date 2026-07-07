@@ -1,0 +1,627 @@
+
+.console-card {
+    background-color: #111;
+    border-radius: 6px;
+    border: 1px solid #444;
+    padding: 0.5rem 0.5rem 0.6rem 0.5rem;
+
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+}
+
+@media (max-width: 768px) {
+    .console-card {
+        min-height: 350px;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+}
+
+.console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+@media (max-width: 768px) {
+    .console-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #333;
+        flex-wrap: wrap;
+        position: relative;
+    }
+    
+    /* Server name/port container - left side, takes available space */
+    .console-header > div:first-child {
+        flex: 1;
+        min-width: 0;
+        padding-right: 50px; /* Space for close button */
+        position: relative;
+    }
+    
+    .console-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .console-endpoint {
+        font-size: 0.8rem;
+        color: #999;
+    }
+    
+    /* Buttons container - full width below */
+    .console-header-buttons {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0;
+        position: relative;
+    }
+    
+    /* Close button - extract from buttons container and position next to server name */
+    .console-header-buttons .console-close-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: auto;
+        min-width: 44px;
+        height: 44px;
+        margin: 0;
+        z-index: 10;
+        /* Move up by button height + gap to align with server name row */
+        transform: translateY(calc(-44px - 0.75rem));
+    }
+    
+    /* Make header relative for absolute positioning */
+    .console-header {
+        position: relative;
+    }
+    
+    /* Filter buttons - full width */
+    .console-header-buttons .filter-dropdown {
+        width: 100%;
+    }
+    
+    .console-header-buttons .filter-dropdown-btn {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    /* Logs and Commands toggle buttons - ALWAYS in one row, never stacked on mobile */
+    .toggle-buttons-row {
+        width: 100%;
+    }
+    
+    .toggle-buttons-row .console-toggle-btn {
+        flex: 1 1 auto;
+    }
+}
+
+.console-header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: relative;
+    flex-direction: row;
+}
+
+/* Desktop: toggle buttons row should be inline, not stretched */
+.toggle-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.toggle-buttons-row .console-toggle-btn {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+@media (max-width: 768px) {
+    .console-header-buttons {
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+    
+    /* Mobile: toggle buttons row takes full width and buttons stretch */
+    .toggle-buttons-row {
+        width: 100%;
+    }
+    
+    .toggle-buttons-row .console-toggle-btn {
+        flex: 1 1 auto;
+    }
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.filter-dropdown-btn {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 80px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-dropdown-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: #888;
+    color: #ddd;
+}
+
+.filter-dropdown-btn.has-filter {
+    background-color: rgba(78, 163, 255, 0.2);
+    border-color: #4ea3ff;
+    color: #4ea3ff;
+}
+
+.filter-dropdown-btn.has-filter:hover {
+    background-color: rgba(78, 163, 255, 0.3);
+    border-color: #5fb0ff;
+}
+
+.filter-badge {
+    background-color: #4ea3ff;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    background-color: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    max-width: 300px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 0.25rem;
+}
+
+.filter-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.85rem;
+    color: #ccc;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+}
+
+.filter-dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.filter-dropdown-item input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.filter-dropdown-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.console-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.console-endpoint {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.console-toggle-btn {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+    .console-toggle-btn,
+    .console-close-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .filter-dropdown-btn {
+        min-width: auto;
+        padding: 0.5rem 0.75rem;
+        min-height: 44px;
+    }
+}
+
+.console-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: #888;
+    color: #ddd;
+    transform: scale(1.05);
+}
+
+.console-toggle-btn.active {
+    background-color: #4ea3ff;
+    border-color: #4ea3ff;
+    color: #fff;
+}
+
+.console-toggle-btn.active:hover {
+    background-color: #5fb0ff;
+    border-color: #5fb0ff;
+}
+
+.console-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.console-close-btn {
+    border: 1px solid #666;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ddd;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    transition: all 0.2s ease;
+}
+
+.console-close-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.console-close-btn:active {
+    transform: scale(0.95);
+}
+
+/* console content */
+
+.console-output {
+    background-color: #050505;
+    border-radius: 4px;
+    padding: 0.5rem;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .console-output {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+        /* Better word wrapping on mobile */
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.5;
+        min-height: 150px;
+        max-height: 300px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .console-log-entry,
+    .console-response {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        margin-bottom: 0.5rem;
+    }
+    
+    .console-log-time {
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .console-command {
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .console-prefix {
+        margin-right: 0.5rem;
+    }
+}
+
+.console-empty {
+    color: #777;
+    font-size: 0.85rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .console-empty {
+        font-size: 0.9rem;
+        padding: 2rem 1rem;
+        line-height: 1.6;
+    }
+    
+    .console-empty code {
+        display: block;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        word-break: break-all;
+    }
+    
+    .console-empty small {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #999;
+    }
+}
+
+.console-entry {
+    margin-bottom: 0.35rem;
+}
+
+.console-command {
+    color: #9cdcfe;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.command-user {
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-left: 0.5rem;
+    font-style: italic;
+}
+
+.console-prefix {
+    color: #569cd6;
+    margin-right: 0.25rem;
+}
+
+.console-hint {
+    color: #c9a227;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #333;
+}
+
+.console-hint code {
+    color: #9cdcfe;
+    font-size: 0.75rem;
+}
+
+.console-response {
+    color: #d4d4d4;
+    white-space: pre-wrap;
+    margin-left: 1rem;
+}
+
+.console-log-entry {
+    color: #d4d4d4;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.console-log-time {
+    color: #888;
+    margin-right: 0.5rem;
+    font-family: Consolas, monospace;
+}
+
+.console-log-message {
+    color: #d4d4d4;
+}
+
+/* input row */
+
+.command-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.command-select-wrap {
+    display: inline-grid;
+    flex: 0 0 auto;
+    vertical-align: top;
+}
+
+.command-select-wrap::after {
+    content: attr(data-value);
+    visibility: hidden;
+    white-space: pre;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    grid-area: 1 / 1;
+    pointer-events: none;
+}
+
+.command-select {
+    grid-area: 1 / 1;
+    width: 100%;
+    min-width: 0;
+    background-color: #2a2a2a;
+    border-color: #555;
+    color: #eee;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.command-select:focus {
+    background-color: #2a2a2a;
+    border-color: #4ea3ff;
+    color: #eee;
+    box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
+}
+
+.command-input {
+    flex: 1;
+    min-width: 0;
+    background-color: #2a2a2a;
+    border-color: #555;
+    color: #eee;
+    font-family: Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.command-input:focus {
+    background-color: #2a2a2a;
+    border-color: #4ea3ff;
+    color: #eee;
+    box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
+}
+
+.command-input:disabled {
+    background-color: #1a1a1a;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.command-send-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .command-input-row {
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        flex-direction: column;
+    }
+
+    .command-select-wrap {
+        width: 100%;
+    }
+
+    .command-select-wrap::after {
+        display: none;
+    }
+
+    .command-select {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 16px; /* Prevent iOS zoom */
+        min-height: 44px;
+        border-radius: 6px;
+    }
+    
+    .command-input {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 16px; /* Prevent iOS zoom */
+        min-height: 44px;
+        border-radius: 6px;
+    }
+    
+    .command-send-btn {
+        width: 100%;
+        padding: 0.6rem;
+        min-height: 44px;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+}
+/* Mobile-specific: filter dropdown adjustments */
+@media (max-width: 768px) {
+    .filter-dropdown {
+        width: 100%;
+    }
+    
+    .filter-dropdown-menu {
+        min-width: 100%;
+        max-width: 100%;
+        right: 0;
+        left: 0;
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        max-height: 50vh;
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.7);
+    }
+    
+    .filter-dropdown-btn {
+        width: 100%;
+        min-width: auto;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        justify-content: space-between;
+    }
+    
+    .filter-dropdown-item {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .manage-link {
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+    }
+}
