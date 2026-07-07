@@ -25,7 +25,7 @@ builder.Services.AddHttpContextAccessor();
 
 // our custom services
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
-builder.Services.AddSingleton<ICommandStore, JsonCommandStore>();
+builder.Services.AddScoped<ICommandStore, JsonCommandStore>();
 builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
 builder.Services.AddSingleton<IAppSettingsStore, JsonAppSettingsStore>();
 builder.Services.AddScoped<IRconService, RconService>();
@@ -33,8 +33,10 @@ builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton<ITimeDisplayService, TimeDisplayService>();
 builder.Services.AddSingleton<IConsoleActivityStore, JsonConsoleActivityStore>();
 builder.Services.AddSingleton<IConsoleLogFilterService, ConsoleLogFilterService>();
+builder.Services.AddSingleton<IConsoleLogRetentionService, ConsoleLogRetentionService>();
 builder.Services.AddSingleton<IConsoleTimelineService, ConsoleTimelineService>();
 builder.Services.AddSingleton<IConsoleLogSessionService, ConsoleLogSessionService>();
+builder.Services.AddSingleton<ILogPlayerHighlighter, LogPlayerHighlighter>();
 builder.Services.AddScoped<IConsoleSessionPersistence, BrowserConsoleSessionPersistence>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();
 builder.Services.AddScoped<IAuthService, AuthService>();

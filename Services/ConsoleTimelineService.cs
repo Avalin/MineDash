@@ -12,11 +12,16 @@ public interface IConsoleTimelineService
 public sealed class ConsoleTimelineService : IConsoleTimelineService
 {
     private readonly IConsoleLogFilterService _filters;
+    private readonly IConsoleLogRetentionService _retention;
     private readonly ITimeDisplayService _timeDisplay;
 
-    public ConsoleTimelineService(IConsoleLogFilterService filters, ITimeDisplayService timeDisplay)
+    public ConsoleTimelineService(
+        IConsoleLogFilterService filters,
+        IConsoleLogRetentionService retention,
+        ITimeDisplayService timeDisplay)
     {
         _filters = filters;
+        _retention = retention;
         _timeDisplay = timeDisplay;
     }
 
@@ -30,6 +35,9 @@ public sealed class ConsoleTimelineService : IConsoleTimelineService
         {
             foreach (var log in state.LiveLogs)
             {
+                if (!_retention.IsWithinWindow(state, log.Timestamp))
+                    continue;
+
                 if (!_filters.LevelMatches(log.Level, state) || !_filters.ThreadMatches(log.Thread, state))
                     continue;
 
@@ -38,7 +46,9 @@ public sealed class ConsoleTimelineService : IConsoleTimelineService
                     Timestamp = log.Timestamp,
                     Sequence = log.Sequence,
                     IsLog = true,
-                    LogLine = string.IsNullOrWhiteSpace(log.Message) ? log.RawLine : log.Message
+                    LogLine = string.IsNullOrWhiteSpace(log.Message) ? log.RawLine : log.Message,
+                    ThreadKey = _filters.GetThreadFilterKey(log.Thread ?? string.Empty),
+                    LevelKey = _filters.GetLevelFilterKey(log.Level ?? string.Empty)
                 });
             }
         }
@@ -48,6 +58,9 @@ public sealed class ConsoleTimelineService : IConsoleTimelineService
             var commandIndex = 0;
             foreach (var cmd in commandHistory)
             {
+                if (!_retention.IsWithinWindow(state, cmd.Timestamp))
+                    continue;
+
                 entries.Add(new ConsoleMergedEntry
                 {
                     Timestamp = cmd.Timestamp,

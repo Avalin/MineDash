@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MineDash.Models;
 
 namespace MineDash.Services;
@@ -6,10 +5,15 @@ namespace MineDash.Services;
 public interface IConsoleLogFilterService
 {
     bool HasActiveFilters(ConsoleState state);
+    bool IsLevelFilterRestricting(ConsoleState state);
+    bool IsThreadFilterRestricting(ConsoleState state);
+    int GetLevelBadgeCount(ConsoleState state);
+    int GetThreadBadgeCount(ConsoleState state);
     bool LevelMatches(string? level, ConsoleState state);
     bool ThreadMatches(string? thread, ConsoleState state);
     HashSet<string> GetAvailableLevels(ConsoleState state);
     HashSet<string> GetAvailableThreads(ConsoleState state);
+    void SyncFilterSelections(ConsoleState state);
     void ToggleLevel(ConsoleState state, string level, bool isChecked);
     void ToggleThread(ConsoleState state, string thread, bool isChecked);
     string GetLevelFilterKey(string level);
@@ -20,13 +24,74 @@ public interface IConsoleLogFilterService
 
 public sealed class ConsoleLogFilterService : IConsoleLogFilterService
 {
-    // RCON client lines parse as e.g. "172.21.0.2 #12/INFO" — treat as INFO.
-    private static readonly Regex RconIpLevelRegex = new(
-        @"^(?:\d{1,3}\.){3}\d{1,3}\s+#\d+/(?:INFO|WARN|ERROR|DEBUG|TRACE)$",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly string[] KnownLevels = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
 
     public bool HasActiveFilters(ConsoleState state) =>
         state.LevelFilterActive || state.ThreadFilterActive;
+
+    public bool IsLevelFilterRestricting(ConsoleState state)
+    {
+        if (!state.LevelFilterActive)
+            return false;
+
+        var available = GetAvailableLevels(state);
+        return state.SelectedLogLevels.Count < available.Count;
+    }
+
+    public bool IsThreadFilterRestricting(ConsoleState state)
+    {
+        if (!state.ThreadFilterActive)
+            return false;
+
+        var available = GetAvailableThreads(state);
+        return state.SelectedThreads.Count < available.Count;
+    }
+
+    public int GetLevelBadgeCount(ConsoleState state)
+    {
+        var available = GetAvailableLevels(state);
+        if (!state.LevelFilterActive)
+            return available.Count;
+
+        return state.SelectedLogLevels.Count;
+    }
+
+    public int GetThreadBadgeCount(ConsoleState state)
+    {
+        var available = GetAvailableThreads(state);
+        if (!state.ThreadFilterActive)
+            return available.Count;
+
+        return state.SelectedThreads.Count;
+    }
+
+    public void SyncFilterSelections(ConsoleState state)
+    {
+        var availableLevels = GetAvailableLevels(state);
+        var availableThreads = GetAvailableThreads(state);
+
+        if (state.LevelFilterActive)
+        {
+            state.SelectedLogLevels.IntersectWith(availableLevels);
+
+            if (availableLevels.Count > 0 && state.SelectedLogLevels.Count == availableLevels.Count)
+            {
+                state.LevelFilterActive = false;
+                state.SelectedLogLevels.Clear();
+            }
+        }
+
+        if (state.ThreadFilterActive)
+        {
+            state.SelectedThreads.IntersectWith(availableThreads);
+
+            if (availableThreads.Count > 0 && state.SelectedThreads.Count == availableThreads.Count)
+            {
+                state.ThreadFilterActive = false;
+                state.SelectedThreads.Clear();
+            }
+        }
+    }
 
     public bool LevelMatches(string? level, ConsoleState state)
     {
@@ -84,7 +149,7 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         else
             state.SelectedLogLevels.Remove(level);
 
-        if (state.SelectedLogLevels.Count == availableLevels.Count)
+        if (availableLevels.Count > 0 && state.SelectedLogLevels.Count == availableLevels.Count)
         {
             state.LevelFilterActive = false;
             state.SelectedLogLevels.Clear();
@@ -101,7 +166,7 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         else
             state.SelectedThreads.Remove(thread);
 
-        if (state.SelectedThreads.Count == availableThreads.Count)
+        if (availableThreads.Count > 0 && state.SelectedThreads.Count == availableThreads.Count)
         {
             state.ThreadFilterActive = false;
             state.SelectedThreads.Clear();
@@ -114,7 +179,48 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
             return string.Empty;
 
         var trimmed = level.Trim();
-        return RconIpLevelRegex.IsMatch(trimmed) ? "INFO" : trimmed;
+
+        var exact = TryNormalizeKnownLevel(trimmed);
+        if (exact is not null)
+            return exact;
+
+        // RCON lines: "172.21.0.2 #12/INFO", "0:0:0:0:0:0:0:1 #5/INFO", etc.
+        var slash = trimmed.LastIndexOf('/');
+        if (slash >= 0)
+        {
+            var suffix = TryNormalizeKnownLevel(trimmed[(slash + 1)..]);
+            if (suffix is not null)
+                return suffix;
+        }
+
+        foreach (var known in KnownLevels.OrderByDescending(l => l.Length))
+        {
+            if (trimmed.Contains($"/{known}", StringComparison.OrdinalIgnoreCase))
+                return known;
+        }
+
+        foreach (var known in KnownLevels.OrderByDescending(l => l.Length))
+        {
+            if (trimmed.Contains(known, StringComparison.OrdinalIgnoreCase))
+                return known;
+        }
+
+        return trimmed;
+    }
+
+    private static string? TryNormalizeKnownLevel(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var trimmed = value.Trim();
+        foreach (var known in KnownLevels)
+        {
+            if (trimmed.Equals(known, StringComparison.OrdinalIgnoreCase))
+                return known;
+        }
+
+        return null;
     }
 
     public string GetThreadFilterKey(string thread) =>
@@ -145,9 +251,6 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         state.ThreadFilterActive = true;
         state.SelectedThreads.Clear();
         foreach (var thread in availableThreads)
-        {
-            if (!ConsoleThreadNormalizer.IsDefaultOff(thread))
-                state.SelectedThreads.Add(thread);
-        }
+            state.SelectedThreads.Add(thread);
     }
 }

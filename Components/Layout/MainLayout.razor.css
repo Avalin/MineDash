@@ -44,6 +44,7 @@ main {
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
+    min-width: 0;
 }
 
 @media (max-width: 768px) {
@@ -141,6 +142,9 @@ main {
     article {
         position: relative;
         z-index: 1;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 

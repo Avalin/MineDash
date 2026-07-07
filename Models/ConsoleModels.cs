@@ -2,6 +2,15 @@ namespace MineDash.Models;
 
 using MineDash.Services;
 
+public enum ServerOnlineStatus
+{
+    Unknown,
+    Checking,
+    Online,
+    Offline,
+    AuthError,
+}
+
 public sealed class ConsoleState
 {
     public ConsoleState(string serverId)
@@ -10,7 +19,8 @@ public sealed class ConsoleState
         ShowLogs = true;
         ShowCommands = true;
         SelectedLogLevels = new HashSet<string>();
-        SelectedThreads = new HashSet<string>();
+        SelectedThreads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ThreadFilterActive = false;
     }
 
     public string ServerId { get; }
@@ -28,6 +38,10 @@ public sealed class ConsoleState
     public bool LevelFilterActive { get; set; }
     public bool ThreadFilterActive { get; set; }
     public string? OpenFilterDropdown { get; set; }
+    public int LogHistoryMinutes { get; set; } = LogHistoryPresets.DefaultMinutes;
+    public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;
+    public ServerOnlineStatus OnlineStatus { get; set; } = ServerOnlineStatus.Unknown;
+    public DateTime LastStatusCheckUtc { get; set; } = DateTime.MinValue;
 }
 
 public sealed class ConsoleMergedEntry
@@ -36,6 +50,8 @@ public sealed class ConsoleMergedEntry
     public int Sequence { get; set; }
     public bool IsLog { get; set; }
     public string? LogLine { get; set; }
+    public string? ThreadKey { get; set; }
+    public string? LevelKey { get; set; }
     public string? Command { get; set; }
     public string? Response { get; set; }
     public string? ExecutedBy { get; set; }
@@ -56,4 +72,7 @@ public sealed class ConsoleToggleState
     public bool ThreadFilterActive { get; set; }
     public List<string>? SelectedLogLevels { get; set; }
     public List<string>? SelectedThreads { get; set; }
+    public int? LogHistoryMinutes { get; set; }
+    public int? LogHistoryHours { get; set; }
+    public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;
 }

@@ -103,7 +103,7 @@
         }
         else
         {
-            <div class="console-grid" style="grid-template-columns:@GridTemplateColumns">
+            <div class="console-grid" style="@GridColumnStyle">
                 @foreach (var serverId in _openConsoleIds)
                 {
                     var server = _servers!.FirstOrDefault(s => s.Id == serverId);
@@ -112,13 +112,15 @@
                         continue;
                     }
 
-                    <ServerConsole Server="server"
-                                   State="GetConsoleState(serverId)"
-                                   Commands="@GetCommands()"
-                                   DefaultSayCommandId="@_defaultSayCommandId"
-                                   CloseFiltersTick="@_closeFiltersTick"
-                                   OnClose="@(() => CloseConsole(serverId))"
-                                   OnPersistRequested="SavePersistedState" />
+                    <div class="console-grid-item">
+                        <ServerConsole Server="server"
+                                       State="GetConsoleState(serverId)"
+                                       Commands="@GetCommands()"
+                                       DefaultSayCommandId="@_defaultSayCommandId"
+                                       CloseFiltersTick="@_closeFiltersTick"
+                                       OnClose="@(() => CloseConsole(serverId))"
+                                       OnPersistRequested="SavePersistedState" />
+                    </div>
                 }
             </div>
         }
@@ -136,23 +138,21 @@
         }
         else
         {
-            <ul class="help-list">
+            <div class="help-list">
                 @foreach (var cmd in MinecraftCommandSyntax.OrderForDisplay(_commands))
                 {
-                    <li>
-                        <button type="button"
-                                class="help-command-btn @(IsCommandSelectedInConsoles(cmd) ? "selected" : "")"
-                                title="Use this command"
-                                @onclick="@(() => SelectCommand(cmd))">
-                            <code>@cmd.Syntax</code>
-                            @if (!string.IsNullOrWhiteSpace(cmd.Description))
-                            {
-                                <span class="help-command-desc"> – @cmd.Description</span>
-                            }
-                        </button>
-                    </li>
+                    <button type="button"
+                            class="help-command-btn @(IsCommandSelectedInConsoles(cmd) ? "selected" : "")"
+                            title="Use this command"
+                            @onclick="@(() => SelectCommand(cmd))">
+                        <span class="help-command-syntax">@cmd.Syntax</span>
+                        @if (!string.IsNullOrWhiteSpace(cmd.Description))
+                        {
+                            <span class="help-command-desc">@cmd.Description</span>
+                        }
+                    </button>
                 }
-            </ul>
+            </div>
         }
     </div>
 </div>
@@ -167,13 +167,20 @@
     private int _layoutColumns = 1;
     private long _closeFiltersTick;
 
-    private string GridTemplateColumns => _layoutColumns switch
+    private string GridColumnStyle =>
+        $"grid-template-columns: repeat({EffectiveColumnCount}, minmax(0, 1fr));";
+
+    private int EffectiveColumnCount
     {
-        1 => "1fr",
-        2 => "1fr 1fr",
-        3 => "1fr 1fr 1fr",
-        _ => "1fr"
-    };
+        get
+        {
+            var count = _openConsoleIds.Count;
+            if (count == 0)
+                return 1;
+
+            return _layoutColumns == 1 ? 1 : Math.Min(_layoutColumns, count);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -336,18 +343,18 @@
             state.ThreadFilterActive = toggle.ThreadFilterActive;
 
             if (toggle.SelectedLogLevels is not null)
-            {
                 state.SelectedLogLevels = LogFilters.NormalizeLevelSelections(toggle.SelectedLogLevels);
-                if (toggle.SelectedLogLevels.Count > 0)
-                    state.LevelFilterActive = true;
-            }
 
             if (toggle.SelectedThreads is not null)
-            {
                 state.SelectedThreads = LogFilters.NormalizeThreadSelections(toggle.SelectedThreads);
-                if (toggle.SelectedThreads.Count > 0)
-                    state.ThreadFilterActive = true;
-            }
+
+            if (toggle.LogHistoryMinutes.HasValue)
+                state.LogHistoryMinutes = toggle.LogHistoryMinutes.Value;
+            else if (toggle.LogHistoryHours is > 0)
+                state.LogHistoryMinutes = toggle.LogHistoryHours.Value * 60;
+
+            if (toggle.LogLineLimit >= 0)
+                state.LogLineLimit = toggle.LogLineLimit;
         }
     }
 
@@ -365,7 +372,9 @@
                     LevelFilterActive = state.LevelFilterActive,
                     ThreadFilterActive = state.ThreadFilterActive,
                     SelectedLogLevels = state.SelectedLogLevels.ToList(),
-                    SelectedThreads = state.SelectedThreads.ToList()
+                    SelectedThreads = state.SelectedThreads.ToList(),
+                    LogHistoryMinutes = state.LogHistoryMinutes,
+                    LogLineLimit = state.LogLineLimit
                 };
             });
 

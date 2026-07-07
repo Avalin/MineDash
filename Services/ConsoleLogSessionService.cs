@@ -4,37 +4,45 @@ namespace MineDash.Services;
 
 public interface IConsoleLogSessionService
 {
-    Task LoadRecentLogsAsync(ServerConfig server, ConsoleState state, int tailLines = 500, CancellationToken ct = default);
+    Task LoadRecentLogsAsync(ServerConfig server, ConsoleState state, CancellationToken ct = default);
     Task PollLogsAsync(ServerConfig server, ConsoleState state, CancellationToken ct = default);
 }
 
 public sealed class ConsoleLogSessionService : IConsoleLogSessionService
 {
-    private const int MaxLiveLogEntries = 1000;
-
     private readonly ILogService _logService;
+    private readonly IConsoleLogRetentionService _retention;
+    private readonly IConsoleLogFilterService _filters;
 
-    public ConsoleLogSessionService(ILogService logService)
+    public ConsoleLogSessionService(
+        ILogService logService,
+        IConsoleLogRetentionService retention,
+        IConsoleLogFilterService filters)
     {
         _logService = logService;
+        _retention = retention;
+        _filters = filters;
     }
 
     public async Task LoadRecentLogsAsync(
-        ServerConfig server, ConsoleState state, int tailLines = 500, CancellationToken ct = default)
+        ServerConfig server, ConsoleState state, CancellationToken ct = default)
     {
+        _retention.NormalizeLimits(state);
+
         try
         {
+            var tailLines = _retention.GetInitialTailLines(state);
             var (recentLogs, endPosition) = await _logService.GetRecentLogsAsync(server, tailLines, ct);
 
             state.LiveLogs.Clear();
             state.LiveLogs.AddRange(recentLogs);
+            _retention.ApplyRetention(state);
+            _filters.SyncFilterSelections(state);
 
             if (HasRenderableLogs(state) || endPosition == 0)
                 state.LogFilePosition = endPosition;
             else
                 state.LogFilePosition = 0;
-
-            TrimLiveLogs(state);
         }
         catch (Exception ex)
         {
@@ -53,11 +61,13 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
         if (string.IsNullOrWhiteSpace(server.LogPath?.Trim()))
             return;
 
+        _retention.NormalizeLimits(state);
+
         try
         {
             if (state.ShowLogs && !state.LiveLogs.Any())
             {
-                await LoadRecentLogsAsync(server, state, ct: ct);
+                await LoadRecentLogsAsync(server, state, ct);
                 return;
             }
 
@@ -67,7 +77,7 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
                 var fileLength = new FileInfo(logPath).Length;
                 if (fileLength < state.LogFilePosition)
                 {
-                    await LoadRecentLogsAsync(server, state, ct: ct);
+                    await LoadRecentLogsAsync(server, state, ct);
                     return;
                 }
             }
@@ -78,7 +88,8 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
             if (newLogs.Count > 0)
             {
                 state.LiveLogs.AddRange(newLogs);
-                TrimLiveLogs(state);
+                _retention.ApplyRetention(state);
+                _filters.SyncFilterSelections(state);
             }
 
             state.LogFilePosition = endPosition;
@@ -100,10 +111,4 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
 
     private static bool HasRenderableLogs(ConsoleState state) =>
         state.LiveLogs.Any(l => l.Thread != "MineDash");
-
-    private static void TrimLiveLogs(ConsoleState state)
-    {
-        if (state.LiveLogs.Count > MaxLiveLogEntries)
-            state.LiveLogs.RemoveRange(0, state.LiveLogs.Count - MaxLiveLogEntries);
-    }
 }

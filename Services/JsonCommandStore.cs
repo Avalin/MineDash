@@ -6,19 +6,20 @@ namespace MineDash.Services;
 
 public class JsonCommandStore : ICommandStore
 {
-    private readonly string _filePath;
+    private readonly string _usersDir;
+    private readonly IAuthService _authService;
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public JsonCommandStore(IWebHostEnvironment env)
+    public JsonCommandStore(IWebHostEnvironment env, IAuthService authService)
     {
-        var dir = Path.Combine(env.ContentRootPath, "app_data");
-        Directory.CreateDirectory(dir);
-        _filePath = Path.Combine(dir, "commands.json");
+        _authService = authService;
+        _usersDir = Path.Combine(env.ContentRootPath, "app_data", "users");
+        Directory.CreateDirectory(_usersDir);
     }
 
     public async Task<IReadOnlyList<MinecraftCommand>> GetAllAsync(CancellationToken ct = default)
@@ -26,14 +27,14 @@ public class JsonCommandStore : ICommandStore
         await _lock.WaitAsync(ct);
         try
         {
-            if (!File.Exists(_filePath))
+            var filePath = await GetUserFilePathAsync(ct);
+            if (!File.Exists(filePath))
             {
-                // Initialize with defaults if file doesn't exist
-                await ResetToDefaultsInternalAsync(ct);
-                return await GetAllInternalAsync(ct);
+                await ResetToDefaultsInternalAsync(filePath, ct);
+                return await GetAllInternalAsync(filePath, ct);
             }
 
-            return await GetAllInternalAsync(ct);
+            return await GetAllInternalAsync(filePath, ct);
         }
         finally
         {
@@ -52,7 +53,8 @@ public class JsonCommandStore : ICommandStore
         await _lock.WaitAsync(ct);
         try
         {
-            var commands = (await GetAllInternalAsync(ct)).ToList();
+            var filePath = await GetUserFilePathAsync(ct);
+            var commands = (await GetAllInternalAsync(filePath, ct)).ToList();
 
             var existing = commands.FirstOrDefault(c => c.Id == command.Id);
             if (existing is null)
@@ -67,7 +69,7 @@ public class JsonCommandStore : ICommandStore
                 commands[index] = command;
             }
 
-            await SaveInternalAsync(commands, ct);
+            await SaveInternalAsync(filePath, commands, ct);
         }
         finally
         {
@@ -80,11 +82,12 @@ public class JsonCommandStore : ICommandStore
         await _lock.WaitAsync(ct);
         try
         {
-            var commands = (await GetAllInternalAsync(ct))
+            var filePath = await GetUserFilePathAsync(ct);
+            var commands = (await GetAllInternalAsync(filePath, ct))
                 .Where(c => c.Id != id)
                 .ToList();
 
-            await SaveInternalAsync(commands, ct);
+            await SaveInternalAsync(filePath, commands, ct);
         }
         finally
         {
@@ -97,7 +100,8 @@ public class JsonCommandStore : ICommandStore
         await _lock.WaitAsync(ct);
         try
         {
-            await ResetToDefaultsInternalAsync(ct);
+            var filePath = await GetUserFilePathAsync(ct);
+            await ResetToDefaultsInternalAsync(filePath, ct);
         }
         finally
         {
@@ -105,38 +109,49 @@ public class JsonCommandStore : ICommandStore
         }
     }
 
-    private async Task ResetToDefaultsInternalAsync(CancellationToken ct)
+    private async Task<string> GetUserFilePathAsync(CancellationToken ct)
     {
-        var defaults = new List<MinecraftCommand>
-        {
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/say <message>", Description = "Broadcast a message" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/list", Description = "List players" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/kick <player> [<reason>]", Description = "" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/ban <player> [<reason>]", Description = "" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/time set day|night|noon|midnight", Description = "" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/gamemode survival|creative|adventure|spectator [player]", Description = "" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/tp <target> <destination>", Description = "" },
-            new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/stop", Description = "Stop the server" }
-        };
+        var user = await _authService.GetCurrentUserAsync();
+        if (user is null)
+            throw new InvalidOperationException("Commands are only available for authenticated users.");
 
-        await SaveInternalAsync(defaults, ct);
+        var userDir = Path.Combine(_usersDir, user.Id);
+        Directory.CreateDirectory(userDir);
+        return Path.Combine(userDir, "commands.json");
     }
 
-    private async Task<IReadOnlyList<MinecraftCommand>> GetAllInternalAsync(CancellationToken ct)
+    private static async Task ResetToDefaultsInternalAsync(string filePath, CancellationToken ct)
     {
-        if (!File.Exists(_filePath))
+        await SaveInternalAsync(filePath, CreateDefaultCommands(), ct);
+    }
+
+    private static List<MinecraftCommand> CreateDefaultCommands() =>
+    [
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/say <message>", Description = "Broadcast a message" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/list", Description = "List players" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/kick <player> [<reason>]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/ban <player> [<reason>]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/time set day|night|noon|midnight", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/gamemode survival|creative|adventure|spectator [player]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/tp <target> <destination>", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/stop", Description = "Stop the server" }
+    ];
+
+    private static async Task<IReadOnlyList<MinecraftCommand>> GetAllInternalAsync(string filePath, CancellationToken ct)
+    {
+        if (!File.Exists(filePath))
             return Array.Empty<MinecraftCommand>();
 
-        await using var stream = File.OpenRead(_filePath);
-        var commands = await JsonSerializer.DeserializeAsync<List<MinecraftCommand>>(stream, _jsonOptions, ct)
+        await using var stream = File.OpenRead(filePath);
+        var commands = await JsonSerializer.DeserializeAsync<List<MinecraftCommand>>(stream, JsonOptions, ct)
                       ?? new List<MinecraftCommand>();
         return commands;
     }
 
-    private async Task SaveInternalAsync(IReadOnlyList<MinecraftCommand> commands, CancellationToken ct)
+    private static async Task SaveInternalAsync(string filePath, IReadOnlyList<MinecraftCommand> commands, CancellationToken ct)
     {
-        await using var stream = File.Create(_filePath);
-        await JsonSerializer.SerializeAsync(stream, commands, _jsonOptions, ct);
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        await using var stream = File.Create(filePath);
+        await JsonSerializer.SerializeAsync(stream, commands, JsonOptions, ct);
     }
 }
-

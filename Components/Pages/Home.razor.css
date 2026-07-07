@@ -1,9 +1,12 @@
 ﻿.page-layout {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 1rem;
     padding: 1rem;
-    align-items: start;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* Mobile: stack layout vertically, hide help panel by default */
@@ -71,6 +74,9 @@
     flex-direction: column;
     height: calc(100vh - 100px);
     max-height: calc(100vh - 100px);
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
@@ -102,7 +108,12 @@
     color: #eee;
     height: calc(100vh - 100px);
     max-height: calc(100vh - 100px);
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+    box-sizing: border-box;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* toolbar */
@@ -322,61 +333,55 @@
 .console-grid {
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
     overflow-y: auto;
     padding-top: 0.5rem;
 
     display: grid;
     gap: 0.75rem;
+    align-items: stretch;
+    /* Collapse whitespace text nodes Blazor emits between foreach items */
+    font-size: 0;
+    line-height: 0;
+}
+
+.console-grid ::deep .console-grid-item {
+    min-width: 0;
+    min-height: 0;
+    font-size: 1rem;
+    line-height: normal;
 }
 
 
-/* help ref */
+/* help ref — command buttons also in wwwroot/css/help-panel.css (loaded last) */
 
 .help-list {
-    font-size: 0.85rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.help-list li {
-    margin-bottom: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.4rem;
+    width: 100%;
 }
 
 .help-command-btn {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+
+.help-command-syntax,
+.help-command-desc {
     display: block;
     width: 100%;
-    text-align: left;
-    padding: 0.45rem 0.55rem;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    background: transparent;
-    color: #eee;
-    cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.help-command-btn:hover {
-    background-color: rgba(78, 163, 255, 0.12);
-    border-color: rgba(78, 163, 255, 0.35);
-}
-
-.help-command-btn.selected {
-    background-color: rgba(78, 163, 255, 0.2);
-    border-color: #4ea3ff;
-}
-
-.help-command-btn code {
-    font-size: 0.9rem;
-    color: #f8a8c8;
-}
-
-.help-command-btn.selected code {
-    color: #ffb8d0;
-}
-
-.help-command-desc {
-    color: #bbb;
 }
 
 /* empty-state text */
@@ -412,8 +417,8 @@
     }
     
     /* On mobile, ALWAYS use single column layout - ignore layout selector */
-    .console-grid[style*="grid-template-columns"] {
-        grid-template-columns: 1fr !important;
+    .console-grid[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr) !important;
     }
     
     /* Hide layout selector on mobile completely */

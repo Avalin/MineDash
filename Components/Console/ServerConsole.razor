@@ -9,16 +9,85 @@
 @inject IConsoleLogFilterService LogFilters
 @inject IConsoleTimelineService Timeline
 @inject IConsoleLogSessionService LogSession
+@inject IConsoleLogRetentionService LogRetention
+@inject ILogPlayerHighlighter PlayerHighlighter
 @inject ITimeDisplayService TimeDisplay
 @inject IJSRuntime JSRuntime
 
 <div class="console-card">
     <div class="console-header">
-        <div>
-            <div class="console-title">@Server.Name</div>
-            <div class="console-endpoint">@Server.Host:@Server.RconPort</div>
+        <div class="console-header-title-row">
+            <div class="console-header-title">
+                <div class="console-title">@Server.Name</div>
+                <div class="console-endpoint">@Server.Host:@Server.RconPort</div>
+            </div>
+            <div class="console-header-actions">
+                <span class="server-status-pill @GetStatusPillClass()"
+                      title="@GetStatusTooltip()">
+                    <span class="server-status-dot" aria-hidden="true"></span>
+                    <span class="server-status-label">@GetStatusLabel()</span>
+                </span>
+                <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
+                    <span class="bi bi-x-lg"></span>
+                </button>
+            </div>
         </div>
         <div class="console-header-buttons">
+            @if (State.ShowLogs)
+            {
+                <div class="filter-dropdown">
+                    <button class="filter-dropdown-btn has-filter"
+                            type="button"
+                            @onclick="@(() => ToggleFilterDropdown("time"))"
+                            @onclick:stopPropagation="true">
+                        <span class="bi bi-clock-history"></span>
+                        <span>Time</span>
+                        <span class="filter-badge">@LogRetention.FormatTimeShort(State.LogHistoryMinutes)</span>
+                    </button>
+                    @if (State.OpenFilterDropdown == "time")
+                    {
+                        <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
+                            @foreach (var preset in LogHistoryPresets.Time)
+                            {
+                                <label class="filter-dropdown-item">
+                                    <input type="radio"
+                                           name="@($"log-time-{State.ServerId}")"
+                                           checked="@(State.LogHistoryMinutes == preset.Minutes)"
+                                           @onchange="@(() => OnTimeLimitChanged(preset.Minutes))" />
+                                    <span>@preset.Label</span>
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="filter-dropdown">
+                    <button class="filter-dropdown-btn has-filter"
+                            type="button"
+                            @onclick="@(() => ToggleFilterDropdown("lines"))"
+                            @onclick:stopPropagation="true">
+                        <span class="bi bi-list-ol"></span>
+                        <span>Lines</span>
+                        <span class="filter-badge">@LogRetention.FormatLineShort(State.LogLineLimit)</span>
+                    </button>
+                    @if (State.OpenFilterDropdown == "lines")
+                    {
+                        <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
+                            @foreach (var preset in LogHistoryPresets.Lines)
+                            {
+                                <label class="filter-dropdown-item">
+                                    <input type="radio"
+                                           name="@($"log-lines-{State.ServerId}")"
+                                           checked="@(State.LogLineLimit == preset.Lines)"
+                                           @onchange="@(() => OnLineLimitChanged(preset.Lines))" />
+                                    <span>@preset.Label</span>
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
             @if (State.ShowLogs && State.LiveLogs.Any())
             {
                 var availableLevels = LogFilters.GetAvailableLevels(State);
@@ -27,16 +96,13 @@
                 @if (availableLevels.Any())
                 {
                     <div class="filter-dropdown">
-                        <button class="filter-dropdown-btn @(State.LevelFilterActive ? "has-filter" : "")"
+                        <button class="filter-dropdown-btn @(LogFilters.IsLevelFilterRestricting(State) ? "has-filter" : "")"
                                 type="button"
                                 @onclick="@(() => ToggleFilterDropdown("levels"))"
                                 @onclick:stopPropagation="true">
                             <span class="bi bi-funnel"></span>
                             <span>Levels</span>
-                            @if (State.LevelFilterActive)
-                            {
-                                <span class="filter-badge">@State.SelectedLogLevels.Count</span>
-                            }
+                            <span class="filter-badge">@LogFilters.GetLevelBadgeCount(State)</span>
                         </button>
                         @if (State.OpenFilterDropdown == "levels")
                         {
@@ -59,16 +125,13 @@
                 @if (availableThreads.Any())
                 {
                     <div class="filter-dropdown">
-                        <button class="filter-dropdown-btn @(State.ThreadFilterActive ? "has-filter" : "")"
+                        <button class="filter-dropdown-btn @(LogFilters.IsThreadFilterRestricting(State) ? "has-filter" : "")"
                                 type="button"
                                 @onclick="@(() => ToggleFilterDropdown("threads"))"
                                 @onclick:stopPropagation="true">
                             <span class="bi bi-funnel"></span>
                             <span>Threads</span>
-                            @if (State.ThreadFilterActive)
-                            {
-                                <span class="filter-badge">@State.SelectedThreads.Count</span>
-                            }
+                            <span class="filter-badge">@LogFilters.GetThreadBadgeCount(State)</span>
                         </button>
                         @if (State.OpenFilterDropdown == "threads")
                         {
@@ -103,9 +166,6 @@
                     <span class="bi bi-terminal"></span>
                 </button>
             </div>
-            <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
-                <span class="bi bi-x-lg"></span>
-            </button>
         </div>
     </div>
 
@@ -127,13 +187,16 @@
         }
         @if (mergedEntries.Any())
         {
+            var knownPlayerNames = PlayerHighlighter.CollectPlayerNames(State.LiveLogs);
             @foreach (var entry in mergedEntries)
             {
                 @if (entry.IsLog)
                 {
+                    var messageClass = ConsoleLogAppearance.GetMessageClasses(
+                        entry.LevelKey, entry.ThreadKey, entry.LogLine);
                     <div class="console-log-entry">
                         <span class="console-log-time">[@TimeDisplay.FormatTime(entry.Timestamp)]</span>
-                        <span class="console-log-message">@entry.LogLine</span>
+                        <span class="console-log-message @messageClass">@((MarkupString)PlayerHighlighter.Highlight(entry.LogLine ?? string.Empty, knownPlayerNames))</span>
                     </div>
                 }
                 else
@@ -231,12 +294,15 @@
     [Parameter] public EventCallback OnPersistRequested { get; set; }
 
     private CancellationTokenSource? _pollCts;
+    private CancellationTokenSource? _statusCts;
     private long _lastCloseFiltersTick;
+    private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(45);
     private string OutputElementId => $"console-output-{State.ServerId}";
 
     protected override async Task OnInitializedAsync()
     {
         ConsoleActivity.HistoryChanged += OnHistoryChanged;
+        StartStatusPolling();
         await StartLogWatchingAsync();
     }
 
@@ -262,6 +328,7 @@
     {
         ConsoleActivity.HistoryChanged -= OnHistoryChanged;
         StopLogPolling();
+        StopStatusPolling();
         await Task.CompletedTask;
     }
 
@@ -304,6 +371,38 @@
         _pollCts.Cancel();
         _pollCts.Dispose();
         _pollCts = null;
+    }
+
+    private void StartStatusPolling()
+    {
+        StopStatusPolling();
+        _statusCts = new CancellationTokenSource();
+        _ = StatusPollLoopAsync(_statusCts.Token);
+    }
+
+    private void StopStatusPolling()
+    {
+        if (_statusCts is null)
+            return;
+
+        _statusCts.Cancel();
+        _statusCts.Dispose();
+        _statusCts = null;
+    }
+
+    private async Task StatusPollLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            await CheckServerStatusAsync(force: true);
+
+            using var timer = new PeriodicTimer(StatusCheckInterval);
+            while (await timer.WaitForNextTickAsync(ct))
+                await CheckServerStatusAsync(force: true);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private async Task PollLogsLoopAsync(CancellationToken ct)
@@ -359,6 +458,26 @@
     private async Task ToggleThread(string thread, bool isChecked)
     {
         LogFilters.ToggleThread(State, thread, isChecked);
+        await OnPersistRequested.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnTimeLimitChanged(int minutes)
+    {
+        State.LogHistoryMinutes = minutes;
+        await ReloadLogsForHistoryChangeAsync();
+    }
+
+    private async Task OnLineLimitChanged(int lines)
+    {
+        State.LogLineLimit = lines;
+        await ReloadLogsForHistoryChangeAsync();
+    }
+
+    private async Task ReloadLogsForHistoryChangeAsync()
+    {
+        LogRetention.NormalizeLimits(State);
+        await LogSession.LoadRecentLogsAsync(Server, State);
         await OnPersistRequested.InvokeAsync();
         StateHasChanged();
     }
@@ -436,6 +555,8 @@
         try
         {
             var response = await Rcon.SendCommandAsync(Server, cmdToSend);
+            State.OnlineStatus = ServerOnlineStatus.Online;
+            State.LastStatusCheckUtc = DateTime.UtcNow;
             await RecordCommandAsync(new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
@@ -446,6 +567,8 @@
         }
         catch (Exception ex)
         {
+            State.OnlineStatus = ClassifyCommandFailure(ex);
+            State.LastStatusCheckUtc = DateTime.UtcNow;
             await RecordCommandAsync(new CommandHistoryItem
             {
                 Timestamp = DateTime.UtcNow,
@@ -481,4 +604,70 @@
         {
         }
     }
+
+    private async Task CheckServerStatusAsync(bool force = false)
+    {
+        if (!force && DateTime.UtcNow - State.LastStatusCheckUtc < StatusCheckInterval)
+            return;
+
+        State.OnlineStatus = ServerOnlineStatus.Checking;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            State.OnlineStatus = await Rcon.PingAsync(Server);
+        }
+        catch
+        {
+            State.OnlineStatus = ServerOnlineStatus.Offline;
+        }
+
+        State.LastStatusCheckUtc = DateTime.UtcNow;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static ServerOnlineStatus ClassifyCommandFailure(Exception ex)
+    {
+        var message = ex.Message;
+        if (message.Contains("authentication", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("password", StringComparison.OrdinalIgnoreCase))
+        {
+            return ServerOnlineStatus.AuthError;
+        }
+
+        if (message.Contains("Failed to connect", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Could not resolve hostname", StringComparison.OrdinalIgnoreCase))
+        {
+            return ServerOnlineStatus.Offline;
+        }
+
+        return ServerOnlineStatus.Offline;
+    }
+
+    private string GetStatusPillClass() => State.OnlineStatus switch
+    {
+        ServerOnlineStatus.Online => "status-online",
+        ServerOnlineStatus.Offline => "status-offline",
+        ServerOnlineStatus.AuthError => "status-auth-error",
+        ServerOnlineStatus.Checking => "status-checking",
+        _ => "status-unknown",
+    };
+
+    private string GetStatusLabel() => State.OnlineStatus switch
+    {
+        ServerOnlineStatus.Online => "Online",
+        ServerOnlineStatus.Offline => "Offline",
+        ServerOnlineStatus.AuthError => "Auth",
+        ServerOnlineStatus.Checking => "…",
+        _ => "—",
+    };
+
+    private string GetStatusTooltip() => State.OnlineStatus switch
+    {
+        ServerOnlineStatus.Online => "RCON connected",
+        ServerOnlineStatus.Offline => "RCON unreachable — server may be down or host/port wrong",
+        ServerOnlineStatus.AuthError => "RCON reachable but authentication failed — check password",
+        ServerOnlineStatus.Checking => "Checking RCON connection…",
+        _ => "Server status unknown",
+    };
 }

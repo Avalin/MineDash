@@ -1,4 +1,18 @@
-﻿/* single console card */
+﻿/* Console grid layout (global — avoids scoped CSS / whitespace grid-item bugs) */
+
+.console-grid-item {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.console-grid-item > .console-card {
+    flex: 1;
+    min-height: 0;
+}
+
+/* single console card */
 
 .console-card {
     background-color: #111;
@@ -9,6 +23,8 @@
     display: flex;
     flex-direction: column;
     min-height: 240px;
+    min-width: 0;
+    width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -19,94 +35,70 @@
         margin-bottom: 0.75rem;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
         flex-shrink: 0;
     }
 }
 
 .console-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.5rem;
     margin-bottom: 0.35rem;
+    position: relative;
+    z-index: 20;
+    overflow: visible;
+}
+
+.console-header-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.console-header-title {
+    min-width: 0;
+    flex: 1;
 }
 
 @media (max-width: 768px) {
     .console-header {
-        flex-direction: row;
-        align-items: flex-start;
-        justify-content: space-between;
         gap: 0.75rem;
         margin-bottom: 0.75rem;
         padding-bottom: 0.75rem;
         border-bottom: 1px solid #333;
-        flex-wrap: wrap;
-        position: relative;
     }
-    
-    /* Server name/port container - left side, takes available space */
-    .console-header > div:first-child {
-        flex: 1;
-        min-width: 0;
-        padding-right: 50px; /* Space for close button */
-        position: relative;
-    }
-    
+
     .console-title {
         font-size: 1rem;
         font-weight: 600;
         margin-bottom: 0.25rem;
     }
-    
+
     .console-endpoint {
         font-size: 0.8rem;
         color: #999;
     }
-    
-    /* Buttons container - full width below */
+
     .console-header-buttons {
         width: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 0;
-        position: relative;
+        flex-wrap: wrap;
     }
-    
-    /* Close button - extract from buttons container and position next to server name */
-    .console-header-buttons .console-close-btn {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: auto;
-        min-width: 44px;
-        height: 44px;
-        margin: 0;
-        z-index: 10;
-        /* Move up by button height + gap to align with server name row */
-        transform: translateY(calc(-44px - 0.75rem));
-    }
-    
-    /* Make header relative for absolute positioning */
-    .console-header {
-        position: relative;
-    }
-    
-    /* Filter buttons - full width */
+
     .console-header-buttons .filter-dropdown {
         width: 100%;
+        flex-basis: 100%;
     }
-    
+
     .console-header-buttons .filter-dropdown-btn {
         width: 100%;
         justify-content: space-between;
     }
-    
-    /* Logs and Commands toggle buttons - ALWAYS in one row, never stacked on mobile */
+
     .toggle-buttons-row {
         width: 100%;
     }
-    
+
     .toggle-buttons-row .console-toggle-btn {
         flex: 1 1 auto;
     }
@@ -116,8 +108,10 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    position: relative;
+    flex-wrap: wrap;
     flex-direction: row;
+    position: relative;
+    overflow: visible;
 }
 
 /* Desktop: toggle buttons row should be inline, not stretched */
@@ -151,6 +145,8 @@
 
 .filter-dropdown {
     position: relative;
+    flex: 0 0 auto;
+    flex-shrink: 0;
 }
 
 .filter-dropdown-btn {
@@ -200,13 +196,15 @@
 .filter-dropdown-menu {
     position: absolute;
     top: calc(100% + 0.25rem);
-    right: 0;
+    left: 0;
+    right: auto;
     background-color: #1e1e1e;
     border: 1px solid #444;
     border-radius: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     min-width: 200px;
-    max-width: 300px;
+    width: max-content;
+    max-width: min(300px, calc(100vw - 2rem));
     max-height: 300px;
     overflow-y: auto;
     z-index: 1000;
@@ -242,6 +240,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.history-menu {
+    min-width: 200px;
+}
+
+.history-menu .filter-dropdown-item input[type="radio"] {
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .console-title {
@@ -308,6 +316,76 @@
     transform: scale(0.95);
 }
 
+.console-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+}
+
+.server-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+    color: #bdbdbd;
+}
+
+.server-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.server-status-pill.status-online {
+    color: #8fd14f;
+    border-color: rgba(124, 179, 66, 0.45);
+    background: rgba(124, 179, 66, 0.12);
+}
+
+.server-status-pill.status-online .server-status-dot {
+    box-shadow: 0 0 6px rgba(124, 179, 66, 0.75);
+}
+
+.server-status-pill.status-offline {
+    color: #f07070;
+    border-color: rgba(220, 53, 69, 0.45);
+    background: rgba(220, 53, 69, 0.12);
+}
+
+.server-status-pill.status-auth-error {
+    color: #e8b84a;
+    border-color: rgba(232, 184, 74, 0.45);
+    background: rgba(232, 184, 74, 0.12);
+}
+
+.server-status-pill.status-checking,
+.server-status-pill.status-unknown {
+    color: #9a9a9a;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.server-status-pill.status-checking .server-status-dot {
+    animation: server-status-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes server-status-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+}
+
 .console-close-btn {
     border: 1px solid #666;
     background: rgba(255, 255, 255, 0.1);
@@ -343,10 +421,18 @@
     padding: 0.5rem;
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    overflow-x: auto;
     overflow-y: auto;
     font-family: Consolas, monospace;
     font-size: 0.85rem;
     margin-bottom: 0.5rem;
+}
+
+.console-log-message {
+    color: #d4d4d4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 @media (max-width: 768px) {
@@ -472,8 +558,25 @@
     font-family: Consolas, monospace;
 }
 
-.console-log-message {
-    color: #d4d4d4;
+.console-log-message.log-thread-server {
+    color: #e6c84a;
+}
+
+.console-log-message.log-thread-chat {
+    color: #7ec8ff;
+}
+
+.console-log-message.log-severity-error {
+    color: #f44747;
+}
+
+.console-log-message.log-severity-warn {
+    color: #e8a040;
+}
+
+.console-log-message .log-player-name {
+    color: #ff44ff;
+    font-weight: 600;
 }
 
 /* input row */
@@ -592,25 +695,20 @@
 
 /* Mobile filter dropdown (console toolbar) */
 
-/* Mobile-specific: filter dropdown adjustments */
 @media (max-width: 768px) {
     .filter-dropdown {
         width: 100%;
+        flex-basis: 100%;
     }
-    
+
     .filter-dropdown-menu {
-        min-width: 100%;
-        max-width: 100%;
-        right: 0;
         left: 0;
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        max-height: 50vh;
-        border-radius: 12px 12px 0 0;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.7);
+        right: 0;
+        width: auto;
+        min-width: 0;
+        max-width: none;
     }
-    
+
     .filter-dropdown-btn {
         width: 100%;
         min-width: auto;
@@ -618,8 +716,9 @@
         padding: 0.5rem 0.75rem;
         justify-content: space-between;
     }
-    
+
     .filter-dropdown-item {
         padding: 0.75rem 1rem;
         font-size: 0.95rem;
     }
+}

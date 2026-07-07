@@ -10,6 +10,7 @@ public static class ConsoleThreadNormalizer
     private static readonly Regex[] SuffixPatterns =
     [
         new(@"\s*-\s*#\d+$", RegexOptions.Compiled),
+        new(@"\s*-\s*\d+$", RegexOptions.Compiled),
         new(@"\s+#\d+$", RegexOptions.Compiled),
         new(@"-\d+$", RegexOptions.Compiled),
         new(@"-[0-9a-fA-F]{8,}$", RegexOptions.Compiled | RegexOptions.IgnoreCase),
@@ -20,9 +21,11 @@ public static class ConsoleThreadNormalizer
         @"^RCON\b",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    private static readonly Regex DefaultOffRegex = new(
-        @"^RCON$",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly HashSet<string> DefaultOnThreads = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Server thread",
+        "Async Chat Thread",
+    };
 
     public static string Normalize(string thread)
     {
@@ -37,8 +40,24 @@ public static class ConsoleThreadNormalizer
         return key;
     }
 
-    public static bool IsDefaultOff(string normalizedKey) =>
-        !string.IsNullOrEmpty(normalizedKey) && DefaultOffRegex.IsMatch(normalizedKey);
+    public static bool IsDefaultOn(string normalizedKey) =>
+        !string.IsNullOrEmpty(normalizedKey) && DefaultOnThreads.Contains(normalizedKey);
+
+    public static IReadOnlyCollection<string> DefaultOnThreadNames => DefaultOnThreads;
+
+    public static string? GetMessageColorClass(string normalizedThreadKey)
+    {
+        if (string.IsNullOrEmpty(normalizedThreadKey))
+            return null;
+
+        if (normalizedThreadKey.Equals("Server thread", StringComparison.OrdinalIgnoreCase))
+            return "log-thread-server";
+
+        if (normalizedThreadKey.Equals("Async Chat Thread", StringComparison.OrdinalIgnoreCase))
+            return "log-thread-chat";
+
+        return null;
+    }
 
     private static string StripSuffixes(string key)
     {
