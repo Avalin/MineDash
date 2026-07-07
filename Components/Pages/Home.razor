@@ -337,7 +337,7 @@
 
             if (toggle.SelectedLogLevels is not null)
             {
-                state.SelectedLogLevels = new HashSet<string>(toggle.SelectedLogLevels);
+                state.SelectedLogLevels = LogFilters.NormalizeLevelSelections(toggle.SelectedLogLevels);
                 if (toggle.SelectedLogLevels.Count > 0)
                     state.LevelFilterActive = true;
             }
