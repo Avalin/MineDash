@@ -90,8 +90,10 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
    - **Host**: The IP address or hostname of your Minecraft server
    - **RCON Port**: The RCON port (usually 25575)
    - **RCON Password**: Your RCON password
-   - **Log Path** (optional): Path to your server's `latest.log` file
-     - For Docker: Use the host path, e.g., `/srv/minecraft/server-name/logs/latest.log`
+   - **Log Path** (optional): Path to `latest.log` **inside the MineDash container**
+     - Example: `/srv/minecraft/creatamon/data/logs/latest.log`
+     - This is not your Windows `\\NAS\minecraft\...` path — map the NAS folder into Docker first
+     - Use **Test log access** on the server edit form to verify the path
    - **Notes** (optional): Any additional notes about the server
 
 4. Click **Save**
@@ -181,9 +183,26 @@ Adjust these paths to match your server setup.
 
 ### Logs not showing
 
-- Verify the log path is correct and accessible
-- For Docker deployments, ensure the volume mount includes the log directory
-- Check file permissions - the application needs read access to the log file
+- The log path must be readable **inside the MineDash container**, not just on your PC/NAS file share
+- On **Synology**, mount your minecraft share in Docker/Compose, e.g. `/volume1/minecraft:/srv/minecraft:ro`
+- Then configure the in-container path, e.g. `/srv/minecraft/creatamon/data/logs/latest.log`
+- Use **Server Management → Test log access** to see mount diagnostics
+- Check file permissions — MineDash needs read access to `latest.log`
+
+### Synology / NAS setup
+
+If FileBrowser shows `minecraft/creatamon/data/logs`, that maps to something like `/volume1/minecraft/creatamon/data/logs` on the NAS host. MineDash cannot read SMB paths directly. In `compose.yml` (or Container Manager):
+
+```yaml
+volumes:
+  - /volume1/minecraft:/srv/minecraft:ro
+```
+
+Server log path in MineDash:
+
+```text
+/srv/minecraft/creatamon/data/logs/latest.log
+```
 
 ### Port already in use
 
@@ -197,6 +216,24 @@ Adjust these paths to match your server setup.
 - Check file permissions on the host system
 
 ## Development
+
+### Building the Docker image
+
+On Windows (checks that Docker Desktop is running first):
+
+```powershell
+.\scripts\docker-build.ps1
+.\scripts\docker-build.ps1 -Push
+```
+
+On Linux/macOS:
+
+```bash
+./scripts/docker-build.sh
+PUSH=1 ./scripts/docker-build.sh
+```
+
+If Docker isn't running, these scripts show a clear message instead of the raw pipe error.
 
 ### Building from Source
 

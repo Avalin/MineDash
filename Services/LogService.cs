@@ -10,11 +10,15 @@ public class LogService : ILogService
     private const int TailReadBytes = 512 * 1024;
 
     private static readonly Regex DatedLogRegex = new(
-        @"^\[(?<day>\d{2})(?<mon>[A-Za-z]{3})(?<year>\d{4})\s+(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})(?:\.(?<ms>\d{1,3}))?\](?:\s+\[\d{2}:\d{2}:\d{2}\]){0,2}\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
+        @"^\[(?<day>\d{2})(?<mon>[A-Za-z]{3})(?<year>\d{4})\s+(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})(?:\.(?<ms>\d{1,3}))?\](?:\s+\[\d{2}:\d{2}:\d{2}\]){0,2}\s+\[(?<thread>.+?)/(?<level>[^\]]+)\](?:\s*\[[^\]]+\])?:\s*(?<msg>.*)$",
         RegexOptions.Compiled);
 
     private static readonly Regex TimeOnlyLogRegex = new(
-        @"^\[(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})\](?:\s+\[(?<hour2>\d{2}):(?<min2>\d{2}):(?<sec2>\d{2})\])?\s+\[(?<thread>[^/]+)/(?<level>[^\]]+)\]:\s*(?<msg>.*)$",
+        @"^\[(?<hour>\d{2}):(?<min>\d{2}):(?<sec>\d{2})\](?:\s+\[(?<hour2>\d{2}):(?<min2>\d{2}):(?<sec2>\d{2})\])?\s+\[(?<thread>.+?)/(?<level>[^\]]+)\](?:\s*\[[^\]]+\])?:\s*(?<msg>.*)$",
+        RegexOptions.Compiled);
+
+    private static readonly Regex LooseLogRegex = new(
+        @"^\[(?<stamp>[^\]]+)\].*?\[(?<thread>.+?)/(?<level>[^\]]+)\](?:\s*\[[^\]]+\])?:\s*(?<msg>.*)$",
         RegexOptions.Compiled);
 
     private readonly ILogger<LogService> _logger;
@@ -22,6 +26,50 @@ public class LogService : ILogService
     public LogService(ILogger<LogService> logger)
     {
         _logger = logger;
+    }
+
+    public async Task<LogPathDiagnostics> DiagnoseLogAccessAsync(
+        ServerConfig server, CancellationToken ct = default)
+    {
+        var configured = server.LogPath?.Trim() ?? string.Empty;
+        var tried = new List<string>();
+        string? resolved = null;
+
+        foreach (var candidate in GetPathCandidates(configured))
+        {
+            tried.Add(candidate);
+            if (await CanReadLogFileAsync(candidate))
+            {
+                resolved = candidate;
+                break;
+            }
+        }
+
+        long fileSize = 0;
+        string? lastLine = null;
+        if (resolved is not null)
+        {
+            fileSize = await GetFileLengthAsync(resolved, ct);
+            lastLine = await ReadLastLineAsync(resolved, ct);
+        }
+
+        var summary = resolved is not null
+            ? $"Readable at {resolved}."
+            : string.IsNullOrWhiteSpace(configured)
+                ? "No log path configured."
+                : $"Cannot read {configured} from inside the MineDash container.";
+
+        return new LogPathDiagnostics
+        {
+            ConfiguredPath = configured,
+            ResolvedPath = resolved,
+            Readable = resolved is not null,
+            FileSizeBytes = fileSize,
+            LastLinePreview = lastLine,
+            TriedPaths = tried,
+            MountHints = Array.Empty<string>(),
+            Summary = summary
+        };
     }
 
     public async Task<(List<LogEntry> Entries, long EndPosition)> GetRecentLogsAsync(
@@ -32,21 +80,22 @@ public class LogService : ILogService
 
         try
         {
-            var logPath = server.LogPath?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(logPath))
+            var logPath = GetReadableLogPath(server);
+            if (logPath is null)
             {
-                _logger.LogDebug("No log path configured for server {ServerName}", server.Name);
-                return (entries, endPosition);
-            }
-
-            if (!await CanReadLogFileAsync(logPath))
-            {
-                _logger.LogWarning("Cannot read log file for {ServerName} at {LogPath}", server.Name, logPath);
+                _logger.LogWarning("Cannot read log file for {ServerName} at {LogPath}",
+                    server.Name, server.LogPath?.Trim() ?? "");
+                entries.Add(CreateDiagnosticEntry(
+                    $"Cannot read log file at {server.LogPath?.Trim()}. " +
+                    $"Also tried: {SuggestAlternateLogPath(server.LogPath?.Trim() ?? "")}."));
                 return (entries, endPosition);
             }
 
             entries = await ReadLogFileTailAsync(server, logPath, tailLines, ct);
             endPosition = await GetFileLengthAsync(logPath, ct);
+
+            if (endPosition == 0)
+                entries.Add(CreateDiagnosticEntry("Log file exists but is empty (0 bytes)."));
 
             _logger.LogInformation(
                 "Loaded {Count} tail log entries for {ServerName} from {LogPath}",
@@ -56,6 +105,7 @@ public class LogService : ILogService
         {
             _logger.LogError(ex, "Error reading logs for {ServerName} from {LogPath}",
                 server.Name, server.LogPath?.Trim() ?? "");
+            entries.Add(CreateDiagnosticEntry($"Failed to read log file: {ex.Message}"));
         }
 
         return (entries, endPosition);
@@ -69,11 +119,8 @@ public class LogService : ILogService
 
         try
         {
-            var logPath = server.LogPath?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(logPath))
-                return (entries, endPosition);
-
-            if (!await CanReadLogFileAsync(logPath))
+            var logPath = GetReadableLogPath(server);
+            if (logPath is null)
                 return (entries, endPosition);
 
             var fileLength = await GetFileLengthAsync(logPath, ct);
@@ -100,6 +147,51 @@ public class LogService : ILogService
         }
 
         return (entries, endPosition);
+    }
+
+    private static string? GetReadableLogPath(ServerConfig server)
+    {
+        foreach (var candidate in GetPathCandidates(server.LogPath?.Trim()))
+        {
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> GetPathCandidates(string? configuredPath)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+        {
+            yield return configuredPath;
+            var alternate = SuggestAlternateLogPath(configuredPath);
+            if (!alternate.Equals(configuredPath, StringComparison.OrdinalIgnoreCase))
+                yield return alternate;
+        }
+    }
+
+    private static async Task<string?> ReadLastLineAsync(string logPath, CancellationToken ct)
+    {
+        await using var fileStream = new FileStream(
+            logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+        if (fileStream.Length == 0)
+            return null;
+
+        var start = Math.Max(0, fileStream.Length - 8192);
+        fileStream.Seek(start, SeekOrigin.Begin);
+
+        using var reader = new StreamReader(fileStream);
+        if (start > 0)
+            await reader.ReadLineAsync(ct);
+
+        string? line = null;
+        string? next;
+        while ((next = reader.ReadLine()) != null)
+            line = next;
+
+        return line;
     }
 
     private static async Task<bool> CanReadLogFileAsync(string logPath)
@@ -237,12 +329,24 @@ public class LogService : ILogService
             };
         }
 
-        if (fallbackUtc is null)
-            return null;
+        var loose = LooseLogRegex.Match(line);
+        if (loose.Success)
+        {
+            return new LogEntry
+            {
+                Timestamp = fallbackUtc ?? DateTime.UtcNow,
+                HasParsedTimestamp = fallbackUtc.HasValue,
+                Sequence = sequence,
+                RawLine = line,
+                Message = loose.Groups["msg"].Value,
+                Thread = loose.Groups["thread"].Value.Trim(),
+                Level = loose.Groups["level"].Value.Trim()
+            };
+        }
 
         return new LogEntry
         {
-            Timestamp = fallbackUtc.Value,
+            Timestamp = fallbackUtc ?? DateTime.UtcNow,
             HasParsedTimestamp = false,
             Sequence = sequence,
             RawLine = line,
@@ -250,6 +354,30 @@ public class LogService : ILogService
             Thread = string.Empty,
             Level = string.Empty
         };
+    }
+
+    private static LogEntry CreateDiagnosticEntry(string message) => new()
+    {
+        Timestamp = DateTime.UtcNow,
+        HasParsedTimestamp = true,
+        Sequence = 0,
+        RawLine = message,
+        Message = message,
+        Thread = "MineDash",
+        Level = "WARN"
+    };
+
+    private static string SuggestAlternateLogPath(string logPath)
+    {
+        const string dataSuffix = "/data/logs/latest.log";
+        if (logPath.EndsWith(dataSuffix, StringComparison.OrdinalIgnoreCase))
+            return logPath[..^dataSuffix.Length] + "/logs/latest.log";
+
+        const string logsSuffix = "/logs/latest.log";
+        if (logPath.EndsWith(logsSuffix, StringComparison.OrdinalIgnoreCase))
+            return logPath[..^logsSuffix.Length] + "/data/logs/latest.log";
+
+        return logPath;
     }
 
     private static int ParseMonth(string month) =>

@@ -176,3 +176,35 @@
         grid-column: 1 / -1;
     }
 }
+
+.log-path-actions[b-itiwke9orw] {
+    margin-top: 0.5rem;
+}
+
+.log-path-test[b-itiwke9orw] {
+    margin-top: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.log-path-test.success[b-itiwke9orw] {
+    background: rgba(25, 135, 84, 0.15);
+    border: 1px solid rgba(25, 135, 84, 0.45);
+}
+
+.log-path-test.error[b-itiwke9orw] {
+    background: rgba(220, 53, 69, 0.12);
+    border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.log-path-test-meta[b-itiwke9orw] {
+    margin-top: 0.45rem;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.log-path-test-hints[b-itiwke9orw] {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+}

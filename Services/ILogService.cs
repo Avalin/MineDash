@@ -15,6 +15,23 @@ public interface ILogService
     /// </summary>
     Task<(List<LogEntry> Entries, long EndPosition)> ReadLogsFromPositionAsync(
         ServerConfig server, long fromPosition, CancellationToken ct = default);
+
+    /// <summary>
+    /// Checks whether MineDash can read the configured log file from inside its container.
+    /// </summary>
+    Task<LogPathDiagnostics> DiagnoseLogAccessAsync(ServerConfig server, CancellationToken ct = default);
+}
+
+public sealed class LogPathDiagnostics
+{
+    public string ConfiguredPath { get; init; } = string.Empty;
+    public string? ResolvedPath { get; init; }
+    public bool Readable { get; init; }
+    public long FileSizeBytes { get; init; }
+    public string? LastLinePreview { get; init; }
+    public IReadOnlyList<string> TriedPaths { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> MountHints { get; init; } = Array.Empty<string>();
+    public string Summary { get; init; } = string.Empty;
 }
 
 public class LogEntry

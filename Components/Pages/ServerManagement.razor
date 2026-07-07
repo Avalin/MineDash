@@ -4,6 +4,7 @@
 @using MineDash.Services
 @inject IServerConfigStore ServerStore
 @inject IAuthService AuthService
+@inject ILogService LogService
 @inject NavigationManager Navigation
 
 <PageTitle>Server Management</PageTitle>
@@ -71,10 +72,40 @@
                 <div class="field-row">
                     <div class="field-label">Log file path</div>
                     <div class="field-hint">
-                        Path to the Minecraft server log file on the host (e.g., <code>/srv/minecraft/cobbleverse/data/logs/latest.log</code>).
-                        Required for log viewing functionality.
+                        Path inside the MineDash container (e.g. <code>/srv/minecraft/creatamon/data/logs/latest.log</code>).
                     </div>
-                    <input class="form-control" placeholder="/srv/minecraft/cobbleverse/data/logs/latest.log" @bind="_editServer.LogPath" />
+                    <input class="form-control" placeholder="/srv/minecraft/creatamon/data/logs/latest.log" @bind="_editServer.LogPath" />
+                    <div class="log-path-actions">
+                        <button class="btn btn-sm btn-outline-light" type="button" disabled="@_testingLogPath" @onclick="TestLogPath">
+                            @(_testingLogPath ? "Testing..." : "Test log access")
+                        </button>
+                    </div>
+                    @if (_logPathTestResult is not null)
+                    {
+                        <div class="log-path-test @(_logPathTestResult.Readable ? "success" : "error")">
+                            <div>@_logPathTestResult.Summary</div>
+                            @if (_logPathTestResult.Readable)
+                            {
+                                <div class="log-path-test-meta">
+                                    Resolved path: <code>@_logPathTestResult.ResolvedPath</code>
+                                    (@_logPathTestResult.FileSizeBytes.ToString("N0") bytes)
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(_logPathTestResult.LastLinePreview))
+                                {
+                                    <div class="log-path-test-meta">Latest line: <code>@_logPathTestResult.LastLinePreview</code></div>
+                                }
+                            }
+                            else if (_logPathTestResult.MountHints.Count > 0)
+                            {
+                                <ul class="log-path-test-hints">
+                                    @foreach (var hint in _logPathTestResult.MountHints)
+                                    {
+                                        <li><code>@hint</code></li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <div class="field-row field-row-half">
@@ -162,6 +193,8 @@
     private bool _isNew;
     private string? _nameValidationError;
     private bool _showDeleteDialog = false;
+    private bool _testingLogPath;
+    private LogPathDiagnostics? _logPathTestResult;
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,6 +222,7 @@
         };
         _isNew = true;
         _nameValidationError = null;
+        _logPathTestResult = null;
     }
 
     private void EditServer(ServerConfig server)
@@ -207,6 +241,7 @@
         };
         _isNew = false;
         _nameValidationError = null;
+        _logPathTestResult = null;
     }
 
     private async Task OnNameInput(ChangeEventArgs e)
@@ -279,11 +314,38 @@
         _editServer = null;
         _isNew = false;
         _nameValidationError = null;
+        _logPathTestResult = null;
     }
 
     private void ShowDeleteConfirmation()
     {
         _showDeleteDialog = true;
+    }
+
+    private async Task TestLogPath()
+    {
+        if (_editServer is null)
+            return;
+
+        _testingLogPath = true;
+        _logPathTestResult = null;
+        StateHasChanged();
+
+        try
+        {
+            _logPathTestResult = await LogService.DiagnoseLogAccessAsync(_editServer);
+            if (_logPathTestResult.Readable &&
+                !string.IsNullOrWhiteSpace(_logPathTestResult.ResolvedPath) &&
+                !string.Equals(_editServer.LogPath?.Trim(), _logPathTestResult.ResolvedPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _editServer.LogPath = _logPathTestResult.ResolvedPath;
+            }
+        }
+        finally
+        {
+            _testingLogPath = false;
+            StateHasChanged();
+        }
     }
 
     private void HideDeleteConfirmation()
@@ -310,5 +372,6 @@
         _editServer = null;
         _isNew = false;
         _nameValidationError = null;
+        _logPathTestResult = null;
     }
 }

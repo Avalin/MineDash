@@ -663,9 +663,9 @@
 
     private async Task RefreshLogsAfterCommandAsync(string serverId)
     {
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 8; i++)
         {
-            await Task.Delay(500);
+            await Task.Delay(250);
             await PollServerLogs(serverId, scrollToBottom: true);
         }
     }
@@ -724,6 +724,7 @@
 
         await LoadRecentLogs(serverId);
         StartLogPolling(serverId);
+        await InvokeAsync(StateHasChanged);
     }
 
     private string InjectUsernameIntoCommand(string command, string username)
@@ -1168,6 +1169,9 @@
         StateHasChanged();
     }
 
+    private static bool HasRenderableLogs(ConsoleState state) =>
+        state.LiveLogs.Any(l => l.Thread != "MineDash");
+
     private async Task LoadRecentLogs(string serverId)
     {
         if (_servers is null)
@@ -1185,17 +1189,19 @@
 
             state.LiveLogs.Clear();
             state.LiveLogs.AddRange(recentLogs);
-            state.LogFilePosition = endPosition;
+
+            // Only advance the file cursor when we actually loaded log lines.
+            // Otherwise we'd sit at EOF and miss everything until new bytes arrive.
+            if (HasRenderableLogs(state) || endPosition == 0)
+                state.LogFilePosition = endPosition;
+            else
+                state.LogFilePosition = 0;
             
-            // Keep only last 1000 entries to prevent memory issues
             if (state.LiveLogs.Count > 1000)
-            {
                 state.LiveLogs.RemoveRange(0, state.LiveLogs.Count - 1000);
-            }
         }
         catch (Exception ex)
         {
-            // Add error message to logs for debugging
             state.LiveLogs.Add(new LogEntry
             {
                 Timestamp = DateTime.UtcNow,
@@ -1204,6 +1210,8 @@
                 RawLine = $"[ERROR] Failed to load logs: {ex.Message}"
             });
         }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private void StartLogPolling(string serverId)
@@ -1221,7 +1229,7 @@
         {
             await PollServerLogs(serverId, scrollToBottom: false);
 
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
             while (await timer.WaitForNextTickAsync(ct))
                 await PollServerLogs(serverId, scrollToBottom: false);
         }
@@ -1253,14 +1261,23 @@
 
         try
         {
+            if (state.ShowLogs && !state.LiveLogs.Any())
+            {
+                await LoadRecentLogs(serverId);
+                if (scrollToBottom)
+                    await ScrollToBottom(serverId);
+                return;
+            }
+
             var logPath = server.LogPath!.Trim();
-            if (!string.IsNullOrEmpty(logPath) && File.Exists(logPath))
+            if (File.Exists(logPath))
             {
                 var fileLength = new FileInfo(logPath).Length;
                 if (fileLength < state.LogFilePosition)
                 {
                     await LoadRecentLogs(serverId);
-                    await InvokeAsync(StateHasChanged);
+                    if (scrollToBottom)
+                        await ScrollToBottom(serverId);
                     return;
                 }
             }
@@ -1285,16 +1302,26 @@
                 if (state.ShowLogs)
                     StateHasChanged();
 
-                if (hadNewLogs && scrollToBottom && state.ShowLogs)
+                if (scrollToBottom && state.ShowLogs)
                 {
                     await Task.Delay(50);
                     await ScrollToBottom(serverId);
                 }
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently handle errors - don't spam the UI
+            state.LiveLogs.Add(new LogEntry
+            {
+                Timestamp = DateTime.UtcNow,
+                HasParsedTimestamp = true,
+                Message = $"[MineDash] Log poll failed: {ex.Message}",
+                RawLine = $"[MineDash] Log poll failed: {ex.Message}",
+                Thread = "MineDash",
+                Level = "WARN"
+            });
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 

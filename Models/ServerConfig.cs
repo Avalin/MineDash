@@ -10,8 +10,8 @@ public class ServerConfig
     public string RconPassword { get; set; } = string.Empty;
 
     /// <summary>
-    /// Path to the Minecraft server log file (latest.log).
-    /// For Docker containers, this should be the host path, e.g., /srv/minecraft/server-name/data/logs/latest.log
+    /// Path to latest.log as seen inside the MineDash container (after Docker volume mounts).
+    /// Example: /srv/minecraft/creatamon/data/logs/latest.log
     /// </summary>
     public string? LogPath { get; set; }
 
