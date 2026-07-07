@@ -137,13 +137,13 @@
                                     @if (availableLevels.Any())
                                     {
                                         <div class="filter-dropdown">
-                                            <button class="filter-dropdown-btn @(state.SelectedLogLevels.Count > 0 ? "has-filter" : "")"
+                                            <button class="filter-dropdown-btn @(state.LevelFilterActive ? "has-filter" : "")"
                                                     type="button"
                                                     @onclick="@(() => ToggleFilterDropdown(serverId, "levels"))"
                                                     @onclick:stopPropagation="true">
                                                 <span class="bi bi-funnel"></span>
                                                 <span>Levels</span>
-                                                @if (state.SelectedLogLevels.Count > 0)
+                                                @if (state.LevelFilterActive)
                                                 {
                                                     <span class="filter-badge">@state.SelectedLogLevels.Count</span>
                                                 }
@@ -153,7 +153,7 @@
                                                 <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
                                                     @foreach (var level in availableLevels.OrderBy(l => l))
                                                     {
-                                                        var isChecked = state.SelectedLogLevels.Count == 0 || state.SelectedLogLevels.Contains(level);
+                                                        var isChecked = !state.LevelFilterActive || state.SelectedLogLevels.Contains(level);
                                                         <label class="filter-dropdown-item">
                                                             <input type="checkbox" 
                                                                    checked="@isChecked"
@@ -169,13 +169,13 @@
                                     @if (availableThreads.Any())
                                     {
                                         <div class="filter-dropdown">
-                                            <button class="filter-dropdown-btn @(state.SelectedThreads.Count > 0 ? "has-filter" : "")"
+                                            <button class="filter-dropdown-btn @(state.ThreadFilterActive ? "has-filter" : "")"
                                                     type="button"
                                                     @onclick="@(() => ToggleFilterDropdown(serverId, "threads"))"
                                                     @onclick:stopPropagation="true">
                                                 <span class="bi bi-funnel"></span>
                                                 <span>Threads</span>
-                                                @if (state.SelectedThreads.Count > 0)
+                                                @if (state.ThreadFilterActive)
                                                 {
                                                     <span class="filter-badge">@state.SelectedThreads.Count</span>
                                                 }
@@ -185,7 +185,7 @@
                                                 <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
                                                     @foreach (var thread in availableThreads.OrderBy(t => t))
                                                     {
-                                                        var isChecked = state.SelectedThreads.Count == 0 || state.SelectedThreads.Contains(thread);
+                                                        var isChecked = !state.ThreadFilterActive || state.SelectedThreads.Contains(thread);
                                                         <label class="filter-dropdown-item">
                                                             <input type="checkbox" 
                                                                    checked="@isChecked"
@@ -699,7 +699,29 @@
         response?.Trim() ?? string.Empty;
 
     private static bool HasActiveLogFilters(ConsoleState state) =>
-        state.SelectedLogLevels.Count > 0 || state.SelectedThreads.Count > 0;
+        state.LevelFilterActive || state.ThreadFilterActive;
+
+    private static void EnsureExplicitLevelFilter(ConsoleState state, HashSet<string> availableLevels)
+    {
+        if (state.LevelFilterActive)
+            return;
+
+        state.LevelFilterActive = true;
+        state.SelectedLogLevels.Clear();
+        foreach (var level in availableLevels)
+            state.SelectedLogLevels.Add(level);
+    }
+
+    private static void EnsureExplicitThreadFilter(ConsoleState state, HashSet<string> availableThreads)
+    {
+        if (state.ThreadFilterActive)
+            return;
+
+        state.ThreadFilterActive = true;
+        state.SelectedThreads.Clear();
+        foreach (var thread in availableThreads)
+            state.SelectedThreads.Add(thread);
+    }
 
     private async Task EnsureLogWatchingAsync(string serverId)
     {
@@ -898,8 +920,10 @@
             ServerId = serverId;
             ShowLogs = true; // Default to showing logs
             ShowCommands = true; // Default to showing commands
-            SelectedLogLevels = new HashSet<string>(); // Empty means all levels shown
-            SelectedThreads = new HashSet<string>(); // Empty means all threads shown
+            SelectedLogLevels = new HashSet<string>();
+            SelectedThreads = new HashSet<string>();
+            LevelFilterActive = false;
+            ThreadFilterActive = false;
             OpenFilterDropdown = null;
         }
 
@@ -915,6 +939,8 @@
         public DateTime LastLogPoll { get; set; } = DateTime.MinValue;
         public HashSet<string> SelectedLogLevels { get; set; }
         public HashSet<string> SelectedThreads { get; set; }
+        public bool LevelFilterActive { get; set; }
+        public bool ThreadFilterActive { get; set; }
         public string? OpenFilterDropdown { get; set; }
     }
 
@@ -940,11 +966,11 @@
             foreach (var log in state.LiveLogs)
             {
                 // Apply filters: if filters are set, check if log matches
-                var levelMatches = state.SelectedLogLevels.Count == 0 || 
+                var levelMatches = !state.LevelFilterActive ||
                                    (string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains("")) ||
                                    (!string.IsNullOrEmpty(log.Level) && state.SelectedLogLevels.Contains(log.Level));
                 
-                var threadMatches = state.SelectedThreads.Count == 0 || 
+                var threadMatches = !state.ThreadFilterActive ||
                                     (string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains("")) ||
                                     (!string.IsNullOrEmpty(log.Thread) && state.SelectedThreads.Contains(log.Thread));
                 
@@ -1016,50 +1042,20 @@
     {
         var state = GetConsoleState(serverId);
         var availableLevels = GetAvailableLogLevels(state);
-        
+
+        EnsureExplicitLevelFilter(state, availableLevels);
+
         if (isChecked)
-        {
-            // If checking and set was empty (showing all), we need to add all others first
-            if (state.SelectedLogLevels.Count == 0)
-            {
-                // Add all levels except the one being checked
-                foreach (var l in availableLevels)
-                {
-                    if (l != level)
-                    {
-                        state.SelectedLogLevels.Add(l);
-                    }
-                }
-            }
-            else
-            {
-                state.SelectedLogLevels.Add(level);
-                // If we now have all levels selected, clear the set (show all)
-                if (state.SelectedLogLevels.Count == availableLevels.Count)
-                {
-                    state.SelectedLogLevels.Clear();
-                }
-            }
-        }
+            state.SelectedLogLevels.Add(level);
         else
+            state.SelectedLogLevels.Remove(level);
+
+        if (state.SelectedLogLevels.Count == availableLevels.Count)
         {
-            // If unchecking and set was empty (showing all), add all others
-            if (state.SelectedLogLevels.Count == 0)
-            {
-                foreach (var l in availableLevels)
-                {
-                    if (l != level)
-                    {
-                        state.SelectedLogLevels.Add(l);
-                    }
-                }
-            }
-            else
-            {
-                state.SelectedLogLevels.Remove(level);
-                // If set becomes empty, it means show all (which is the default)
-            }
+            state.LevelFilterActive = false;
+            state.SelectedLogLevels.Clear();
         }
+
         await SavePersistedState();
         StateHasChanged();
     }
@@ -1082,50 +1078,20 @@
     {
         var state = GetConsoleState(serverId);
         var availableThreads = GetAvailableThreads(state);
-        
+
+        EnsureExplicitThreadFilter(state, availableThreads);
+
         if (isChecked)
-        {
-            // If checking and set was empty (showing all), we need to add all others first
-            if (state.SelectedThreads.Count == 0)
-            {
-                // Add all threads except the one being checked
-                foreach (var t in availableThreads)
-                {
-                    if (t != thread)
-                    {
-                        state.SelectedThreads.Add(t);
-                    }
-                }
-            }
-            else
-            {
-                state.SelectedThreads.Add(thread);
-                // If we now have all threads selected, clear the set (show all)
-                if (state.SelectedThreads.Count == availableThreads.Count)
-                {
-                    state.SelectedThreads.Clear();
-                }
-            }
-        }
+            state.SelectedThreads.Add(thread);
         else
+            state.SelectedThreads.Remove(thread);
+
+        if (state.SelectedThreads.Count == availableThreads.Count)
         {
-            // If unchecking and set was empty (showing all), add all others
-            if (state.SelectedThreads.Count == 0)
-            {
-                foreach (var t in availableThreads)
-                {
-                    if (t != thread)
-                    {
-                        state.SelectedThreads.Add(t);
-                    }
-                }
-            }
-            else
-            {
-                state.SelectedThreads.Remove(thread);
-                // If set becomes empty, it means show all (which is the default)
-            }
+            state.ThreadFilterActive = false;
+            state.SelectedThreads.Clear();
         }
+
         await SavePersistedState();
         StateHasChanged();
     }
@@ -1376,10 +1342,14 @@
                             if (kvp.Value.SelectedLogLevels != null)
                             {
                                 consoleState.SelectedLogLevels = new HashSet<string>(kvp.Value.SelectedLogLevels);
+                                consoleState.LevelFilterActive = kvp.Value.LevelFilterActive ||
+                                    kvp.Value.SelectedLogLevels.Count > 0;
                             }
                             if (kvp.Value.SelectedThreads != null)
                             {
                                 consoleState.SelectedThreads = new HashSet<string>(kvp.Value.SelectedThreads);
+                                consoleState.ThreadFilterActive = kvp.Value.ThreadFilterActive ||
+                                    kvp.Value.SelectedThreads.Count > 0;
                             }
                             
                             // Start log polling if logs are enabled
@@ -1415,6 +1385,8 @@
                 {
                     ShowLogs = state.ShowLogs,
                     ShowCommands = state.ShowCommands,
+                    LevelFilterActive = state.LevelFilterActive,
+                    ThreadFilterActive = state.ThreadFilterActive,
                     SelectedLogLevels = state.SelectedLogLevels.ToList(),
                     SelectedThreads = state.SelectedThreads.ToList()
                 };
@@ -1463,6 +1435,8 @@
     {
         public bool ShowLogs { get; set; } = true;
         public bool ShowCommands { get; set; } = true;
+        public bool LevelFilterActive { get; set; }
+        public bool ThreadFilterActive { get; set; }
         public List<string>? SelectedLogLevels { get; set; }
         public List<string>? SelectedThreads { get; set; }
     }
