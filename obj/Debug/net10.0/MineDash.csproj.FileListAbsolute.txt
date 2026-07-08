@@ -113,6 +113,6 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\CoreRCON.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\app_data\users\cb1e406459604239b36e2057997b994a\commands.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\ru2qxa4l8x-{0}-w38n0ywy20-w38n0ywy20.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\j3cl8ro38s-{0}-8m2z3bzulz-8m2z3bzulz.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-beiflfsuhm-beiflfsuhm.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-beiflfsuhm-beiflfsuhm.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-pk3nkwovrr-pk3nkwovrr.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-zaam46z1tf-zaam46z1tf.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-zaam46z1tf-zaam46z1tf.gz

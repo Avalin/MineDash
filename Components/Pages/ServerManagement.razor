@@ -113,7 +113,12 @@
                     <div class="field-hint">
                         Timezone of timestamps inside <code>latest.log</code>. Docker servers usually use <code>UTC</code>.
                     </div>
-                    <input class="form-control" placeholder="UTC" @bind="_editServer.LogTimeZoneId" />
+                    <select class="form-control" @bind="_editServer.LogTimeZoneId">
+                        @foreach (var option in GetLogTimeZoneOptions())
+                        {
+                            <option value="@option.Id">@option.Label</option>
+                        }
+                    </select>
                 </div>
 
                 <div class="field-row">
@@ -196,6 +201,16 @@
     private bool _testingLogPath;
     private LogPathDiagnostics? _logPathTestResult;
 
+    private static readonly IReadOnlyList<LogTimeZoneOption> LogTimeZoneOptions =
+    [
+        new("UTC", "UTC (Docker default)"),
+        new("Europe/Oslo", "Europe/Oslo"),
+        new("Europe/Stockholm", "Europe/Stockholm"),
+        new("Europe/Copenhagen", "Europe/Copenhagen"),
+        new("Europe/Berlin", "Europe/Berlin"),
+        new("W. Europe Standard Time", "W. Europe Standard Time")
+    ];
+
     protected override async Task OnInitializedAsync()
     {
         // Check authentication (use async version to ensure session is loaded)
@@ -236,7 +251,7 @@
             RconPort = server.RconPort,
             RconPassword = server.RconPassword,
             LogPath = server.LogPath,
-            LogTimeZoneId = server.LogTimeZoneId,
+            LogTimeZoneId = NormalizeLogTimeZoneId(server.LogTimeZoneId),
             Notes = server.Notes
         };
         _isNew = false;
@@ -306,6 +321,8 @@
         if (!string.IsNullOrEmpty(_nameValidationError))
             return;
 
+        _editServer.LogTimeZoneId = NormalizeLogTimeZoneId(_editServer.LogTimeZoneId);
+
         await ServerStore.AddOrUpdateAsync(_editServer);
 
         _servers = (await ServerStore.GetAllAsync()).ToList();
@@ -374,4 +391,20 @@
         _nameValidationError = null;
         _logPathTestResult = null;
     }
+
+    private IReadOnlyList<LogTimeZoneOption> GetLogTimeZoneOptions()
+    {
+        var current = NormalizeLogTimeZoneId(_editServer?.LogTimeZoneId);
+        if (LogTimeZoneOptions.Any(option => option.Id == current))
+            return LogTimeZoneOptions;
+
+        return LogTimeZoneOptions
+            .Append(new LogTimeZoneOption(current, $"{current} (current)"))
+            .ToList();
+    }
+
+    private static string NormalizeLogTimeZoneId(string? timeZoneId) =>
+        string.IsNullOrWhiteSpace(timeZoneId) ? "UTC" : timeZoneId.Trim();
+
+    private sealed record LogTimeZoneOption(string Id, string Label);
 }
