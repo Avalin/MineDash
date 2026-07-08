@@ -177,8 +177,20 @@
     }
 }
 
-.log-path-actions {
-    margin-top: 0.5rem;
+.server-path-control {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.server-path-control .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.server-path-control .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .server-access-test {
@@ -199,11 +211,15 @@
     margin-bottom: 0;
 }
 
-.server-access-check.success {
+.server-access-check.success,
+.server-access-check-label.success,
+.server-access-check-mark.success {
     color: #4ade80;
 }
 
-.server-access-check.error {
+.server-access-check.error,
+.server-access-check-label.error,
+.server-access-check-mark.error {
     color: #f87171;
 }
 
@@ -214,4 +230,14 @@
 .server-access-check-mark {
     margin-left: 0.25rem;
     font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .server-path-control {
+        flex-direction: column;
+    }
+
+    .server-path-control .btn {
+        width: 100%;
+    }
 }
