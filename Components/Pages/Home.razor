@@ -32,19 +32,17 @@
                     </button>
 
                     <div class="add-console-form">
-                        <div class="add-console-row @(availableToAdd.Count == 1 ? "add-console-row-single" : "")">
-                            @if (availableToAdd.Count > 1)
-                            {
-                                <select class="form-select form-select-sm"
-                                        @bind="_selectedAddServerId">
-                                    @foreach (var s in availableToAdd)
-                                    {
-                                        <option value="@s.Id">
-                                            @s.Name (@s.Host:@s.RconPort)
-                                        </option>
-                                    }
-                                </select>
-                            }
+                        <div class="add-console-row">
+                            <select class="form-select form-select-sm"
+                                    @bind="_selectedAddServerId"
+                                    aria-label="Server to add">
+                                @foreach (var s in availableToAdd)
+                                {
+                                    <option value="@s.Id">
+                                        @s.Name (@s.Host:@s.RconPort)
+                                    </option>
+                                }
+                            </select>
 
                             <button class="btn btn-sm btn-outline-light"
                                     @onclick="AddConsole"
@@ -132,7 +130,6 @@
                                        Commands="@GetCommands()"
                                        DefaultSayCommandId="@_defaultSayCommandId"
                                        CloseFiltersTick="@_closeFiltersTick"
-                                       ShowCloseButton="CanAddMoreConsoles()"
                                        OnClose="@(() => CloseConsole(serverId))"
                                        OnPersistRequested="SavePersistedState" />
                     </div>
@@ -213,16 +210,6 @@
         await LoadCommands();
         await LoadPersistedState();
 
-        if (!_openConsoleIds.Any() && _servers.Any())
-        {
-            var firstId = _servers.FirstOrDefault()?.Id;
-            if (firstId is not null)
-            {
-                _openConsoleIds.Add(firstId);
-                await SavePersistedState();
-            }
-        }
-
         SyncSelectedAddServerId();
 
         Navigation.LocationChanged += OnLocationChanged;
@@ -233,14 +220,22 @@
         if (!firstRender || _viewportLineLimitResolved)
             return;
 
+        var stateChanged = false;
+
         try
         {
             var width = await JSRuntime.InvokeAsync<int>("eval", "window.innerWidth");
             _viewportDefaultLineLimit = LogHistoryPresets.GetDefaultLineLimitForViewport(width);
+            stateChanged = await ApplyDefaultOpenConsolesAsync(width);
         }
         catch
         {
             _viewportDefaultLineLimit = LogHistoryPresets.DefaultLineLimit;
+            if (_servers is { Count: > 0 } && !_openConsoleIds.Any())
+            {
+                _openConsoleIds.Add(_servers[0].Id);
+                stateChanged = true;
+            }
         }
 
         _viewportLineLimitResolved = true;
@@ -252,7 +247,31 @@
         }
 
         _consolesAwaitingLineLimit.Clear();
-        await InvokeAsync(StateHasChanged);
+
+        if (stateChanged)
+        {
+            SyncSelectedAddServerId();
+            await SavePersistedState();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task<bool> ApplyDefaultOpenConsolesAsync(int viewportWidthPx)
+    {
+        if (_servers is null || !_servers.Any() || _openConsoleIds.Any())
+            return false;
+
+        if (viewportWidthPx < 768)
+        {
+            foreach (var server in _servers)
+                _openConsoleIds.Add(server.Id);
+        }
+        else
+        {
+            _openConsoleIds.Add(_servers[0].Id);
+        }
+
+        return true;
     }
 
     public async ValueTask DisposeAsync()
@@ -362,6 +381,7 @@
     {
         _openConsoleIds.Remove(serverId);
         SyncSelectedAddServerId();
+        _addConsoleExpanded = true;
         await SavePersistedState();
         StateHasChanged();
     }
