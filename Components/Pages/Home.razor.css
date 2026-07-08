@@ -401,6 +401,14 @@
     display: block;
 }
 
+.add-console-row-single {
+    justify-content: flex-end;
+}
+
+.add-console-row-single .btn {
+    width: auto;
+}
+
 /* console grid */
 
 .console-grid {

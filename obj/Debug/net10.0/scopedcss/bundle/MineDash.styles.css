@@ -905,6 +905,14 @@ main[b-l3n58rr43k] {
     display: block;
 }
 
+.add-console-row-single[b-r3v39eobk4] {
+    justify-content: flex-end;
+}
+
+.add-console-row-single .btn[b-r3v39eobk4] {
+    width: auto;
+}
+
 /* console grid */
 
 .console-grid[b-r3v39eobk4] {

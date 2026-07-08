@@ -26,9 +26,12 @@
                 <span class="server-status-dot" aria-hidden="true"></span>
                 <span class="server-status-label">@GetStatusLabel()</span>
             </span>
-            <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
-                <span class="bi bi-x-lg"></span>
-            </button>
+            @if (ShowCloseButton)
+            {
+                <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
+                    <span class="bi bi-x-lg"></span>
+                </button>
+            }
         </div>
     </div>
 
@@ -419,6 +422,7 @@
     [Parameter, EditorRequired] public IReadOnlyList<MinecraftCommand> Commands { get; set; } = Array.Empty<MinecraftCommand>();
     [Parameter] public string? DefaultSayCommandId { get; set; }
     [Parameter] public long CloseFiltersTick { get; set; }
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnPersistRequested { get; set; }
 

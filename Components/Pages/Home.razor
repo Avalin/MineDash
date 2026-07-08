@@ -19,50 +19,54 @@
 <div class="page-layout" @onclick="CloseAllFilterDropdowns">
     <div class="command-panel">
         <div class="console-toolbar">
-            <div class="toolbar-section add-console-section @(_addConsoleExpanded ? "expanded" : "")">
-                <button type="button"
-                        class="add-console-toggle"
-                        aria-expanded="@_addConsoleExpanded"
-                        @onclick="ToggleAddConsole">
-                    <span class="bi @(_addConsoleExpanded ? "bi-chevron-down" : "bi-plus-lg")" aria-hidden="true"></span>
-                    <span>Add console</span>
-                </button>
+            @if (CanAddMoreConsoles())
+            {
+                var availableToAdd = GetServersAvailableToAdd().ToList();
+                <div class="toolbar-section add-console-section @(_addConsoleExpanded ? "expanded" : "")">
+                    <button type="button"
+                            class="add-console-toggle"
+                            aria-expanded="@_addConsoleExpanded"
+                            @onclick="ToggleAddConsole">
+                        <span class="bi @(_addConsoleExpanded ? "bi-chevron-down" : "bi-plus-lg")" aria-hidden="true"></span>
+                        <span>Add console</span>
+                    </button>
 
-                <div class="add-console-form">
-                    @if (_servers is null || !_servers.Any())
-                    {
-                        <div class="add-console-row">
-                            <select class="form-select form-select-sm" disabled>
-                                <option>No servers registered</option>
-                            </select>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="add-console-row">
-                            <select class="form-select form-select-sm"
-                                    @bind="_selectedAddServerId">
-                                <option value="">Select server…</option>
-                                @foreach (var s in _servers)
-                                {
-                                    if (!_openConsoleIds.Contains(s.Id))
+                    <div class="add-console-form">
+                        <div class="add-console-row @(availableToAdd.Count == 1 ? "add-console-row-single" : "")">
+                            @if (availableToAdd.Count > 1)
+                            {
+                                <select class="form-select form-select-sm"
+                                        @bind="_selectedAddServerId">
+                                    @foreach (var s in availableToAdd)
                                     {
                                         <option value="@s.Id">
                                             @s.Name (@s.Host:@s.RconPort)
                                         </option>
                                     }
-                                }
-                            </select>
+                                </select>
+                            }
 
                             <button class="btn btn-sm btn-outline-light"
                                     @onclick="AddConsole"
                                     disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
-                                Add
+                                Add console
                             </button>
                         </div>
-                    }
+                    </div>
                 </div>
-            </div>
+            }
+            else if (_servers is null || !_servers.Any())
+            {
+                <div class="toolbar-section add-console-section">
+                    <div class="add-console-form">
+                        <div class="add-console-row">
+                            <select class="form-select form-select-sm" disabled>
+                                <option>No servers registered</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            }
 
             <div class="toolbar-section layout-section">
                 <label class="server-select-label">Layout</label>
@@ -128,6 +132,7 @@
                                        Commands="@GetCommands()"
                                        DefaultSayCommandId="@_defaultSayCommandId"
                                        CloseFiltersTick="@_closeFiltersTick"
+                                       ShowCloseButton="CanAddMoreConsoles()"
                                        OnClose="@(() => CloseConsole(serverId))"
                                        OnPersistRequested="SavePersistedState" />
                     </div>
@@ -218,6 +223,8 @@
             }
         }
 
+        SyncSelectedAddServerId();
+
         Navigation.LocationChanged += OnLocationChanged;
     }
 
@@ -306,7 +313,31 @@
     private void ToggleAddConsole()
     {
         _addConsoleExpanded = !_addConsoleExpanded;
+        SyncSelectedAddServerId();
         StateHasChanged();
+    }
+
+    private IEnumerable<ServerConfig> GetServersAvailableToAdd() =>
+        _servers?.Where(s => !_openConsoleIds.Contains(s.Id)) ?? Enumerable.Empty<ServerConfig>();
+
+    private bool CanAddMoreConsoles() =>
+        _servers is not null && _servers.Any() && GetServersAvailableToAdd().Any();
+
+    private void SyncSelectedAddServerId()
+    {
+        var available = GetServersAvailableToAdd().ToList();
+        if (available.Count == 0)
+        {
+            _selectedAddServerId = string.Empty;
+            return;
+        }
+
+        if (available.Count == 1
+            || string.IsNullOrEmpty(_selectedAddServerId)
+            || available.All(s => s.Id != _selectedAddServerId))
+        {
+            _selectedAddServerId = available[0].Id;
+        }
     }
 
     private async Task AddConsole()
@@ -322,14 +353,15 @@
         _openConsoleIds.Add(addedId);
         GetConsoleState(addedId).MobileExpanded = true;
         _addConsoleExpanded = false;
+        SyncSelectedAddServerId();
         await SavePersistedState();
-        _selectedAddServerId = string.Empty;
         StateHasChanged();
     }
 
     private async Task CloseConsole(string serverId)
     {
         _openConsoleIds.Remove(serverId);
+        SyncSelectedAddServerId();
         await SavePersistedState();
         StateHasChanged();
     }
