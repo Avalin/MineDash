@@ -16,9 +16,24 @@ body {
 @media (max-width: 768px) {
     html, body {
         height: auto;
-        min-height: 100vh;
+        min-height: 100dvh;
         overflow-x: hidden;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main:has(.page-layout) {
+        overflow: visible;
+        display: block;
+        height: auto;
+    }
+
+    article.content:has(.page-layout) {
+        overflow: visible;
+        display: block;
+        height: auto;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.75rem !important;
     }
 }
 

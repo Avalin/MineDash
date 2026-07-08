@@ -9,7 +9,9 @@
 @inject IAuthService AuthService
 @inject IConsoleSessionPersistence ConsolePersistence
 @inject IConsoleLogFilterService LogFilters
+@inject IConsoleLogRetentionService LogRetention
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
 <PageTitle>MineDash</PageTitle>
@@ -17,41 +19,49 @@
 <div class="page-layout" @onclick="CloseAllFilterDropdowns">
     <div class="command-panel">
         <div class="console-toolbar">
-            <div class="toolbar-section">
-                <label class="server-select-label">Add console</label>
+            <div class="toolbar-section add-console-section @(_addConsoleExpanded ? "expanded" : "")">
+                <button type="button"
+                        class="add-console-toggle"
+                        aria-expanded="@_addConsoleExpanded"
+                        @onclick="ToggleAddConsole">
+                    <span class="bi @(_addConsoleExpanded ? "bi-chevron-down" : "bi-plus-lg")" aria-hidden="true"></span>
+                    <span>Add console</span>
+                </button>
 
-                @if (_servers is null || !_servers.Any())
-                {
-                    <div class="add-console-row">
-                        <select class="form-select form-select-sm" disabled>
-                            <option>No servers registered</option>
-                        </select>
-                    </div>
-                }
-                else
-                {
-                    <div class="add-console-row">
-                        <select class="form-select form-select-sm"
-                                @bind="_selectedAddServerId">
-                            <option value="">Select server…</option>
-                            @foreach (var s in _servers)
-                            {
-                                if (!_openConsoleIds.Contains(s.Id))
+                <div class="add-console-form">
+                    @if (_servers is null || !_servers.Any())
+                    {
+                        <div class="add-console-row">
+                            <select class="form-select form-select-sm" disabled>
+                                <option>No servers registered</option>
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="add-console-row">
+                            <select class="form-select form-select-sm"
+                                    @bind="_selectedAddServerId">
+                                <option value="">Select server…</option>
+                                @foreach (var s in _servers)
                                 {
-                                    <option value="@s.Id">
-                                        @s.Name (@s.Host:@s.RconPort)
-                                    </option>
+                                    if (!_openConsoleIds.Contains(s.Id))
+                                    {
+                                        <option value="@s.Id">
+                                            @s.Name (@s.Host:@s.RconPort)
+                                        </option>
+                                    }
                                 }
-                            }
-                        </select>
+                            </select>
 
-                        <button class="btn btn-sm btn-outline-light"
-                                @onclick="AddConsole"
-                                disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
-                            Add
-                        </button>
-                    </div>
-                }
+                            <button class="btn btn-sm btn-outline-light"
+                                    @onclick="AddConsole"
+                                    disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
+                                Add
+                            </button>
+                        </div>
+                    }
+                </div>
             </div>
 
             <div class="toolbar-section layout-section">
@@ -166,6 +176,10 @@
     private string? _selectedAddServerId;
     private int _layoutColumns = 1;
     private long _closeFiltersTick;
+    private bool _addConsoleExpanded;
+    private int _viewportDefaultLineLimit = LogHistoryPresets.DefaultLineLimit;
+    private bool _viewportLineLimitResolved;
+    private readonly HashSet<string> _consolesAwaitingLineLimit = new();
 
     private string GridColumnStyle =>
         $"grid-template-columns: repeat({EffectiveColumnCount}, minmax(0, 1fr));";
@@ -205,6 +219,33 @@
         }
 
         Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _viewportLineLimitResolved)
+            return;
+
+        try
+        {
+            var width = await JSRuntime.InvokeAsync<int>("eval", "window.innerWidth");
+            _viewportDefaultLineLimit = LogHistoryPresets.GetDefaultLineLimitForViewport(width);
+        }
+        catch
+        {
+            _viewportDefaultLineLimit = LogHistoryPresets.DefaultLineLimit;
+        }
+
+        _viewportLineLimitResolved = true;
+
+        foreach (var serverId in _consolesAwaitingLineLimit)
+        {
+            if (_consoleStates.TryGetValue(serverId, out var state))
+                state.LogLineLimit = _viewportDefaultLineLimit;
+        }
+
+        _consolesAwaitingLineLimit.Clear();
+        await InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()
@@ -250,10 +291,22 @@
             state = new ConsoleState(serverId);
             if (!string.IsNullOrEmpty(_defaultSayCommandId))
                 state.SelectedCommandId = _defaultSayCommandId;
+
+            if (_viewportLineLimitResolved)
+                state.LogLineLimit = _viewportDefaultLineLimit;
+            else
+                _consolesAwaitingLineLimit.Add(serverId);
+
             _consoleStates[serverId] = state;
         }
 
         return state;
+    }
+
+    private void ToggleAddConsole()
+    {
+        _addConsoleExpanded = !_addConsoleExpanded;
+        StateHasChanged();
     }
 
     private async Task AddConsole()
@@ -265,7 +318,10 @@
             return;
         }
 
-        _openConsoleIds.Add(_selectedAddServerId);
+        var addedId = _selectedAddServerId;
+        _openConsoleIds.Add(addedId);
+        GetConsoleState(addedId).MobileExpanded = true;
+        _addConsoleExpanded = false;
         await SavePersistedState();
         _selectedAddServerId = string.Empty;
         StateHasChanged();
@@ -364,6 +420,7 @@
                 state.LogLineLimit = toggle.LogLineLimit;
 
             state.AutoscrollMode = toggle.AutoscrollMode;
+            state.MobileExpanded = toggle.MobileExpanded;
         }
     }
 
@@ -384,7 +441,8 @@
                     SelectedThreads = state.SelectedThreads.ToList(),
                     LogHistoryMinutes = state.LogHistoryMinutes,
                     LogLineLimit = state.LogLineLimit,
-                    AutoscrollMode = state.AutoscrollMode
+                    AutoscrollMode = state.AutoscrollMode,
+                    MobileExpanded = state.MobileExpanded
                 };
             });
 

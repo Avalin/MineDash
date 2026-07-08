@@ -21,15 +21,22 @@ public static class LogHistoryPresets
         new(1_000, "1,000"),
         new(5_000, "5,000"),
         new(10_000, "10,000"),
-        new(25_000, "25,000"),
-        new(50_000, "50,000"),
         new(0, "All lines")
     ];
 
     public const int DefaultMinutes = 60;
     public const int DefaultLineLimit = 10_000;
-    public const int MaxReadLines = 50_000;
-    public const int MinLineLimit = 100;
+    public const int MinLineLimit = 500;
+    public const int MaxLineLimit = 10_000;
+    public const int MaxReadLines = 10_000;
+
+    public static int GetDefaultLineLimitForViewport(int viewportWidthPx) =>
+        viewportWidthPx switch
+        {
+            < 768 => 500,
+            < 1024 => 1_000,
+            _ => MaxLineLimit
+        };
 }
 
 public readonly record struct LogHistoryPreset(int Minutes, string Label);

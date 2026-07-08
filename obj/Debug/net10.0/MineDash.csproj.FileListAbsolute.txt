@@ -111,7 +111,6 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\MineDash.pdb
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\BCrypt.Net-Next.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\CoreRCON.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\app_data\users\cb1e406459604239b36e2057997b994a\commands.json
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\ru2qxa4l8x-{0}-w38n0ywy20-w38n0ywy20.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\j3cl8ro38s-{0}-8m2z3bzulz-8m2z3bzulz.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\YamlDotNet.dll
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\appsettings.Development.json
@@ -128,6 +127,7 @@ C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.deps.json
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.runtimeconfig.json
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.dll
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.pdb
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-sdzsbhqnlq-sdzsbhqnlq.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-sdzsbhqnlq-sdzsbhqnlq.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-5vky9qr7j0-5vky9qr7j0.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\ru2qxa4l8x-{0}-nuyo7ssoc3-nuyo7ssoc3.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-qkhjvd3wti-qkhjvd3wti.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-yt59mzc1is-yt59mzc1is.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-yt59mzc1is-yt59mzc1is.gz

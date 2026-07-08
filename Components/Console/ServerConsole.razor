@@ -14,12 +14,33 @@
 @inject ITimeDisplayService TimeDisplay
 @inject IJSRuntime JSRuntime
 
-<div class="console-card">
-    <div class="console-header">
+<div class="console-card @(State.MobileExpanded ? "mobile-expanded" : "mobile-collapsed")">
+    <div class="console-header console-header-summary">
         <div class="console-header-title">
             <div class="console-title">@Server.Name</div>
             <div class="console-endpoint">@Server.Host:@Server.RconPort</div>
         </div>
+        <div class="console-header-actions">
+            <span class="server-status-pill @GetStatusPillClass()"
+                  title="@GetStatusTooltip()">
+                <span class="server-status-dot" aria-hidden="true"></span>
+                <span class="server-status-label">@GetStatusLabel()</span>
+            </span>
+            <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
+                <span class="bi bi-x-lg"></span>
+            </button>
+        </div>
+    </div>
+
+    <button class="console-mobile-toggle"
+            type="button"
+            aria-expanded="@State.MobileExpanded"
+            @onclick="ToggleMobileExpanded">
+        <span class="bi @(State.MobileExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></span>
+        <span>Console</span>
+    </button>
+
+    <div class="console-card-body">
         <div class="console-header-buttons">
             @{
                 IReadOnlyCollection<string> availableLevels = State.ShowLogs && State.LiveLogs.Any()
@@ -53,6 +74,12 @@
                 @if (State.OpenFilterDropdown == "view")
                 {
                     <div class="filter-dropdown-menu console-options-menu" @onclick:stopPropagation="true">
+                        <button class="console-options-close"
+                                type="button"
+                                aria-label="Close view settings"
+                                @onclick="CloseFilterDropdown">
+                            <span class="bi bi-x-lg"></span>
+                        </button>
                         <div class="console-options-section">
                             <button class="console-options-section-title"
                                     type="button"
@@ -174,6 +201,12 @@
                 @if (State.OpenFilterDropdown == "filters")
                 {
                     <div class="filter-dropdown-menu console-options-menu" @onclick:stopPropagation="true">
+                        <button class="console-options-close"
+                                type="button"
+                                aria-label="Close filters"
+                                @onclick="CloseFilterDropdown">
+                            <span class="bi bi-x-lg"></span>
+                        </button>
                         @if (!availableLevels.Any() && !availableThreads.Any())
                         {
                             <div class="console-options-empty">
@@ -263,19 +296,8 @@
                 }
             </div>
         </div>
-        <div class="console-header-actions">
-            <span class="server-status-pill @GetStatusPillClass()"
-                  title="@GetStatusTooltip()">
-                <span class="server-status-dot" aria-hidden="true"></span>
-                <span class="server-status-label">@GetStatusLabel()</span>
-            </span>
-            <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
-                <span class="bi bi-x-lg"></span>
-            </button>
-        </div>
-    </div>
 
-    <div class="console-output" id="@OutputElementId">
+        <div class="console-output" id="@OutputElementId">
         @{
             var mergedEntries = Timeline.BuildMergedEntries(State, ConsoleActivity.GetHistory(State.ServerId));
         }
@@ -362,31 +384,32 @@
         var argsHint = selectedCmd is not null ? MinecraftCommandSyntax.GetArgumentsHint(selectedCmd) : string.Empty;
         var acceptsArgs = selectedCmd is not null && MinecraftCommandSyntax.AcceptsArguments(selectedCmd);
     }
-    <div class="command-input-row">
-        <div class="command-select-wrap"
-             data-value="@(selectedCmd is not null ? MinecraftCommandSyntax.GetDisplayName(selectedCmd) : "say")">
-            <select class="form-select command-select"
-                    value="@MinecraftCommandSyntax.ResolveSelectedCommandId(State, Commands, DefaultSayCommandId)"
-                    @onchange="OnCommandTypeChanged">
-                @foreach (var cmd in MinecraftCommandSyntax.OrderForDisplay(Commands))
-                {
-                    <option value="@cmd.Id" title="@cmd.Description">@MinecraftCommandSyntax.GetDisplayName(cmd)</option>
-                }
-            </select>
+        <div class="command-input-row">
+            <div class="command-select-wrap"
+                 data-value="@(selectedCmd is not null ? MinecraftCommandSyntax.GetDisplayName(selectedCmd) : "say")">
+                <select class="form-select command-select"
+                        value="@MinecraftCommandSyntax.ResolveSelectedCommandId(State, Commands, DefaultSayCommandId)"
+                        @onchange="OnCommandTypeChanged">
+                    @foreach (var cmd in MinecraftCommandSyntax.OrderForDisplay(Commands))
+                    {
+                        <option value="@cmd.Id" title="@cmd.Description">@MinecraftCommandSyntax.GetDisplayName(cmd)</option>
+                    }
+                </select>
+            </div>
+
+            <input class="form-control command-input"
+                   placeholder="@(acceptsArgs ? argsHint : "No arguments needed")"
+                   value="@State.CommandArguments"
+                   disabled="@(!acceptsArgs)"
+                   @oninput="OnCommandArgumentsChanged"
+                   @onkeydown="HandleKeyDown" />
+
+            <button class="btn btn-primary command-send-btn"
+                    @onclick="SendCommand"
+                    disabled="@(!MinecraftCommandSyntax.CanSend(State, selectedCmd))">
+                Send
+            </button>
         </div>
-
-        <input class="form-control command-input"
-               placeholder="@(acceptsArgs ? argsHint : "No arguments needed")"
-               value="@State.CommandArguments"
-               disabled="@(!acceptsArgs)"
-               @oninput="OnCommandArgumentsChanged"
-               @onkeydown="HandleKeyDown" />
-
-        <button class="btn btn-primary command-send-btn"
-                @onclick="SendCommand"
-                disabled="@(!MinecraftCommandSyntax.CanSend(State, selectedCmd))">
-            Send
-        </button>
     </div>
 </div>
 
@@ -567,6 +590,22 @@
     private void ToggleFilterDropdown(string dropdownType)
     {
         State.OpenFilterDropdown = State.OpenFilterDropdown == dropdownType ? null : dropdownType;
+        StateHasChanged();
+    }
+
+    private void CloseFilterDropdown()
+    {
+        State.OpenFilterDropdown = null;
+        StateHasChanged();
+    }
+
+    private async Task ToggleMobileExpanded()
+    {
+        State.MobileExpanded = !State.MobileExpanded;
+        if (!State.MobileExpanded)
+            State.OpenFilterDropdown = null;
+
+        await OnPersistRequested.InvokeAsync();
         StateHasChanged();
     }
 

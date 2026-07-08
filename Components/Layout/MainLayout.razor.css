@@ -17,7 +17,8 @@
 @media (max-width: 768px) {
     .page {
         height: auto;
-        min-height: 100vh;
+        min-height: 100dvh;
+        max-height: none;
         overflow: visible;
     }
 }
@@ -51,13 +52,32 @@ main {
 
 @media (max-width: 768px) {
     main {
-        -webkit-overflow-scrolling: touch;
         overflow-x: hidden;
-        overflow-y: auto;
+        overflow-y: visible;
         display: block;
-        flex: 1 1 auto;
         height: auto;
-        min-height: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .top-row {
+        min-height: 2.25rem;
+        height: auto;
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.78rem;
+    }
+
+    .top-row .btn-sm {
+        min-height: 32px;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .top-row .text-light {
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 55vw;
     }
 }
 

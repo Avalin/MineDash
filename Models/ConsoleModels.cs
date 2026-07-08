@@ -54,6 +54,7 @@ public sealed class ConsoleState
     public ServerOnlineStatus OnlineStatus { get; set; } = ServerOnlineStatus.Unknown;
     public DateTime LastStatusCheckUtc { get; set; } = DateTime.MinValue;
     public ConsoleAutoscrollMode AutoscrollMode { get; set; } = ConsoleAutoscrollMode.Off;
+    public bool MobileExpanded { get; set; }
 }
 
 public sealed class ConsoleMergedEntry
@@ -88,4 +89,5 @@ public sealed class ConsoleToggleState
     public int? LogHistoryHours { get; set; }
     public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;
     public ConsoleAutoscrollMode AutoscrollMode { get; set; } = ConsoleAutoscrollMode.Off;
+    public bool MobileExpanded { get; set; }
 }

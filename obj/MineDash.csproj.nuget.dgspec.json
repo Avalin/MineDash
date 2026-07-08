@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj": {}
+    "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj": {
+    "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
+        "projectUniqueName": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
         "projectName": "MineDash",
-        "projectPath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
+        "projectPath": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
         "packagesPath": "C:\\Users\\Avalin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\obj\\",
+        "outputPath": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Avalin\\AppData\\Roaming\\NuGet\\NuGet.Config"

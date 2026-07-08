@@ -51,7 +51,7 @@ public sealed class ConsoleLogRetentionService : IConsoleLogRetentionService
             state.LogLineLimit = Math.Clamp(
                 state.LogLineLimit,
                 LogHistoryPresets.MinLineLimit,
-                LogHistoryPresets.MaxReadLines);
+                LogHistoryPresets.MaxLineLimit);
         }
         else if (!LogHistoryPresets.Lines.Any(p => p.Lines == state.LogLineLimit))
         {
@@ -109,8 +109,6 @@ public sealed class ConsoleLogRetentionService : IConsoleLogRetentionService
         1_000 => "1k",
         5_000 => "5k",
         10_000 => "10k",
-        25_000 => "25k",
-        50_000 => "50k",
         _ => lineLimit.ToString("N0")
     };
 
