@@ -25,6 +25,7 @@ builder.Services.AddHttpContextAccessor();
 
 // our custom services
 builder.Services.AddSingleton<IServerConfigStore, JsonServerConfigStore>();
+builder.Services.AddSingleton<IDockerComposeImportService, DockerComposeImportService>();
 builder.Services.AddScoped<ICommandStore, JsonCommandStore>();
 builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
 builder.Services.AddSingleton<IAppSettingsStore, JsonAppSettingsStore>();

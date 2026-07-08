@@ -15,7 +15,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
 - 👥 **User Management**: Multi-user support with admin/non-admin roles
 - 🎨 **Customizable Layouts**: Arrange open consoles in 1, 2, or 3-column layouts
 - 🔐 **RCON Integration**: Connect to Minecraft servers using password-protected RCON
-- 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
+- 🐳 **Docker Support**: Easy deployment plus Docker Compose import for managed Minecraft servers
 
 ## Prerequisites
 
@@ -85,6 +85,27 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
 
 ### Adding Minecraft Servers
 
+MineDash supports two server setup modes:
+
+- **Import Docker Compose**: Recommended for Docker-managed Minecraft servers. MineDash parses a Minecraft server `docker-compose.yml`, extracts RCON and volume settings, and saves the compose file path so the server can be reloaded later. Imported values are read-only because the compose file is the source of truth.
+- **Add Server**: Manual setup for vanilla servers on Windows, Paper servers on Linux, hosted servers, non-Docker servers, or any server where you want to enter all details yourself.
+
+### Importing Docker Compose Servers
+
+1. Navigate to the **Manage Servers** page (gear icon in the top right)
+2. Click **Import Docker Compose**
+3. Choose one of the import modes:
+   - **Compose-managed server**: Enter a path to a `docker-compose.yml` that is readable by the MineDash server/container, for example `/srv/minecraft/creatamon/docker-compose.yml`
+   - **One-time import**: Upload a compose file from your browser to create a normal editable server
+4. If the compose file contains multiple Minecraft-like services, choose the service to import
+5. For compose-managed servers, use **Reload from compose** after changing the compose file
+
+MineDash extracts values such as the service/container name, RCON host, RCON port, RCON password, data volume, image/version, and memory settings when they are present in the compose file.
+
+For path-based compose imports, the compose file path must be visible inside the MineDash runtime. In Docker, mount the compose file or its parent folder read-only if needed.
+
+### Adding Manual Servers
+
 1. Navigate to the **Manage Servers** page (gear icon in the top right)
 2. Click **Add Server**
 3. Fill in the server details:
@@ -99,7 +120,6 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
      - This is not your Windows `\\NAS\minecraft\...` path — map the NAS folder into Docker first
      - Use **Test server access** on the server edit form to verify the folder, log file, and `server.properties`
    - **Log Timezone** (optional): Timezone used by timestamps in `latest.log` (Docker servers commonly log in UTC)
-   - **Notes** (optional): Any additional notes about the server
 
 4. Click **Save**
 
@@ -175,8 +195,8 @@ Create automated commands that run on a schedule:
 
 Choose from three layout options:
 - **Layout 1**: Single console (full width)
-- **Layout 2**: Two consoles side by side
-- **Layout 3**: Nine consoles in a grid (3x3)
+- **Layout 2**: Up to two console columns
+- **Layout 3**: Up to three console columns
 
 ## Docker Configuration Details
 
@@ -185,6 +205,7 @@ The `compose.yml` file includes:
 - Volume mounts:
   - `/srv/minedash/app_data` → Application data persistence
   - `/srv/minecraft` → Read-only access to Minecraft server logs
+  - Mount Minecraft server compose files or parent folders read-only if you want path-based Compose import/reload
 - Environment:
   - `ASPNETCORE_URLS=http://+:8214`
   - `MineDash__DisplayTimeZoneId=Europe/Oslo` (change to your preferred display timezone)

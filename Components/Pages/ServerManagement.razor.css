@@ -42,6 +42,20 @@
     color: #aaa;
 }
 
+.server-mgmt-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .server-mgmt-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+}
+
 /* Cards */
 
 .server-table-card,
@@ -95,6 +109,10 @@
 
 .server-form-title {
     margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .server-form-grid {
@@ -169,7 +187,7 @@
         margin-bottom: 0.25rem;
     }
 
-    /* Make Name + Host + Notes span full width */
+    /* Make Name + Host + Server folder path span full width */
     .field-row:nth-child(1),
     .field-row:nth-child(2),
     .field-row:nth-child(5) {
@@ -230,6 +248,103 @@
 .server-access-check-mark {
     margin-left: 0.25rem;
     font-weight: 700;
+}
+
+.import-compose-card {
+    border-color: rgba(74, 222, 128, 0.35);
+}
+
+.import-message {
+    margin-top: 0.75rem;
+    color: #ddd;
+    font-size: 0.9rem;
+}
+
+.import-warnings {
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.5rem;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.08);
+    border: 1px solid rgba(250, 204, 21, 0.2);
+    font-size: 0.85rem;
+}
+
+.compose-candidates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.compose-candidate {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    padding: 0.65rem 0.8rem;
+    color: #eee;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    text-align: left;
+}
+
+.compose-candidate:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.compose-candidate-name {
+    font-weight: 700;
+}
+
+.compose-candidate-details {
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+.server-source-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    font-size: 0.75rem;
+}
+
+.compose-managed-panel {
+    margin-bottom: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.5rem;
+    background: rgba(74, 222, 128, 0.06);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.compose-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.65rem;
+    margin-top: 0.65rem;
+}
+
+.compose-meta-grid div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.compose-meta-grid span {
+    color: #aaa;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.compose-meta-grid code {
+    overflow-wrap: anywhere;
 }
 
 @media (max-width: 768px) {

@@ -33,6 +33,19 @@
         "buildMultiTargeting": {
           "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
         }
+      },
+      "YamlDotNet/18.1.0": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/YamlDotNet.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/YamlDotNet.dll": {
+            "related": ".xml"
+          }
+        }
       }
     }
   },
@@ -104,13 +117,37 @@
         "microsoft.aspnetcore.app.internal.assets.10.0.9.nupkg.sha512",
         "microsoft.aspnetcore.app.internal.assets.nuspec"
       ]
+    },
+    "YamlDotNet/18.1.0": {
+      "sha512": "5K+9KFg2TdTl7VXv88Qzi/0lqK6JFoNP3lRuImPYGRV7K/QYklDyTrj4+A+KAki1JsQi6qKY+hDyY7d6WRqjrw==",
+      "type": "package",
+      "path": "yamldotnet/18.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "images/yamldotnet.png",
+        "lib/net10.0/YamlDotNet.dll",
+        "lib/net10.0/YamlDotNet.xml",
+        "lib/net47/YamlDotNet.dll",
+        "lib/net47/YamlDotNet.xml",
+        "lib/net8.0/YamlDotNet.dll",
+        "lib/net8.0/YamlDotNet.xml",
+        "lib/netstandard2.0/YamlDotNet.dll",
+        "lib/netstandard2.0/YamlDotNet.xml",
+        "lib/netstandard2.1/YamlDotNet.dll",
+        "lib/netstandard2.1/YamlDotNet.xml",
+        "yamldotnet.18.1.0.nupkg.sha512",
+        "yamldotnet.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "BCrypt.Net-Next >= 4.0.3",
       "CoreRCON >= 5.4.2",
-      "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.9"
+      "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.9",
+      "YamlDotNet >= 18.1.0"
     ]
   },
   "packageFolders": {
@@ -119,11 +156,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
+      "projectUniqueName": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
       "projectName": "MineDash",
-      "projectPath": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
+      "projectPath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
       "packagesPath": "C:\\Users\\Avalin\\.nuget\\packages\\",
-      "outputPath": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\obj\\",
+      "outputPath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Avalin\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -171,6 +208,10 @@
             "target": "Package",
             "version": "[10.0.9, )",
             "autoReferenced": true
+          },
+          "YamlDotNet": {
+            "target": "Package",
+            "version": "[18.1.0, )"
           }
         },
         "imports": [

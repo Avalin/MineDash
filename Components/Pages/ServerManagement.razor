@@ -2,10 +2,12 @@
 @rendermode InteractiveServer
 @using MineDash.Models
 @using MineDash.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject IServerConfigStore ServerStore
 @inject IAuthService AuthService
 @inject ILogService LogService
 @inject IRconService RconService
+@inject IDockerComposeImportService ComposeImporter
 @inject NavigationManager Navigation
 
 <PageTitle>Server Management</PageTitle>
@@ -15,21 +17,161 @@
         <div>
             <h2>Server Management</h2>
             <p class="server-mgmt-subtitle">
-                Configure the Minecraft servers available in MineDash.
+                Configure manual servers or import Docker Compose-managed Minecraft servers.
             </p>
         </div>
 
-        <button class="btn btn-primary" @onclick="NewServer">
-            + Add server
-        </button>
+        <div class="server-mgmt-actions">
+            <button class="btn btn-secondary" @onclick="ToggleImportPanel">
+                Import Docker Compose
+            </button>
+            <button class="btn btn-primary" @onclick="NewServer">
+                + Add server
+            </button>
+        </div>
     </div>
+
+    @if (_showImportPanel)
+    {
+        <div class="server-form-card import-compose-card">
+            <h3 class="server-form-title">Import Docker Compose</h3>
+            <p class="field-hint">
+                Use a saved path for Compose-managed servers that can reload later, or upload a compose file once to create an editable manual server.
+            </p>
+
+            <div class="server-form-grid">
+                <div class="field-row">
+                    <div class="field-label">Compose-managed server</div>
+                    <div class="field-hint">
+                        Path to a <code>docker-compose.yml</code> visible from the MineDash server/container. Imported values are read-only and can be reloaded.
+                    </div>
+                    <div class="server-path-control">
+                        <input class="form-control"
+                               placeholder="/srv/minecraft/creatamon/docker-compose.yml"
+                               @bind="_composeFilePath" />
+                        <button class="btn btn-sm btn-outline-light"
+                                type="button"
+                                disabled="@_importingCompose"
+                                @onclick="ImportManagedComposeFromPath">
+                            @(_importingCompose ? "Importing..." : "Import managed")
+                        </button>
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field-label">One-time import</div>
+                    <div class="field-hint">
+                        Upload a compose file to prefill a normal editable server. MineDash will not track the file after import.
+                    </div>
+                    <InputFile class="form-control" OnChange="ImportUploadedCompose" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_importMessage))
+            {
+                <div class="import-message">@_importMessage</div>
+            }
+
+            @if (_importWarnings.Count > 0)
+            {
+                <div class="import-warnings">
+                    @foreach (var warning in _importWarnings)
+                    {
+                        <div>@warning</div>
+                    }
+                </div>
+            }
+
+            @if (_composeCandidates.Count > 1)
+            {
+                <div class="compose-candidates">
+                    <div class="field-label">Choose a service to import</div>
+                    @foreach (var candidate in _composeCandidates)
+                    {
+                        var selectedCandidate = candidate;
+                        <button class="compose-candidate"
+                                type="button"
+                                @onclick="@(() => SaveImportedCandidate(selectedCandidate))">
+                            <span class="compose-candidate-name">@GetCandidateDisplayName(candidate)</span>
+                            <span class="compose-candidate-details">
+                                @candidate.Host:@candidate.RconPort
+                                @if (!string.IsNullOrWhiteSpace(candidate.Image))
+                                {
+                                    <span> · @candidate.Image</span>
+                                }
+                            </span>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
 
     @if (_editServer is not null)
     {
         <div class="server-form-card">
             <h3 class="server-form-title">
                 @(_isNew ? "Add server" : "Edit server")
+                @if (IsComposeManaged)
+                {
+                    <span class="server-source-badge">Managed by Docker Compose</span>
+                }
             </h3>
+
+            @if (IsComposeManaged)
+            {
+                <div class="compose-managed-panel">
+                    <div class="field-label">Managed by Docker Compose</div>
+                    <div class="field-hint">
+                        This server is controlled by its compose file. Reload from compose to update imported values.
+                    </div>
+                    <div class="compose-meta-grid">
+                        <div>
+                            <span>Compose file</span>
+                            <code>@_editServer.ComposeFilePath</code>
+                        </div>
+                        <div>
+                            <span>Service</span>
+                            <code>@_editServer.ComposeServiceName</code>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_editServer.ComposeContainerName))
+                        {
+                            <div>
+                                <span>Container</span>
+                                <code>@_editServer.ComposeContainerName</code>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_editServer.ComposeImage))
+                        {
+                            <div>
+                                <span>Image</span>
+                                <code>@_editServer.ComposeImage</code>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_editServer.ComposeVersion))
+                        {
+                            <div>
+                                <span>Version</span>
+                                <code>@_editServer.ComposeVersion</code>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_editServer.ComposeMemory))
+                        {
+                            <div>
+                                <span>Memory</span>
+                                <code>@_editServer.ComposeMemory</code>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_editServer.ComposeDataVolumeSource))
+                        {
+                            <div>
+                                <span>Data volume</span>
+                                <code>@_editServer.ComposeDataVolumeSource:@_editServer.ComposeDataVolumeTarget</code>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             <div class="server-form-grid">
                 <div class="field-row">
@@ -37,7 +179,7 @@
                     <div class="field-hint">
                         Friendly name for this server, shown in the Home dropdown.
                     </div>
-                    <input class="form-control" value="@_editServer.Name" @oninput="OnNameInput" />
+                    <input class="form-control" value="@_editServer.Name" @oninput="OnNameInput" disabled="@IsComposeManaged" />
                     @if (!string.IsNullOrEmpty(_nameValidationError))
                     {
                         <div class="field-error">@_nameValidationError</div>
@@ -48,9 +190,9 @@
                     <div class="field-label">Server host</div>
                     <div class="field-hint">
                         IP or hostname where the Minecraft server is reachable from this panel.
-                        For Docker on the same host, <code>localhost</code> usually works.
+                        Docker Compose imports use the service or container name.
                     </div>
-                    <input class="form-control" @bind="_editServer.Host" />
+                    <input class="form-control" @bind="_editServer.Host" disabled="@IsComposeManaged" />
                 </div>
 
                 <div class="field-row field-row-half">
@@ -58,7 +200,7 @@
                     <div class="field-hint">
                         The port of the RCON interface (e.g. <code>25575</code>).
                     </div>
-                    <input class="form-control" type="number" @bind="_editServer.RconPort" />
+                    <input class="form-control" type="number" @bind="_editServer.RconPort" disabled="@IsComposeManaged" />
                 </div>
 
                 <div class="field-row field-row-half">
@@ -67,18 +209,16 @@
                         The password set as <code>rcon.password</code> (or the Docker env
                         <code>RCON_PASSWORD</code>).
                     </div>
-                    <input class="form-control" type="password" @bind="_editServer.RconPassword" />
+                    <input class="form-control" type="password" @bind="_editServer.RconPassword" disabled="@IsComposeManaged" />
                 </div>
 
                 <div class="field-row">
                     <div class="field-label">Server folder path</div>
                     <div class="field-hint">
-                        Path inside the MineDash container to this Minecraft server (e.g.
-                        <code>/srv/minecraft/creatamon</code>). MineDash assumes the latest log and
-                        <code>server.properties</code> live under this folder.
+                        Path inside the MineDash container to this Minecraft server. Compose imports derive this from the data volume.
                     </div>
                     <div class="server-path-control">
-                        <input class="form-control" placeholder="/srv/minecraft/creatamon" @bind="_editServer.LogPath" />
+                        <input class="form-control" placeholder="/srv/minecraft/creatamon" @bind="_editServer.LogPath" disabled="@IsComposeManaged" />
                         <button class="btn btn-sm btn-outline-light" type="button" disabled="@_testingServerAccess" @onclick="TestServerAccess">
                             @(_testingServerAccess ? "Testing..." : "Test server access")
                         </button>
@@ -102,25 +242,26 @@
                     <div class="field-hint">
                         Timezone of timestamps inside <code>latest.log</code>. Docker servers usually use <code>UTC</code>.
                     </div>
-                    <select class="form-control" @bind="_editServer.LogTimeZoneId">
+                    <select class="form-control" @bind="_editServer.LogTimeZoneId" disabled="@IsComposeManaged">
                         @foreach (var option in GetLogTimeZoneOptions())
                         {
                             <option value="@option.Id">@option.Label</option>
                         }
                     </select>
                 </div>
-
-                <div class="field-row">
-                    <div class="field-label">Notes</div>
-                    <div class="field-hint">
-                        Optional description or notes about this server (e.g. "Cobbleverse modpack").
-                    </div>
-                    <textarea class="form-control" rows="2" @bind="_editServer.Notes"></textarea>
-                </div>
             </div>
 
             <div class="server-form-actions">
-                <button class="btn btn-success" @onclick="SaveServer">Save</button>
+                @if (IsComposeManaged)
+                {
+                    <button class="btn btn-success" @onclick="ReloadComposeServer" disabled="@_reloadingCompose">
+                        @(_reloadingCompose ? "Reloading..." : "Reload from compose")
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-success" @onclick="SaveServer">Save</button>
+                }
                 <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                 @if (!_isNew && _selectedServer is not null)
                 {
@@ -138,14 +279,10 @@
                        OnCancelCallback="HideDeleteConfirmation" />
 
     <div class="server-table-card">
-        @if (_servers is null)
-        {
-            <p>Loading...</p>
-        }
-        else if (_servers.Count == 0)
+        @if (_servers.Count == 0)
         {
             <p class="no-server-text">
-                No servers configured yet. Click <strong>Add server</strong> to create one.
+                No servers configured yet. Click <strong>Add server</strong> or <strong>Import Docker Compose</strong> to create one.
             </p>
         }
         else
@@ -154,6 +291,7 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Source</th>
                         <th>Host</th>
                         <th>RCON port</th>
                         <th style="width: 90px;"></th>
@@ -164,6 +302,7 @@
                     {
                         <tr class="@( _selectedServer?.Id == s.Id ? "selected-row" : "" )">
                             <td>@s.Name</td>
+                            <td>@GetSourceLabel(s)</td>
                             <td>@s.Host</td>
                             <td>@s.RconPort</td>
                             <td>
@@ -181,14 +320,26 @@
 </div>
 
 @code {
-    private List<ServerConfig>? _servers;
+    private const long MaxUploadBytes = 1024 * 1024;
+
+    private List<ServerConfig> _servers = new();
     private ServerConfig? _selectedServer;
     private ServerConfig? _editServer;
     private bool _isNew;
     private string? _nameValidationError;
-    private bool _showDeleteDialog = false;
+    private bool _showDeleteDialog;
     private bool _testingServerAccess;
+    private bool _showImportPanel;
+    private bool _importingCompose;
+    private bool _reloadingCompose;
+    private string _composeFilePath = string.Empty;
+    private string? _importMessage;
+    private readonly List<string> _importWarnings = new();
+    private readonly List<DockerComposeServerCandidate> _composeCandidates = new();
+    private bool _pendingComposeManaged;
     private ServerAccessDiagnostics? _serverAccessTestResult;
+
+    private bool IsComposeManaged => _editServer?.ConfigSource == ServerConfigSource.DockerCompose;
 
     private static readonly IReadOnlyList<LogTimeZoneOption> LogTimeZoneOptions =
     [
@@ -202,56 +353,67 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Check authentication (use async version to ensure session is loaded)
         if (!await AuthService.IsAuthenticatedAsync())
         {
             Navigation.NavigateTo("/login");
             return;
         }
 
-        _servers = (await ServerStore.GetAllAsync()).ToList();
+        await RefreshServers();
         _selectedServer = _servers.FirstOrDefault();
     }
 
     private void NewServer()
     {
+        _showImportPanel = false;
         _selectedServer = null;
         _editServer = new ServerConfig
         {
             Id = Guid.NewGuid().ToString("N"),
             Name = "New Minecraft Server",
+            ConfigSource = ServerConfigSource.Manual,
             Host = "localhost",
             RconPort = 25575,
             LogPath = "/srv/minecraft/creatamon",
             LogTimeZoneId = "UTC"
         };
         _isNew = true;
-        _nameValidationError = null;
-        _serverAccessTestResult = null;
+        ClearFormMessages();
     }
 
     private void EditServer(ServerConfig server)
     {
         _selectedServer = server;
-        _editServer = new ServerConfig
+        _editServer = CopyForEdit(server);
+        _isNew = false;
+        _composeFilePath = server.ComposeFilePath ?? _composeFilePath;
+        ClearFormMessages();
+    }
+
+    private ServerConfig CopyForEdit(ServerConfig server) =>
+        new()
         {
             Id = server.Id,
             Name = server.Name,
+            ConfigSource = server.ConfigSource,
             Host = server.Host,
             RconPort = server.RconPort,
             RconPassword = server.RconPassword,
             LogPath = ToServerFolderPath(server.LogPath),
             LogTimeZoneId = NormalizeLogTimeZoneId(server.LogTimeZoneId),
-            Notes = server.Notes
+            ComposeFilePath = server.ComposeFilePath,
+            ComposeServiceName = server.ComposeServiceName,
+            ComposeContainerName = server.ComposeContainerName,
+            ComposeImage = server.ComposeImage,
+            ComposeVersion = server.ComposeVersion,
+            ComposeDataVolumeSource = server.ComposeDataVolumeSource,
+            ComposeDataVolumeTarget = server.ComposeDataVolumeTarget,
+            ComposeMemory = server.ComposeMemory
         };
-        _isNew = false;
-        _nameValidationError = null;
-        _serverAccessTestResult = null;
-    }
 
     private async Task OnNameInput(ChangeEventArgs e)
     {
-        if (_editServer is null)
+        if (_editServer is null || IsComposeManaged)
             return;
 
         _editServer.Name = e.Value?.ToString() ?? string.Empty;
@@ -260,14 +422,13 @@
 
     private Task ValidateServerName()
     {
-        if (_editServer is null || _servers is null)
+        if (_editServer is null)
         {
             _nameValidationError = null;
             StateHasChanged();
             return Task.CompletedTask;
         }
 
-        // Only validate for new servers, or if editing and name changed
         if (!_isNew && _selectedServer?.Name == _editServer.Name)
         {
             _nameValidationError = null;
@@ -278,24 +439,18 @@
         var trimmedName = _editServer.Name?.Trim();
         if (string.IsNullOrWhiteSpace(trimmedName))
         {
-            _nameValidationError = null;
+            _nameValidationError = "Server name is required.";
             StateHasChanged();
             return Task.CompletedTask;
         }
 
-        // Check if a server with this name already exists (excluding current server if editing)
-        var existingServer = _servers.FirstOrDefault(s => 
+        var existingServer = _servers.FirstOrDefault(s =>
             s.Name.Equals(trimmedName, StringComparison.OrdinalIgnoreCase) &&
             (_isNew || s.Id != _editServer.Id));
 
-        if (existingServer is not null)
-        {
-            _nameValidationError = "A server with this name already exists.";
-        }
-        else
-        {
-            _nameValidationError = null;
-        }
+        _nameValidationError = existingServer is not null
+            ? "A server with this name already exists."
+            : null;
 
         StateHasChanged();
         return Task.CompletedTask;
@@ -303,31 +458,159 @@
 
     private async Task SaveServer()
     {
-        if (_editServer is null)
+        if (_editServer is null || IsComposeManaged)
             return;
 
-        // Validate before saving
         await ValidateServerName();
         if (!string.IsNullOrEmpty(_nameValidationError))
             return;
 
+        _editServer.ConfigSource = ServerConfigSource.Manual;
         _editServer.LogPath = NormalizeServerFolderPath(_editServer.LogPath);
         _editServer.LogTimeZoneId = NormalizeLogTimeZoneId(_editServer.LogTimeZoneId);
+        ClearComposeMetadata(_editServer);
 
         await ServerStore.AddOrUpdateAsync(_editServer);
-
-        _servers = (await ServerStore.GetAllAsync()).ToList();
-        _selectedServer = _servers.FirstOrDefault(s => s.Id == _editServer.Id);
-
-        _editServer = null;
-        _isNew = false;
-        _nameValidationError = null;
-        _serverAccessTestResult = null;
+        await RefreshAfterSave(_editServer.Id);
     }
 
-    private void ShowDeleteConfirmation()
+    private void ToggleImportPanel()
     {
-        _showDeleteDialog = true;
+        _showImportPanel = !_showImportPanel;
+        _editServer = null;
+        _isNew = false;
+        ClearFormMessages();
+        ClearImportMessages();
+    }
+
+    private async Task ImportManagedComposeFromPath()
+    {
+        _importingCompose = true;
+        ClearImportMessages();
+        try
+        {
+            var result = await ComposeImporter.ImportFromPathAsync(_composeFilePath);
+            await HandleImportResult(result, managedByCompose: true);
+        }
+        finally
+        {
+            _importingCompose = false;
+        }
+    }
+
+    private async Task ImportUploadedCompose(InputFileChangeEventArgs e)
+    {
+        _importingCompose = true;
+        ClearImportMessages();
+        try
+        {
+            var file = e.File;
+            await using var stream = file.OpenReadStream(MaxUploadBytes);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            var result = ComposeImporter.ImportFromContent(content, file.Name);
+            await HandleImportResult(result, managedByCompose: false);
+        }
+        catch (IOException ex)
+        {
+            _importMessage = $"Could not read uploaded compose file: {ex.Message}";
+        }
+        finally
+        {
+            _importingCompose = false;
+        }
+    }
+
+    private async Task HandleImportResult(DockerComposeImportResult result, bool managedByCompose)
+    {
+        _pendingComposeManaged = managedByCompose;
+        _importWarnings.AddRange(result.Warnings);
+
+        if (result.Candidates.Count == 0)
+        {
+            _importMessage = "No server was imported.";
+            return;
+        }
+
+        _composeCandidates.AddRange(result.Candidates);
+        if (result.Candidates.Count == 1)
+        {
+            await SaveImportedCandidate(result.Candidates[0]);
+            return;
+        }
+
+        _importMessage = $"Found {result.Candidates.Count} Minecraft-like services.";
+    }
+
+    private async Task SaveImportedCandidate(DockerComposeServerCandidate candidate)
+    {
+        var server = ComposeImporter.CreateServerConfig(candidate, _pendingComposeManaged);
+        EnsureUniqueServerName(server);
+        server.LogPath = NormalizeServerFolderPath(server.LogPath);
+        server.LogTimeZoneId = NormalizeLogTimeZoneId(server.LogTimeZoneId);
+
+        await ServerStore.AddOrUpdateAsync(server);
+        await RefreshServers();
+
+        _selectedServer = _servers.FirstOrDefault(s => s.Id == server.Id);
+        _editServer = _selectedServer is null ? null : CopyForEdit(_selectedServer);
+        _isNew = false;
+        _showImportPanel = false;
+        ClearImportMessages();
+    }
+
+    private async Task ReloadComposeServer()
+    {
+        if (_editServer is null ||
+            string.IsNullOrWhiteSpace(_editServer.ComposeFilePath))
+        {
+            _importMessage = "This server does not have a compose file path to reload.";
+            return;
+        }
+
+        _reloadingCompose = true;
+        ClearImportMessages();
+        try
+        {
+            var result = await ComposeImporter.ImportFromPathAsync(_editServer.ComposeFilePath);
+            var candidate = result.Candidates.FirstOrDefault(c =>
+                string.Equals(c.ServiceName, _editServer.ComposeServiceName, StringComparison.OrdinalIgnoreCase));
+
+            candidate ??= result.Candidates.Count == 1 ? result.Candidates[0] : null;
+            if (candidate is null)
+            {
+                _importMessage = "Could not find the original compose service to reload.";
+                _importWarnings.AddRange(result.Warnings);
+                return;
+            }
+
+            var reloaded = ComposeImporter.CreateServerConfig(candidate, managedByCompose: true, existingId: _editServer.Id);
+            reloaded.LogPath = NormalizeServerFolderPath(reloaded.LogPath);
+            reloaded.LogTimeZoneId = NormalizeLogTimeZoneId(reloaded.LogTimeZoneId);
+            await ServerStore.AddOrUpdateAsync(reloaded);
+            await RefreshAfterSave(reloaded.Id);
+        }
+        finally
+        {
+            _reloadingCompose = false;
+        }
+    }
+
+    private void EnsureUniqueServerName(ServerConfig server)
+    {
+        if (_servers is null || _servers.All(s => !s.Name.Equals(server.Name, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        var baseName = server.Name;
+        for (var index = 2; ; index++)
+        {
+            var candidate = $"{baseName} ({index})";
+            if (_servers.All(s => !s.Name.Equals(candidate, StringComparison.OrdinalIgnoreCase)))
+            {
+                server.Name = candidate;
+                return;
+            }
+        }
     }
 
     private async Task TestServerAccess()
@@ -351,6 +634,11 @@
         }
     }
 
+    private void ShowDeleteConfirmation()
+    {
+        _showDeleteDialog = true;
+    }
+
     private void HideDeleteConfirmation()
     {
         _showDeleteDialog = false;
@@ -363,7 +651,7 @@
 
         await ServerStore.DeleteAsync(_selectedServer.Id);
 
-        _servers = (await ServerStore.GetAllAsync()).ToList();
+        await RefreshServers();
         _selectedServer = _servers.FirstOrDefault();
         _editServer = null;
         _isNew = false;
@@ -374,8 +662,46 @@
     {
         _editServer = null;
         _isNew = false;
+        ClearFormMessages();
+    }
+
+    private async Task RefreshServers()
+    {
+        _servers = (await ServerStore.GetAllAsync()).ToList();
+    }
+
+    private async Task RefreshAfterSave(string serverId)
+    {
+        await RefreshServers();
+        _selectedServer = _servers.FirstOrDefault(s => s.Id == serverId);
+        _editServer = null;
+        _isNew = false;
+        ClearFormMessages();
+    }
+
+    private void ClearFormMessages()
+    {
         _nameValidationError = null;
         _serverAccessTestResult = null;
+    }
+
+    private void ClearImportMessages()
+    {
+        _importMessage = null;
+        _importWarnings.Clear();
+        _composeCandidates.Clear();
+    }
+
+    private static void ClearComposeMetadata(ServerConfig server)
+    {
+        server.ComposeFilePath = null;
+        server.ComposeServiceName = null;
+        server.ComposeContainerName = null;
+        server.ComposeImage = null;
+        server.ComposeVersion = null;
+        server.ComposeDataVolumeSource = null;
+        server.ComposeDataVolumeTarget = null;
+        server.ComposeMemory = null;
     }
 
     private IReadOnlyList<LogTimeZoneOption> GetLogTimeZoneOptions()
@@ -475,6 +801,14 @@
 
     private static string CombinePath(string basePath, string relativePath) =>
         $"{basePath.TrimEnd('/', '\\')}/{relativePath}";
+
+    private static string GetSourceLabel(ServerConfig server) =>
+        server.ConfigSource == ServerConfigSource.DockerCompose ? "Docker Compose" : "Manual";
+
+    private static string GetCandidateDisplayName(DockerComposeServerCandidate candidate) =>
+        string.IsNullOrWhiteSpace(candidate.ContainerName)
+            ? candidate.ServiceName
+            : candidate.ContainerName;
 
     private sealed record LogTimeZoneOption(string Id, string Label);
     private sealed record ServerAccessDiagnostics(IReadOnlyList<ServerAccessCheck> Checks);
