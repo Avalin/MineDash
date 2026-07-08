@@ -19,8 +19,11 @@ public sealed class ConsoleState
         ShowLogs = true;
         ShowCommands = true;
         SelectedLogLevels = new HashSet<string>();
-        SelectedThreads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        ThreadFilterActive = false;
+        SelectedThreads = new HashSet<string>(
+            ConsoleThreadNormalizer.DefaultSelectedThreads,
+            StringComparer.OrdinalIgnoreCase);
+        ThreadFilterActive = true;
+        ThreadFilterInitialized = false;
     }
 
     public string ServerId { get; }
@@ -37,6 +40,7 @@ public sealed class ConsoleState
     public HashSet<string> SelectedThreads { get; set; }
     public bool LevelFilterActive { get; set; }
     public bool ThreadFilterActive { get; set; }
+    public bool ThreadFilterInitialized { get; set; }
     public string? OpenFilterDropdown { get; set; }
     public int LogHistoryMinutes { get; set; } = LogHistoryPresets.DefaultMinutes;
     public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;

@@ -124,6 +124,9 @@
 
                 @if (availableThreads.Any())
                 {
+                    var threadsForUi = LogFilters.GetThreadsForFilterUi(State);
+                    var pinnedThreads = threadsForUi.Where(ConsoleThreadNormalizer.IsPinnedThread).ToList();
+                    var otherThreads = threadsForUi.Where(t => !ConsoleThreadNormalizer.IsPinnedThread(t)).ToList();
                     <div class="filter-dropdown">
                         <button class="filter-dropdown-btn @(LogFilters.IsThreadFilterRestricting(State) ? "has-filter" : "")"
                                 type="button"
@@ -135,8 +138,32 @@
                         </button>
                         @if (State.OpenFilterDropdown == "threads")
                         {
-                            <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
-                                @foreach (var thread in availableThreads.OrderBy(t => t))
+                            <div class="filter-dropdown-menu filter-dropdown-menu-threads" @onclick:stopPropagation="true">
+                                <div class="filter-dropdown-actions">
+                                    <button type="button" class="filter-dropdown-action" @onclick="SelectAllThreads">
+                                        Select all
+                                    </button>
+                                    <button type="button" class="filter-dropdown-action" @onclick="DeselectAllThreads">
+                                        Deselect all
+                                    </button>
+                                </div>
+                                @foreach (var thread in pinnedThreads)
+                                {
+                                    var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
+                                    var isAbsent = !availableThreads.Contains(thread);
+                                    <label class="filter-dropdown-item filter-dropdown-item-pinned @(isAbsent ? "filter-dropdown-item-absent" : "")"
+                                           title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
+                                        <input type="checkbox"
+                                               checked="@isChecked"
+                                               @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
+                                        <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
+                                    </label>
+                                }
+                                @if (pinnedThreads.Count > 0 && otherThreads.Count > 0)
+                                {
+                                    <div class="filter-dropdown-divider" role="separator"></div>
+                                }
+                                @foreach (var thread in otherThreads)
                                 {
                                     var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
                                     <label class="filter-dropdown-item">
@@ -459,6 +486,20 @@
     private async Task ToggleThread(string thread, bool isChecked)
     {
         LogFilters.ToggleThread(State, thread, isChecked);
+        await OnPersistRequested.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectAllThreads()
+    {
+        LogFilters.SelectAllThreads(State);
+        await OnPersistRequested.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task DeselectAllThreads()
+    {
+        LogFilters.DeselectAllThreads(State);
         await OnPersistRequested.InvokeAsync();
         StateHasChanged();
     }

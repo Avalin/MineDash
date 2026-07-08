@@ -13,9 +13,12 @@ public interface IConsoleLogFilterService
     bool ThreadMatches(string? thread, ConsoleState state);
     HashSet<string> GetAvailableLevels(ConsoleState state);
     HashSet<string> GetAvailableThreads(ConsoleState state);
+    IReadOnlyList<string> GetThreadsForFilterUi(ConsoleState state);
     void SyncFilterSelections(ConsoleState state);
     void ToggleLevel(ConsoleState state, string level, bool isChecked);
     void ToggleThread(ConsoleState state, string thread, bool isChecked);
+    void SelectAllThreads(ConsoleState state);
+    void DeselectAllThreads(ConsoleState state);
     string GetLevelFilterKey(string level);
     string GetThreadFilterKey(string thread);
     HashSet<string> NormalizeLevelSelections(IEnumerable<string> selections);
@@ -83,14 +86,51 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
 
         if (state.ThreadFilterActive)
         {
-            state.SelectedThreads.IntersectWith(availableThreads);
+            if (!state.ThreadFilterInitialized && availableThreads.Count > 0)
+            {
+                ApplyDefaultThreadFilter(state);
+                state.ThreadFilterInitialized = true;
+            }
+            else if (state.ThreadFilterInitialized)
+            {
+                state.SelectedThreads.RemoveWhere(thread =>
+                    !availableThreads.Contains(thread)
+                    && !ConsoleThreadNormalizer.IsPinnedThread(thread));
+            }
 
-            if (availableThreads.Count > 0 && state.SelectedThreads.Count == availableThreads.Count)
+            if (availableThreads.Count > 0
+                && availableThreads.All(state.SelectedThreads.Contains))
             {
                 state.ThreadFilterActive = false;
                 state.SelectedThreads.Clear();
             }
         }
+    }
+
+    public IReadOnlyList<string> GetThreadsForFilterUi(ConsoleState state) =>
+        ConsoleThreadNormalizer.OrderForFilterUi(GetAvailableThreads(state));
+
+    public void SelectAllThreads(ConsoleState state)
+    {
+        var availableThreads = GetAvailableThreads(state);
+        state.ThreadFilterActive = true;
+        state.SelectedThreads.Clear();
+        foreach (var thread in availableThreads)
+            state.SelectedThreads.Add(thread);
+        state.ThreadFilterInitialized = true;
+
+        if (availableThreads.Count > 0)
+        {
+            state.ThreadFilterActive = false;
+            state.SelectedThreads.Clear();
+        }
+    }
+
+    public void DeselectAllThreads(ConsoleState state)
+    {
+        state.ThreadFilterActive = true;
+        state.SelectedThreads.Clear();
+        state.ThreadFilterInitialized = true;
     }
 
     public bool LevelMatches(string? level, ConsoleState state)
@@ -166,7 +206,9 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         else
             state.SelectedThreads.Remove(thread);
 
-        if (availableThreads.Count > 0 && state.SelectedThreads.Count == availableThreads.Count)
+        state.ThreadFilterInitialized = true;
+
+        if (availableThreads.Count > 0 && availableThreads.All(state.SelectedThreads.Contains))
         {
             state.ThreadFilterActive = false;
             state.SelectedThreads.Clear();
@@ -251,6 +293,14 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         state.ThreadFilterActive = true;
         state.SelectedThreads.Clear();
         foreach (var thread in availableThreads)
+            state.SelectedThreads.Add(thread);
+    }
+
+    private static void ApplyDefaultThreadFilter(ConsoleState state)
+    {
+        state.ThreadFilterActive = true;
+        state.SelectedThreads.Clear();
+        foreach (var thread in ConsoleThreadNormalizer.DefaultSelectedThreads)
             state.SelectedThreads.Add(thread);
     }
 }

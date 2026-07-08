@@ -346,7 +346,14 @@
                 state.SelectedLogLevels = LogFilters.NormalizeLevelSelections(toggle.SelectedLogLevels);
 
             if (toggle.SelectedThreads is not null)
+            {
                 state.SelectedThreads = LogFilters.NormalizeThreadSelections(toggle.SelectedThreads);
+                state.ThreadFilterInitialized = true;
+            }
+            else if (toggle.ThreadFilterActive)
+            {
+                state.ThreadFilterInitialized = true;
+            }
 
             if (toggle.LogHistoryMinutes.HasValue)
                 state.LogHistoryMinutes = toggle.LogHistoryMinutes.Value;
