@@ -59,6 +59,7 @@
 .console-header-title {
     min-width: 0;
     flex: 1;
+    overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -69,14 +70,8 @@
         border-bottom: 1px solid #333;
     }
 
-    .console-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-    }
-
     .console-endpoint {
-        font-size: 0.8rem;
+        font-size: 0.72rem;
         color: #999;
     }
 
@@ -321,14 +316,14 @@
 .console-options-menu {
     left: auto;
     right: 0;
-    min-width: min(330px, calc(100vw - 2rem));
-    max-width: min(380px, calc(100vw - 2rem));
+    min-width: min(250px, calc(100vw - 1rem));
+    max-width: min(300px, calc(100vw - 1rem));
     max-height: min(520px, calc(100vh - 8rem));
     padding: 0;
 }
 
 .console-options-section {
-    padding: 0.45rem;
+    padding: 0.25rem;
     border-bottom: 1px solid #333;
 }
 
@@ -336,12 +331,17 @@
     border-bottom: 0;
 }
 
+.console-options-menu .filter-dropdown-item {
+    padding: 0.35rem 0.4rem;
+}
+
 .console-options-section-title {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr) 3rem 1rem;
     align-items: center;
-    gap: 0.45rem;
+    column-gap: 0.35rem;
     width: 100%;
-    padding: 0.35rem 0.4rem 0.45rem;
+    padding: 0.35rem 0.35rem;
     color: #eee;
     background: transparent;
     border: 0;
@@ -357,7 +357,16 @@
 }
 
 .console-options-section-title > span:nth-child(2) {
-    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.console-options-section-title .filter-badge {
+    width: 3rem;
+    min-width: 3rem;
+    justify-self: end;
 }
 
 @media (max-width: 768px) {
@@ -372,9 +381,9 @@
     .console-options-menu {
         position: fixed;
         top: auto;
-        right: 1rem;
-        left: 1rem;
-        bottom: 1rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        bottom: 0.5rem;
         width: auto;
         max-width: none;
         max-height: min(75vh, 560px);
@@ -383,13 +392,21 @@
 }
 
 .console-title {
-    font-size: 1rem;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(0.72rem, 4vw, 1rem);
     font-weight: 600;
+    line-height: 1.15;
 }
 
 .console-endpoint {
     font-size: 0.8rem;
     color: #aaa;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .console-toggle-btn {
@@ -468,6 +485,32 @@
     line-height: 1;
     white-space: nowrap;
     color: #bdbdbd;
+}
+
+@media (max-width: 420px) {
+    .console-header-title-row {
+        gap: 0.35rem;
+    }
+
+    .console-header-actions {
+        gap: 0.3rem;
+    }
+
+    .server-status-pill {
+        padding: 0.16rem 0.4rem 0.16rem 0.35rem;
+        font-size: 0.6rem;
+    }
+
+    .server-status-dot {
+        width: 6px;
+        height: 6px;
+    }
+
+    .console-close-btn {
+        min-width: 36px;
+        min-height: 36px;
+        padding: 0.35rem;
+    }
 }
 
 .server-status-dot {
