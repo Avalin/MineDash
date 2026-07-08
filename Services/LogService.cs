@@ -21,6 +21,11 @@ public class LogService : ILogService
         @"^\[(?<stamp>[^\]]+)\].*?\[(?<thread>.+?)/(?<level>[^\]]+)\](?:\s*\[[^\]]+\])?:\s*(?<msg>.*)$",
         RegexOptions.Compiled);
 
+    // MineDash status pings used to open RCON every second — hide leftover lifecycle noise.
+    private static readonly Regex RconClientLifecycleRegex = new(
+        @"^Thread RCON Client /\S+ (?:started|shutting down)\.?$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private readonly ILogger<LogService> _logger;
 
     public LogService(ILogger<LogService> logger)
@@ -259,7 +264,7 @@ public class LogService : ILogService
             ct.ThrowIfCancellationRequested();
 
             var entry = ParseLogLine(line, server, lastTimestampUtc, sequence);
-            if (entry is null)
+            if (entry is null || IsRconClientLifecycleNoise(entry))
                 continue;
 
             if (entry.HasParsedTimestamp)
@@ -354,6 +359,12 @@ public class LogService : ILogService
             Thread = string.Empty,
             Level = string.Empty
         };
+    }
+
+    private static bool IsRconClientLifecycleNoise(LogEntry entry)
+    {
+        var text = string.IsNullOrWhiteSpace(entry.Message) ? entry.RawLine : entry.Message;
+        return !string.IsNullOrWhiteSpace(text) && RconClientLifecycleRegex.IsMatch(text.Trim());
     }
 
     private static LogEntry CreateDiagnosticEntry(string message) => new()

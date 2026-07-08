@@ -362,6 +362,8 @@
 
             if (toggle.LogLineLimit >= 0)
                 state.LogLineLimit = toggle.LogLineLimit;
+
+            state.AutoscrollMode = toggle.AutoscrollMode;
         }
     }
 
@@ -381,7 +383,8 @@
                     SelectedLogLevels = state.SelectedLogLevels.ToList(),
                     SelectedThreads = state.SelectedThreads.ToList(),
                     LogHistoryMinutes = state.LogHistoryMinutes,
-                    LogLineLimit = state.LogLineLimit
+                    LogLineLimit = state.LogLineLimit,
+                    AutoscrollMode = state.AutoscrollMode
                 };
             });
 

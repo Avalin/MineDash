@@ -88,6 +88,32 @@
                 </div>
             }
 
+            <div class="filter-dropdown">
+                <button class="filter-dropdown-btn @(State.AutoscrollMode != ConsoleAutoscrollMode.Off ? "has-filter" : "")"
+                        type="button"
+                        @onclick="@(() => ToggleFilterDropdown("scroll"))"
+                        @onclick:stopPropagation="true">
+                    <span class="bi bi-arrow-down-circle"></span>
+                    <span>Scroll</span>
+                    <span class="filter-badge">@ConsoleAutoscrollPresets.GetShortLabel(State.AutoscrollMode)</span>
+                </button>
+                @if (State.OpenFilterDropdown == "scroll")
+                {
+                    <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
+                        @foreach (var preset in ConsoleAutoscrollPresets.Modes)
+                        {
+                            <label class="filter-dropdown-item" title="@preset.Description">
+                                <input type="radio"
+                                       name="@($"autoscroll-{State.ServerId}")"
+                                       checked="@(State.AutoscrollMode == preset.Mode)"
+                                       @onchange="@(() => OnAutoscrollModeChanged(preset.Mode))" />
+                                <span>@preset.Label</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+
             @if (State.ShowLogs && State.LiveLogs.Any())
             {
                 var availableLevels = LogFilters.GetAvailableLevels(State);
@@ -324,7 +350,10 @@
     private CancellationTokenSource? _statusCts;
     private long _lastCloseFiltersTick;
     private int _statusCheckRunning;
-    private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(1);
+    private bool _stickToBottomForAuto;
+    private DateTime _lastFullRconCheckUtc = DateTime.MinValue;
+    private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan FullRconCheckInterval = TimeSpan.FromSeconds(90);
     private string OutputElementId => $"console-output-{State.ServerId}";
 
     protected override async Task OnInitializedAsync()
@@ -338,8 +367,9 @@
     {
         if (firstRender)
         {
+            _stickToBottomForAuto = true;
             await Task.Delay(100);
-            await ScrollToBottom();
+            await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
         }
     }
 
@@ -367,10 +397,10 @@
 
         _ = InvokeAsync(async () =>
         {
+            await PrepareAutoscrollCheckAsync();
             await LogSession.PollLogsAsync(Server, State);
             StateHasChanged();
-            await Task.Delay(50);
-            await ScrollToBottom();
+            await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
         });
     }
 
@@ -437,28 +467,29 @@
     {
         try
         {
-            await PollOnceAsync(scrollToBottom: false);
+            await PollOnceAsync(legacyOffScroll: false);
 
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
             while (await timer.WaitForNextTickAsync(ct))
-                await PollOnceAsync(scrollToBottom: false);
+                await PollOnceAsync(legacyOffScroll: false);
         }
         catch (OperationCanceledException)
         {
         }
     }
 
-    private async Task PollOnceAsync(bool scrollToBottom)
+    private async Task PollOnceAsync(bool legacyOffScroll)
     {
+        await PrepareAutoscrollCheckAsync();
+        var logCountBefore = State.LiveLogs.Count;
+
         await LogSession.PollLogsAsync(Server, State);
+        var contentAdded = State.LiveLogs.Count > logCountBefore;
+
         if (State.ShowLogs)
             await InvokeAsync(StateHasChanged);
 
-        if (scrollToBottom && State.ShowLogs)
-        {
-            await Task.Delay(50);
-            await ScrollToBottom();
-        }
+        await AfterContentUpdateAsync(contentAdded, legacyOffScroll);
     }
 
     private async Task RefreshLogsAfterCommandAsync()
@@ -466,8 +497,17 @@
         for (var i = 0; i < 8; i++)
         {
             await Task.Delay(250);
-            await PollOnceAsync(scrollToBottom: true);
+            await Task.Delay(250);
+            await PollOnceAsync(legacyOffScroll: true);
         }
+    }
+
+    private async Task OnAutoscrollModeChanged(ConsoleAutoscrollMode mode)
+    {
+        State.AutoscrollMode = mode;
+        State.OpenFilterDropdown = null;
+        await OnPersistRequested.InvokeAsync();
+        StateHasChanged();
     }
 
     private void ToggleFilterDropdown(string dropdownType)
@@ -594,6 +634,8 @@
         var username = currentUser?.Username?.ToUpperInvariant() ?? "RCON";
         var cmdToSend = ConsoleCommandFormatter.InjectUsername(originalCmd, username);
 
+        await PrepareAutoscrollCheckAsync();
+
         try
         {
             var response = await Rcon.SendCommandAsync(Server, cmdToSend);
@@ -622,13 +664,12 @@
 
         State.CommandArguments = string.Empty;
         StateHasChanged();
-        await Task.Delay(50);
-        await ScrollToBottom();
+        await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
 
         if (State.ShowLogs)
             _ = RefreshLogsAfterCommandAsync();
 
-        _ = CheckServerStatusAsync(initial: false);
+        _ = CheckServerStatusAsync(initial: false, forceFullRcon: true);
     }
 
     private async Task RecordCommandAsync(CommandHistoryItem item)
@@ -649,7 +690,41 @@
         }
     }
 
-    private async Task CheckServerStatusAsync(bool initial)
+    private async Task<bool> IsAtBottomAsync()
+    {
+        try
+        {
+            return await JSRuntime.InvokeAsync<bool>("isConsoleAtBottom", OutputElementId);
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private async Task PrepareAutoscrollCheckAsync()
+    {
+        if (State.AutoscrollMode == ConsoleAutoscrollMode.Auto)
+            _stickToBottomForAuto = await IsAtBottomAsync();
+    }
+
+    private async Task AfterContentUpdateAsync(bool contentAdded, bool legacyOffScroll)
+    {
+        var shouldScroll = State.AutoscrollMode switch
+        {
+            ConsoleAutoscrollMode.On => contentAdded,
+            ConsoleAutoscrollMode.Auto => contentAdded && _stickToBottomForAuto,
+            _ => legacyOffScroll,
+        };
+
+        if (!shouldScroll)
+            return;
+
+        await Task.Delay(50);
+        await ScrollToBottom();
+    }
+
+    private async Task CheckServerStatusAsync(bool initial, bool forceFullRcon = false)
     {
         if (Interlocked.CompareExchange(ref _statusCheckRunning, 1, 0) != 0)
             return;
@@ -664,10 +739,24 @@
                 await InvokeAsync(StateHasChanged);
             }
 
+            var needsFullRcon = forceFullRcon
+                || initial
+                || DateTime.UtcNow - _lastFullRconCheckUtc >= FullRconCheckInterval;
+
             ServerOnlineStatus next;
             try
             {
-                next = await Rcon.PingAsync(Server);
+                if (needsFullRcon)
+                {
+                    next = await Rcon.PingAsync(Server);
+                    _lastFullRconCheckUtc = DateTime.UtcNow;
+                }
+                else
+                {
+                    next = await Rcon.CheckReachabilityAsync(Server);
+                    if (next == ServerOnlineStatus.Online && previous == ServerOnlineStatus.AuthError)
+                        next = ServerOnlineStatus.AuthError;
+                }
             }
             catch
             {

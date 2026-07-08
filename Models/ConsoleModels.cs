@@ -11,6 +11,13 @@ public enum ServerOnlineStatus
     AuthError,
 }
 
+public enum ConsoleAutoscrollMode
+{
+    Off,
+    On,
+    Auto,
+}
+
 public sealed class ConsoleState
 {
     public ConsoleState(string serverId)
@@ -46,6 +53,7 @@ public sealed class ConsoleState
     public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;
     public ServerOnlineStatus OnlineStatus { get; set; } = ServerOnlineStatus.Unknown;
     public DateTime LastStatusCheckUtc { get; set; } = DateTime.MinValue;
+    public ConsoleAutoscrollMode AutoscrollMode { get; set; } = ConsoleAutoscrollMode.Off;
 }
 
 public sealed class ConsoleMergedEntry
@@ -79,4 +87,5 @@ public sealed class ConsoleToggleState
     public int? LogHistoryMinutes { get; set; }
     public int? LogHistoryHours { get; set; }
     public int LogLineLimit { get; set; } = LogHistoryPresets.DefaultLineLimit;
+    public ConsoleAutoscrollMode AutoscrollMode { get; set; } = ConsoleAutoscrollMode.Off;
 }

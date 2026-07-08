@@ -30,6 +30,12 @@
                 element.scrollTop = element.scrollHeight;
             }
         };
+
+        window.isConsoleAtBottom = (elementId, threshold = 48) => {
+            const element = document.getElementById(elementId);
+            if (!element) return true;
+            return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold;
+        };
         
         window.scrollToLastCommand = (elementId) => {
             const element = document.getElementById(elementId);

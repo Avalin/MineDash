@@ -7,7 +7,37 @@ namespace MineDash.Services;
 
 public class RconService : IRconService
 {
-    private static readonly TimeSpan PingTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(2);
+
+    public async Task<ServerOnlineStatus> CheckReachabilityAsync(
+        ServerConfig server,
+        CancellationToken ct = default)
+    {
+        if (server is null)
+            throw new ArgumentNullException(nameof(server));
+
+        if (string.IsNullOrWhiteSpace(server.Host))
+            return ServerOnlineStatus.Offline;
+
+        try
+        {
+            var endpoint = await ResolveEndpointAsync(server, ct);
+            using var client = new TcpClient();
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(ConnectTimeout);
+
+            await client.ConnectAsync(endpoint.Address, endpoint.Port, timeoutCts.Token);
+            return ServerOnlineStatus.Online;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return ServerOnlineStatus.Offline;
+        }
+    }
 
     public async Task<ServerOnlineStatus> PingAsync(
         ServerConfig server,
@@ -25,7 +55,7 @@ public class RconService : IRconService
             using var rcon = new RCON(endpoint, server.RconPassword);
 
             var connectTask = rcon.ConnectAsync();
-            if (await Task.WhenAny(connectTask, Task.Delay(PingTimeout, ct)) != connectTask)
+            if (await Task.WhenAny(connectTask, Task.Delay(ConnectTimeout, ct)) != connectTask)
                 return ServerOnlineStatus.Offline;
 
             await connectTask;
