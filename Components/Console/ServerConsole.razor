@@ -16,38 +16,11 @@
 
 <div class="console-card">
     <div class="console-header">
-        <div class="console-header-title-row">
-            <div class="console-header-title">
-                <div class="console-title">@Server.Name</div>
-                <div class="console-endpoint">@Server.Host:@Server.RconPort</div>
-            </div>
-            <div class="console-header-actions">
-                <span class="server-status-pill @GetStatusPillClass()"
-                      title="@GetStatusTooltip()">
-                    <span class="server-status-dot" aria-hidden="true"></span>
-                    <span class="server-status-label">@GetStatusLabel()</span>
-                </span>
-                <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
-                    <span class="bi bi-x-lg"></span>
-                </button>
-            </div>
+        <div class="console-header-title">
+            <div class="console-title">@Server.Name</div>
+            <div class="console-endpoint">@Server.Host:@Server.RconPort</div>
         </div>
         <div class="console-header-buttons">
-            <div class="toggle-buttons-row">
-                <button class="console-toggle-btn @(State.ShowLogs ? "active" : "")"
-                        title="@(State.ShowLogs ? "Hide logs" : "Show logs")"
-                        type="button"
-                        @onclick="ToggleLogs">
-                    <span class="bi bi-journal-text"></span>
-                </button>
-                <button class="console-toggle-btn @(State.ShowCommands ? "active" : "")"
-                        title="@(State.ShowCommands ? "Hide commands" : "Show commands")"
-                        type="button"
-                        @onclick="ToggleCommands">
-                    <span class="bi bi-terminal"></span>
-                </button>
-            </div>
-
             @{
                 IReadOnlyCollection<string> availableLevels = State.ShowLogs && State.LiveLogs.Any()
                     ? LogFilters.GetAvailableLevels(State)
@@ -60,25 +33,52 @@
                     : Array.Empty<string>();
                 var pinnedThreads = threadsForUi.Where(ConsoleThreadNormalizer.IsPinnedThread).ToList();
                 var otherThreads = threadsForUi.Where(t => !ConsoleThreadNormalizer.IsPinnedThread(t)).ToList();
-                var activeOptionCount = GetActiveOptionCount();
+                var activeViewCount = GetActiveViewCount();
+                var activeFilterCount = GetActiveFilterCount();
             }
             <div class="filter-dropdown console-options-dropdown">
-                <button class="filter-dropdown-btn console-options-btn @(activeOptionCount > 0 ? "has-filter" : "")"
+                <button class="filter-dropdown-btn console-options-btn @(activeViewCount > 0 ? "has-filter" : "")"
                         type="button"
-                        title="Console options"
-                        aria-label="Console options"
-                        @onclick="@(() => ToggleFilterDropdown("options"))"
+                        title="View settings"
+                        aria-label="View settings"
+                        @onclick="@(() => ToggleFilterDropdown("view"))"
                         @onclick:stopPropagation="true">
-                    <span class="bi bi-three-dots-vertical"></span>
-                    <span class="console-options-label">Options</span>
-                    @if (activeOptionCount > 0)
+                    <span class="bi bi-sliders"></span>
+                    <span class="console-options-label">View</span>
+                    @if (activeViewCount > 0)
                     {
-                        <span class="filter-badge">@activeOptionCount</span>
+                        <span class="filter-badge">@activeViewCount</span>
                     }
                 </button>
-                @if (State.OpenFilterDropdown == "options")
+                @if (State.OpenFilterDropdown == "view")
                 {
                     <div class="filter-dropdown-menu console-options-menu" @onclick:stopPropagation="true">
+                        <div class="console-options-section">
+                            <button class="console-options-section-title"
+                                    type="button"
+                                    @onclick="@(() => ToggleOptionSection("display"))">
+                                <span class="bi bi-eye"></span>
+                                <span>Display</span>
+                                <span class="filter-badge">@GetDisplaySummary()</span>
+                                <span class="bi @GetOptionSectionChevron("display")"></span>
+                            </button>
+                            @if (IsOptionSectionExpanded("display"))
+                            {
+                                <label class="filter-dropdown-item">
+                                    <input type="checkbox"
+                                           checked="@State.ShowLogs"
+                                           @onchange="@(_ => ToggleLogs())" />
+                                    <span>Logs</span>
+                                </label>
+                                <label class="filter-dropdown-item">
+                                    <input type="checkbox"
+                                           checked="@State.ShowCommands"
+                                           @onchange="@(_ => ToggleCommands())" />
+                                    <span>Commands</span>
+                                </label>
+                            }
+                        </div>
+
                         @if (State.ShowLogs)
                         {
                             <div class="console-options-section">
@@ -153,6 +153,33 @@
                                 }
                             }
                         </div>
+
+                    </div>
+                }
+            </div>
+            <div class="filter-dropdown console-options-dropdown">
+                <button class="filter-dropdown-btn console-options-btn @(activeFilterCount > 0 ? "has-filter" : "")"
+                        type="button"
+                        title="Log filters"
+                        aria-label="Log filters"
+                        @onclick="@(() => ToggleFilterDropdown("filters"))"
+                        @onclick:stopPropagation="true">
+                    <span class="bi bi-funnel"></span>
+                    <span class="console-options-label">Filters</span>
+                    @if (activeFilterCount > 0)
+                    {
+                        <span class="filter-badge">@activeFilterCount</span>
+                    }
+                </button>
+                @if (State.OpenFilterDropdown == "filters")
+                {
+                    <div class="filter-dropdown-menu console-options-menu" @onclick:stopPropagation="true">
+                        @if (!availableLevels.Any() && !availableThreads.Any())
+                        {
+                            <div class="console-options-empty">
+                                No log filters available yet.
+                            </div>
+                        }
 
                         @if (availableLevels.Any())
                         {
@@ -235,6 +262,16 @@
                     </div>
                 }
             </div>
+        </div>
+        <div class="console-header-actions">
+            <span class="server-status-pill @GetStatusPillClass()"
+                  title="@GetStatusTooltip()">
+                <span class="server-status-dot" aria-hidden="true"></span>
+                <span class="server-status-label">@GetStatusLabel()</span>
+            </span>
+            <button class="console-close-btn" title="Close console" type="button" @onclick="OnClose">
+                <span class="bi bi-x-lg"></span>
+            </button>
         </div>
     </div>
 
@@ -533,12 +570,24 @@
         StateHasChanged();
     }
 
-    private int GetActiveOptionCount()
+    private int GetActiveViewCount()
     {
         var count = 0;
+        if (!State.ShowLogs)
+            count++;
+
+        if (!State.ShowCommands)
+            count++;
+
         if (State.AutoscrollMode != ConsoleAutoscrollMode.Off)
             count++;
 
+        return count;
+    }
+
+    private int GetActiveFilterCount()
+    {
+        var count = 0;
         if (LogFilters.IsLevelFilterRestricting(State))
             count++;
 
@@ -546,6 +595,17 @@
             count++;
 
         return count;
+    }
+
+    private string GetDisplaySummary()
+    {
+        if (State.ShowLogs && State.ShowCommands)
+            return "All";
+
+        if (State.ShowLogs)
+            return "Logs";
+
+        return State.ShowCommands ? "Cmd" : "None";
     }
 
     private bool IsOptionSectionExpanded(string section) =>

@@ -72,31 +72,98 @@
 }
 
 .console-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    gap: 0.35rem;
     margin-bottom: 0.35rem;
     position: relative;
     z-index: 20;
     overflow: visible;
-}
-
-.console-header-title-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
+    align-items: center;
 }
 
 .console-header-title {
     min-width: 0;
-    flex: 1;
     overflow: hidden;
+}
+
+/* Narrow card: title + actions on row 1, View/Filters split 50/50 on row 2 */
+@container (max-width: 479px) {
+    .console-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "title actions"
+            "buttons buttons";
+    }
+
+    .console-header-title {
+        grid-area: title;
+    }
+
+    .console-header-buttons {
+        grid-area: buttons;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem;
+        width: 100%;
+    }
+
+    .console-header-buttons .filter-dropdown {
+        min-width: 0;
+    }
+
+    .console-header-buttons .filter-dropdown-btn {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .console-header-actions {
+        grid-area: actions;
+    }
+
+    .console-header-buttons .console-options-label {
+        display: inline;
+    }
+}
+
+@container (max-width: 280px) {
+    .console-header-buttons .console-options-label {
+        display: none;
+    }
+}
+
+/* Wide card: title, buttons, and status/close on one line */
+@container (min-width: 480px) {
+    .console-header {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas: "title buttons actions";
+        gap: 0.5rem;
+    }
+
+    .console-header-title {
+        grid-area: title;
+    }
+
+    .console-header-buttons {
+        grid-area: buttons;
+        display: flex;
+        gap: 0.35rem;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .console-header-actions {
+        grid-area: actions;
+    }
+
+    .console-header-buttons .console-options-label {
+        display: inline;
+    }
 }
 
 @media (max-width: 768px) {
     .console-header {
-        gap: 0.75rem;
+        gap: 0.5rem;
         margin-bottom: 0.75rem;
         padding-bottom: 0.75rem;
         border-bottom: 1px solid #333;
@@ -106,32 +173,9 @@
         font-size: 0.72rem;
         color: #999;
     }
-
-    .console-header-buttons {
-        width: 100%;
-        flex-wrap: nowrap;
-    }
-
-    .console-options-dropdown {
-        flex: 0 0 auto;
-    }
-
-    .toggle-buttons-row {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .toggle-buttons-row .console-toggle-btn {
-        flex: 1 1 auto;
-    }
 }
 
 .console-header-buttons {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-    flex-direction: row;
     position: relative;
     overflow: visible;
 }
@@ -150,11 +194,6 @@
 }
 
 @media (max-width: 768px) {
-    .console-header-buttons {
-        gap: 0.4rem;
-        flex-wrap: nowrap;
-    }
-    
     .toggle-buttons-row {
         flex: 1 1 auto;
         min-width: 0;
@@ -337,7 +376,7 @@
 }
 
 .console-options-dropdown {
-    margin-left: auto;
+    min-width: 0;
 }
 
 .console-options-btn {
@@ -361,6 +400,12 @@
 
 .console-options-section:last-child {
     border-bottom: 0;
+}
+
+.console-options-empty {
+    padding: 0.75rem;
+    color: #aaa;
+    font-size: 0.85rem;
 }
 
 .console-options-menu .filter-dropdown-item {
@@ -520,10 +565,6 @@
 }
 
 @media (max-width: 420px) {
-    .console-header-title-row {
-        gap: 0.35rem;
-    }
-
     .console-header-actions {
         gap: 0.3rem;
     }
@@ -940,12 +981,14 @@
 /* Mobile filter dropdown (console toolbar) */
 
 @media (max-width: 768px) {
-    .filter-dropdown {
+    .command-panel .filter-dropdown,
+    .console-options-menu .filter-dropdown {
         width: 100%;
         flex-basis: 100%;
     }
 
-    .filter-dropdown-menu {
+    .command-panel .filter-dropdown-menu,
+    .console-options-menu .filter-dropdown-menu {
         left: 0;
         right: 0;
         width: auto;
@@ -953,7 +996,7 @@
         max-width: none;
     }
 
-    .filter-dropdown-btn {
+    .command-panel .filter-dropdown-btn {
         width: 100%;
         min-width: auto;
         font-size: 0.9rem;
