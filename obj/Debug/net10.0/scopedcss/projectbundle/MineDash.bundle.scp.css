@@ -1542,32 +1542,39 @@ main[b-l3n58rr43k] {
     margin-top: 0.5rem;
 }
 
-.log-path-test[b-itiwke9orw] {
+.server-access-test[b-itiwke9orw] {
     margin-top: 0.75rem;
     padding: 0.75rem 0.9rem;
     border-radius: 0.5rem;
     font-size: 0.9rem;
-    line-height: 1.45;
+    line-height: 1.6;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.log-path-test.success[b-itiwke9orw] {
-    background: rgba(25, 135, 84, 0.15);
-    border: 1px solid rgba(25, 135, 84, 0.45);
+.server-access-check[b-itiwke9orw] {
+    margin-bottom: 0.25rem;
 }
 
-.log-path-test.error[b-itiwke9orw] {
-    background: rgba(220, 53, 69, 0.12);
-    border: 1px solid rgba(220, 53, 69, 0.4);
+.server-access-check:last-child[b-itiwke9orw] {
+    margin-bottom: 0;
 }
 
-.log-path-test-meta[b-itiwke9orw] {
-    margin-top: 0.45rem;
-    color: rgba(255, 255, 255, 0.78);
+.server-access-check.success[b-itiwke9orw] {
+    color: #4ade80;
 }
 
-.log-path-test-hints[b-itiwke9orw] {
-    margin: 0.5rem 0 0;
-    padding-left: 1.1rem;
+.server-access-check.error[b-itiwke9orw] {
+    color: #f87171;
+}
+
+.server-access-check-label[b-itiwke9orw] {
+    font-weight: 600;
+}
+
+.server-access-check-mark[b-itiwke9orw] {
+    margin-left: 0.25rem;
+    font-weight: 700;
 }
 /* /Components/Pages/TimedCommands.razor.rz.scp.css */
 /* Timed Commands management layout */

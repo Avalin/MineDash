@@ -5,6 +5,7 @@
 @inject IServerConfigStore ServerStore
 @inject IAuthService AuthService
 @inject ILogService LogService
+@inject IRconService RconService
 @inject NavigationManager Navigation
 
 <PageTitle>Server Management</PageTitle>
@@ -70,39 +71,27 @@
                 </div>
 
                 <div class="field-row">
-                    <div class="field-label">Log file path</div>
+                    <div class="field-label">Server folder path</div>
                     <div class="field-hint">
-                        Path inside the MineDash container (e.g. <code>/srv/minecraft/creatamon/data/logs/latest.log</code>).
+                        Path inside the MineDash container to this Minecraft server (e.g.
+                        <code>/srv/minecraft/creatamon</code>). MineDash assumes the latest log and
+                        <code>server.properties</code> live under this folder.
                     </div>
-                    <input class="form-control" placeholder="/srv/minecraft/creatamon/data/logs/latest.log" @bind="_editServer.LogPath" />
+                    <input class="form-control" placeholder="/srv/minecraft/creatamon" @bind="_editServer.LogPath" />
                     <div class="log-path-actions">
-                        <button class="btn btn-sm btn-outline-light" type="button" disabled="@_testingLogPath" @onclick="TestLogPath">
-                            @(_testingLogPath ? "Testing..." : "Test log access")
+                        <button class="btn btn-sm btn-outline-light" type="button" disabled="@_testingServerAccess" @onclick="TestServerAccess">
+                            @(_testingServerAccess ? "Testing..." : "Test server access")
                         </button>
                     </div>
-                    @if (_logPathTestResult is not null)
+                    @if (_serverAccessTestResult is not null)
                     {
-                        <div class="log-path-test @(_logPathTestResult.Readable ? "success" : "error")">
-                            <div>@_logPathTestResult.Summary</div>
-                            @if (_logPathTestResult.Readable)
+                        <div class="server-access-test">
+                            @foreach (var check in _serverAccessTestResult.Checks)
                             {
-                                <div class="log-path-test-meta">
-                                    Resolved path: <code>@_logPathTestResult.ResolvedPath</code>
-                                    (@_logPathTestResult.FileSizeBytes.ToString("N0") bytes)
+                                <div class="server-access-check @(check.Succeeded ? "success" : "error")">
+                                    <span class="server-access-check-label">@check.Label</span>
+                                    <span class="server-access-check-mark">@(check.Succeeded ? "✓" : "✗")</span>
                                 </div>
-                                @if (!string.IsNullOrWhiteSpace(_logPathTestResult.LastLinePreview))
-                                {
-                                    <div class="log-path-test-meta">Latest line: <code>@_logPathTestResult.LastLinePreview</code></div>
-                                }
-                            }
-                            else if (_logPathTestResult.MountHints.Count > 0)
-                            {
-                                <ul class="log-path-test-hints">
-                                    @foreach (var hint in _logPathTestResult.MountHints)
-                                    {
-                                        <li><code>@hint</code></li>
-                                    }
-                                </ul>
                             }
                         </div>
                     }
@@ -198,8 +187,8 @@
     private bool _isNew;
     private string? _nameValidationError;
     private bool _showDeleteDialog = false;
-    private bool _testingLogPath;
-    private LogPathDiagnostics? _logPathTestResult;
+    private bool _testingServerAccess;
+    private ServerAccessDiagnostics? _serverAccessTestResult;
 
     private static readonly IReadOnlyList<LogTimeZoneOption> LogTimeZoneOptions =
     [
@@ -233,11 +222,12 @@
             Name = "New Minecraft Server",
             Host = "localhost",
             RconPort = 25575,
+            LogPath = "/srv/minecraft/creatamon",
             LogTimeZoneId = "UTC"
         };
         _isNew = true;
         _nameValidationError = null;
-        _logPathTestResult = null;
+        _serverAccessTestResult = null;
     }
 
     private void EditServer(ServerConfig server)
@@ -250,13 +240,13 @@
             Host = server.Host,
             RconPort = server.RconPort,
             RconPassword = server.RconPassword,
-            LogPath = server.LogPath,
+            LogPath = ToServerFolderPath(server.LogPath),
             LogTimeZoneId = NormalizeLogTimeZoneId(server.LogTimeZoneId),
             Notes = server.Notes
         };
         _isNew = false;
         _nameValidationError = null;
-        _logPathTestResult = null;
+        _serverAccessTestResult = null;
     }
 
     private async Task OnNameInput(ChangeEventArgs e)
@@ -321,6 +311,7 @@
         if (!string.IsNullOrEmpty(_nameValidationError))
             return;
 
+        _editServer.LogPath = NormalizeServerFolderPath(_editServer.LogPath);
         _editServer.LogTimeZoneId = NormalizeLogTimeZoneId(_editServer.LogTimeZoneId);
 
         await ServerStore.AddOrUpdateAsync(_editServer);
@@ -331,7 +322,7 @@
         _editServer = null;
         _isNew = false;
         _nameValidationError = null;
-        _logPathTestResult = null;
+        _serverAccessTestResult = null;
     }
 
     private void ShowDeleteConfirmation()
@@ -339,28 +330,23 @@
         _showDeleteDialog = true;
     }
 
-    private async Task TestLogPath()
+    private async Task TestServerAccess()
     {
         if (_editServer is null)
             return;
 
-        _testingLogPath = true;
-        _logPathTestResult = null;
+        _testingServerAccess = true;
+        _serverAccessTestResult = null;
         StateHasChanged();
 
         try
         {
-            _logPathTestResult = await LogService.DiagnoseLogAccessAsync(_editServer);
-            if (_logPathTestResult.Readable &&
-                !string.IsNullOrWhiteSpace(_logPathTestResult.ResolvedPath) &&
-                !string.Equals(_editServer.LogPath?.Trim(), _logPathTestResult.ResolvedPath, StringComparison.OrdinalIgnoreCase))
-            {
-                _editServer.LogPath = _logPathTestResult.ResolvedPath;
-            }
+            _editServer.LogPath = NormalizeServerFolderPath(_editServer.LogPath);
+            _serverAccessTestResult = await BuildServerAccessDiagnosticsAsync(_editServer);
         }
         finally
         {
-            _testingLogPath = false;
+            _testingServerAccess = false;
             StateHasChanged();
         }
     }
@@ -389,7 +375,7 @@
         _editServer = null;
         _isNew = false;
         _nameValidationError = null;
-        _logPathTestResult = null;
+        _serverAccessTestResult = null;
     }
 
     private IReadOnlyList<LogTimeZoneOption> GetLogTimeZoneOptions()
@@ -406,5 +392,91 @@
     private static string NormalizeLogTimeZoneId(string? timeZoneId) =>
         string.IsNullOrWhiteSpace(timeZoneId) ? "UTC" : timeZoneId.Trim();
 
+    private async Task<ServerAccessDiagnostics> BuildServerAccessDiagnosticsAsync(ServerConfig server)
+    {
+        var rconStatus = await RconService.PingAsync(server);
+        var rconCheck = rconStatus switch
+        {
+            ServerOnlineStatus.Online => new ServerAccessCheck(
+                "Test RCON credentials",
+                true),
+            ServerOnlineStatus.AuthError => new ServerAccessCheck(
+                "Test RCON credentials",
+                false),
+            _ => new ServerAccessCheck(
+                "Test RCON credentials",
+                false)
+        };
+
+        var logDiagnostics = await LogService.DiagnoseLogAccessAsync(server);
+        var logCheck = logDiagnostics.Readable
+            ? new ServerAccessCheck(
+                "Locate the log",
+                true)
+            : new ServerAccessCheck(
+                "Locate the log",
+                false);
+
+        var serverPropertiesPath = GetReadableServerPropertiesPath(server.LogPath);
+        var propertiesCheck = serverPropertiesPath is not null
+            ? new ServerAccessCheck(
+                "Locate server.properties",
+                true)
+            : new ServerAccessCheck(
+                "Locate server.properties",
+                false);
+
+        return new ServerAccessDiagnostics([rconCheck, logCheck, propertiesCheck]);
+    }
+
+    private static string NormalizeServerFolderPath(string? configuredPath)
+    {
+        var path = ToServerFolderPath(configuredPath);
+        return path.TrimEnd('/', '\\');
+    }
+
+    private static string ToServerFolderPath(string? configuredPath)
+    {
+        var path = configuredPath?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        const string dataLogSuffix = "/data/logs/latest.log";
+        if (path.EndsWith(dataLogSuffix, StringComparison.OrdinalIgnoreCase))
+            return path[..^dataLogSuffix.Length];
+
+        const string logSuffix = "/logs/latest.log";
+        if (path.EndsWith(logSuffix, StringComparison.OrdinalIgnoreCase))
+            return path[..^logSuffix.Length];
+
+        return path;
+    }
+
+    private static string? GetReadableServerPropertiesPath(string? serverFolderPath)
+    {
+        foreach (var candidate in GetServerPropertiesPathCandidates(serverFolderPath))
+        {
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> GetServerPropertiesPathCandidates(string? serverFolderPath)
+    {
+        var folder = NormalizeServerFolderPath(serverFolderPath);
+        if (string.IsNullOrWhiteSpace(folder))
+            yield break;
+
+        yield return CombinePath(folder, "data/server.properties");
+        yield return CombinePath(folder, "server.properties");
+    }
+
+    private static string CombinePath(string basePath, string relativePath) =>
+        $"{basePath.TrimEnd('/', '\\')}/{relativePath}";
+
     private sealed record LogTimeZoneOption(string Id, string Label);
+    private sealed record ServerAccessDiagnostics(IReadOnlyList<ServerAccessCheck> Checks);
+    private sealed record ServerAccessCheck(string Label, bool Succeeded);
 }

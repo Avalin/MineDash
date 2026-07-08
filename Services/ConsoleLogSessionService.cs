@@ -71,8 +71,8 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
                 return;
             }
 
-            var logPath = server.LogPath!.Trim();
-            if (File.Exists(logPath))
+            var logPath = GetReadableLogPath(server.LogPath);
+            if (logPath is not null)
             {
                 var fileLength = new FileInfo(logPath).Length;
                 if (fileLength < state.LogFilePosition)
@@ -108,6 +108,36 @@ public sealed class ConsoleLogSessionService : IConsoleLogSessionService
             });
         }
     }
+
+    private static string? GetReadableLogPath(string? configuredPath)
+    {
+        foreach (var candidate in GetPathCandidates(configuredPath))
+        {
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> GetPathCandidates(string? configuredPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath))
+            yield break;
+
+        var path = configuredPath.Trim();
+        if (path.EndsWith("/latest.log", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return path;
+            yield break;
+        }
+
+        yield return CombinePath(path, "data/logs/latest.log");
+        yield return CombinePath(path, "logs/latest.log");
+    }
+
+    private static string CombinePath(string basePath, string relativePath) =>
+        $"{basePath.TrimEnd('/', '\\')}/{relativePath}";
 
     private static bool HasRenderableLogs(ConsoleState state) =>
         state.LiveLogs.Any(l => l.Thread != "MineDash");

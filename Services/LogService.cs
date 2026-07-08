@@ -59,10 +59,10 @@ public class LogService : ILogService
         }
 
         var summary = resolved is not null
-            ? $"Readable at {resolved}."
+            ? $"Found latest.log at {resolved}."
             : string.IsNullOrWhiteSpace(configured)
-                ? "No log path configured."
-                : $"Cannot read {configured} from inside the MineDash container.";
+                ? "No server folder configured."
+                : $"Cannot find latest.log under {configured} from inside the MineDash container.";
 
         return new LogPathDiagnostics
         {
@@ -169,10 +169,19 @@ public class LogService : ILogService
     {
         if (!string.IsNullOrWhiteSpace(configuredPath))
         {
-            yield return configuredPath;
-            var alternate = SuggestAlternateLogPath(configuredPath);
-            if (!alternate.Equals(configuredPath, StringComparison.OrdinalIgnoreCase))
-                yield return alternate;
+            var path = configuredPath.Trim();
+            if (path.EndsWith("/latest.log", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return path;
+                var alternate = SuggestAlternateLogPath(path);
+                if (!alternate.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    yield return alternate;
+            }
+            else
+            {
+                yield return CombinePath(path, "data/logs/latest.log");
+                yield return CombinePath(path, "logs/latest.log");
+            }
         }
     }
 
@@ -390,6 +399,9 @@ public class LogService : ILogService
 
         return logPath;
     }
+
+    private static string CombinePath(string basePath, string relativePath) =>
+        $"{basePath.TrimEnd('/', '\\')}/{relativePath}";
 
     private static int ParseMonth(string month) =>
         DateTime.ParseExact(month, "MMM", CultureInfo.InvariantCulture).Month;

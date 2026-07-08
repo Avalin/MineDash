@@ -17,7 +17,7 @@ public interface ILogService
         ServerConfig server, long fromPosition, CancellationToken ct = default);
 
     /// <summary>
-    /// Checks whether MineDash can read the configured log file from inside its container.
+    /// Checks whether MineDash can find latest.log under the configured server folder.
     /// </summary>
     Task<LogPathDiagnostics> DiagnoseLogAccessAsync(ServerConfig server, CancellationToken ct = default);
 }
