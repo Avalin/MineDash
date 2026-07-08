@@ -1538,8 +1538,20 @@ main[b-l3n58rr43k] {
     }
 }
 
-.log-path-actions[b-itiwke9orw] {
-    margin-top: 0.5rem;
+.server-path-control[b-itiwke9orw] {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.server-path-control .form-control[b-itiwke9orw] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.server-path-control .btn[b-itiwke9orw] {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .server-access-test[b-itiwke9orw] {
@@ -1560,11 +1572,15 @@ main[b-l3n58rr43k] {
     margin-bottom: 0;
 }
 
-.server-access-check.success[b-itiwke9orw] {
+.server-access-check.success[b-itiwke9orw],
+.server-access-check-label.success[b-itiwke9orw],
+.server-access-check-mark.success[b-itiwke9orw] {
     color: #4ade80;
 }
 
-.server-access-check.error[b-itiwke9orw] {
+.server-access-check.error[b-itiwke9orw],
+.server-access-check-label.error[b-itiwke9orw],
+.server-access-check-mark.error[b-itiwke9orw] {
     color: #f87171;
 }
 
@@ -1575,6 +1591,16 @@ main[b-l3n58rr43k] {
 .server-access-check-mark[b-itiwke9orw] {
     margin-left: 0.25rem;
     font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .server-path-control[b-itiwke9orw] {
+        flex-direction: column;
+    }
+
+    .server-path-control .btn[b-itiwke9orw] {
+        width: 100%;
+    }
 }
 /* /Components/Pages/TimedCommands.razor.rz.scp.css */
 /* Timed Commands management layout */
