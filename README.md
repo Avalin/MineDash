@@ -8,13 +8,13 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
 ## Features
 
 - 🎮 **Multi-Server Management**: Connect to and manage multiple Minecraft servers from a single interface
-- 🧩 **Custom Command Palette:** Add your own frequently used Minecraft commands for quick copy-paste access
-- 💻 **Interactive Console**: Execute commands and view real-time responses with command history
-- 📊 **Server Logs**: View and monitor server logs in real-time with filtering by log level and thread
+- 🧩 **Per-User Command Palette**: Add frequently used Minecraft commands for quick access
+- 💻 **Interactive Console**: Execute commands and view real-time responses with persisted command activity
+- 📊 **Server Logs**: Monitor server logs in real time with history, level, and thread filtering
 - ⏰ **Scheduled Commands**: Automate server commands with flexible scheduling (minutes, hours, weekdays)
 - 👥 **User Management**: Multi-user support with admin/non-admin roles
-- 🎨 **Customizable Layouts**: Choose from multiple console layout options (1, 2, or 9 consoles)
-- 🔒 **Secure RCON**: Connect securely to your Minecraft servers using RCON protocol
+- 🎨 **Customizable Layouts**: Arrange open consoles in 1, 2, or 3-column layouts
+- 🔐 **RCON Integration**: Connect to Minecraft servers using password-protected RCON
 - 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
 
 ## Prerequisites
@@ -53,6 +53,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
    ```
 
 5. Access MineDash at `http://localhost:8214`
+6. Create the first user from the login page. The first account automatically becomes an administrator.
 
 ### Option 2: Manual Build
 
@@ -78,6 +79,7 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
    ```
 
 5. Access MineDash at `http://localhost:5248` (or the port shown in the console)
+6. Create the first user from the login page. The first account automatically becomes an administrator.
 
 ## Configuration
 
@@ -90,13 +92,27 @@ A web-based dashboard for managing multiple Minecraft servers via RCON. Built wi
    - **Host**: The IP address or hostname of your Minecraft server
    - **RCON Port**: The RCON port (usually 25575)
    - **RCON Password**: Your RCON password
-   - **Log Path** (optional): Path to `latest.log` **inside the MineDash container**
-     - Example: `/srv/minecraft/creatamon/data/logs/latest.log`
+   - **Server Folder Path** (optional): Path to the Minecraft server folder **inside the MineDash container**
+     - Example: `/srv/minecraft/creatamon`
+     - MineDash looks for `data/logs/latest.log` and `logs/latest.log` under this folder
+     - Older direct `latest.log` paths are still supported
      - This is not your Windows `\\NAS\minecraft\...` path — map the NAS folder into Docker first
-     - Use **Test log access** on the server edit form to verify the path
+     - Use **Test server access** on the server edit form to verify the folder, log file, and `server.properties`
+   - **Log Timezone** (optional): Timezone used by timestamps in `latest.log` (Docker servers commonly log in UTC)
    - **Notes** (optional): Any additional notes about the server
 
 4. Click **Save**
+
+### Time Display
+
+MineDash can display log and command timestamps in a chosen timezone. For Docker, set:
+
+```yaml
+environment:
+  - MineDash__DisplayTimeZoneId=Europe/Oslo
+```
+
+If this value is not set, MineDash uses the host's local timezone. Server-specific **Log Timezone** controls how timestamps from each Minecraft `latest.log` file are interpreted before display.
 
 ### Enabling RCON on Your Minecraft Server
 
@@ -117,7 +133,8 @@ To use MineDash, you need to enable RCON on your Minecraft server:
 
 MineDash stores its data in JSON files:
 - **Server configurations**: `app_data/servers.json`
-- **Command history**: `app_data/commands.json`
+- **Command palette**: `app_data/users/<username>/commands.json`
+- **Console activity**: `app_data/console_activity.json`
 - **Timed commands**: `app_data/timed-commands.json`
 - **Users**: `app_data/users.json`
 - **Settings**: `app_data/settings.json`
@@ -168,6 +185,9 @@ The `compose.yml` file includes:
 - Volume mounts:
   - `/srv/minedash/app_data` → Application data persistence
   - `/srv/minecraft` → Read-only access to Minecraft server logs
+- Environment:
+  - `ASPNETCORE_URLS=http://+:8214`
+  - `MineDash__DisplayTimeZoneId=Europe/Oslo` (change to your preferred display timezone)
 - Network: Connects to your existing Minecraft network
 
 Adjust these paths to match your server setup.
@@ -185,8 +205,9 @@ Adjust these paths to match your server setup.
 
 - The log path must be readable **inside the MineDash container**, not just on your PC/NAS file share
 - On **Synology**, mount your minecraft share in Docker/Compose, e.g. `/volume1/minecraft:/srv/minecraft:ro`
-- Then configure the in-container path, e.g. `/srv/minecraft/creatamon/data/logs/latest.log`
-- Use **Server Management → Test log access** to see mount diagnostics
+- Then configure the in-container server folder, e.g. `/srv/minecraft/creatamon`
+- MineDash will try both `/srv/minecraft/creatamon/data/logs/latest.log` and `/srv/minecraft/creatamon/logs/latest.log`
+- Use **Server Management → Test server access** to see mount diagnostics
 - Check file permissions — MineDash needs read access to `latest.log`
 
 ### Synology / NAS setup
@@ -201,7 +222,7 @@ volumes:
 Server log path in MineDash:
 
 ```text
-/srv/minecraft/creatamon/data/logs/latest.log
+/srv/minecraft/creatamon
 ```
 
 ### Port already in use
