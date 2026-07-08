@@ -334,6 +334,16 @@
     align-items: center;
 }
 
+.add-console-row select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.add-console-row .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 @media (max-width: 768px) {
     .add-console-row {
         width: 100%;

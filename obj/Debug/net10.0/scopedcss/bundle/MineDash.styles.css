@@ -838,6 +838,16 @@ main[b-l3n58rr43k] {
     align-items: center;
 }
 
+.add-console-row select[b-r3v39eobk4] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.add-console-row .btn[b-r3v39eobk4] {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 @media (max-width: 768px) {
     .add-console-row[b-r3v39eobk4] {
         width: 100%;
