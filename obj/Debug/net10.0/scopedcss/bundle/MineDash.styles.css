@@ -554,6 +554,7 @@ main[b-l3n58rr43k] {
     padding: 0.75rem;
     background-color: #1e1e1e;
     color: #eee;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     height: calc(100vh - 100px);
@@ -630,6 +631,62 @@ main[b-l3n58rr43k] {
         width: 100%;
         justify-content: center;
         padding: 0.5rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .console-toolbar[b-r3v39eobk4] {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .console-toolbar .toolbar-section:first-child[b-r3v39eobk4] {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .layout-section[b-r3v39eobk4] {
+        display: none;
+    }
+
+    .console-grid[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+@container (max-width: 520px) {
+    .console-toolbar[b-r3v39eobk4] {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .console-toolbar .toolbar-section:first-child[b-r3v39eobk4] {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .layout-section[b-r3v39eobk4] {
+        display: none !important;
+    }
+
+    .add-console-row[b-r3v39eobk4] {
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    .add-console-row select[b-r3v39eobk4] {
+        min-width: 0;
+    }
+
+    .add-console-row .btn[b-r3v39eobk4] {
+        flex: 0 0 auto;
+        width: auto;
+    }
+
+    .console-grid[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr) !important;
     }
 }
 
@@ -901,7 +958,7 @@ main[b-l3n58rr43k] {
     }
     
     /* On mobile, ALWAYS use single column layout - ignore layout selector */
-    .console-grid[b-r3v39eobk4][b-r3v39eobk4] {
+    .console-grid[b-r3v39eobk4] {
         grid-template-columns: minmax(0, 1fr) !important;
     }
     

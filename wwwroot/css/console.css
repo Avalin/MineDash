@@ -12,6 +12,37 @@
     min-height: 0;
 }
 
+@container (max-width: 520px) {
+    .console-grid {
+        display: block !important;
+        grid-template-columns: none !important;
+        overflow-y: auto;
+        padding-top: 0.5rem;
+    }
+
+    .console-grid-item {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0;
+        min-height: auto !important;
+        margin: 0 0 0.75rem 0;
+        font-size: 1rem;
+        line-height: normal;
+    }
+
+    .console-grid-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .console-grid-item > .console-card {
+        display: flex !important;
+        width: 100%;
+        height: auto !important;
+        min-height: 0 !important;
+        flex: none !important;
+    }
+}
+
 /* single console card */
 
 .console-card {
@@ -19,6 +50,7 @@
     border-radius: 6px;
     border: 1px solid #444;
     padding: 0.5rem 0.5rem 0.6rem 0.5rem;
+    container-type: inline-size;
 
     display: flex;
     flex-direction: column;
@@ -863,6 +895,45 @@
         min-height: 44px;
         font-size: 0.95rem;
         font-weight: 500;
+    }
+}
+
+@container (max-width: 290px) {
+    .console-grid-item > .console-card,
+    .console-card {
+        flex: 0 0 auto;
+        height: auto;
+        min-height: 0;
+    }
+
+    .console-output {
+        flex: 0 0 auto;
+        min-height: 160px;
+        max-height: none;
+    }
+
+    .command-input-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+        margin-top: 0.5rem;
+    }
+
+    .command-select-wrap,
+    .command-input,
+    .command-send-btn {
+        width: 100%;
+    }
+
+    .command-select-wrap::after {
+        display: none;
+    }
+
+    .command-select,
+    .command-input,
+    .command-send-btn {
+        min-height: 40px;
+        padding: 0.5rem 0.6rem;
     }
 }
 

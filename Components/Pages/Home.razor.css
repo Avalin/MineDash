@@ -70,6 +70,7 @@
     padding: 0.75rem;
     background-color: #1e1e1e;
     color: #eee;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     height: calc(100vh - 100px);
@@ -146,6 +147,62 @@
         width: 100%;
         justify-content: center;
         padding: 0.5rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .console-toolbar {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .console-toolbar .toolbar-section:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .layout-section {
+        display: none;
+    }
+
+    .console-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+@container (max-width: 520px) {
+    .console-toolbar {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .console-toolbar .toolbar-section:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .layout-section {
+        display: none !important;
+    }
+
+    .add-console-row {
+        flex-direction: row;
+        align-items: stretch;
+    }
+
+    .add-console-row select {
+        min-width: 0;
+    }
+
+    .add-console-row .btn {
+        flex: 0 0 auto;
+        width: auto;
+    }
+
+    .console-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
     }
 }
 
@@ -417,7 +474,7 @@
     }
     
     /* On mobile, ALWAYS use single column layout - ignore layout selector */
-    .console-grid[b-r3v39eobk4] {
+    .console-grid {
         grid-template-columns: minmax(0, 1fr) !important;
     }
     
