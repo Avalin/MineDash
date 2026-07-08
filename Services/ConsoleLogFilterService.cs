@@ -336,6 +336,9 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         ConsoleState state,
         IReadOnlyDictionary<string, int> threadLogCounts)
     {
+        if (state.SelectedThreads.Remove("Mod Loading"))
+            state.SelectedThreads.Add("main");
+
         var miscMembers = threadLogCounts
             .Where(kvp => ConsoleThreadNormalizer.IsMiscGrouped(kvp.Key, kvp.Value))
             .Select(kvp => kvp.Key)

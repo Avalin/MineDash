@@ -24,7 +24,7 @@ public static class ConsoleThreadNormalizer
     private static readonly (Regex Pattern, string Key)[] PrefixFamilies =
     [
         (new(@"^VoiceChat", RegexOptions.Compiled | RegexOptions.IgnoreCase), "Voice Chat"),
-        (new(@"^modloading", RegexOptions.Compiled | RegexOptions.IgnoreCase), "Mod Loading"),
+        (new(@"^modloading", RegexOptions.Compiled | RegexOptions.IgnoreCase), "main"),
         (new(@"^ForkJoinPool", RegexOptions.Compiled | RegexOptions.IgnoreCase), "ForkJoin Pool"),
         (new(@"^pool$", RegexOptions.Compiled | RegexOptions.IgnoreCase), "ForkJoin Pool"),
     ];
@@ -57,7 +57,7 @@ public static class ConsoleThreadNormalizer
     private static readonly Dictionary<string, (string Label, string Tooltip)> FriendlyLabels =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            ["main"] = ("Mod Loader", "Java main thread — mod/plugin loading and startup logs (main)"),
+            ["main"] = ("Mod Loader", "Mod/plugin startup logs (main, modloading-worker-*)"),
             ["Server thread"] = ("Server Core", "Primary Minecraft server tick loop (Server thread)"),
             ["Async Chat Thread"] = ("Player Chat", "In-game chat and player messages (Async Chat Thread)"),
             [MiscellaneousKey] = ("Miscellaneous", "Low-volume threads with 1–3 log lines"),
