@@ -39,11 +39,12 @@
 
 main {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     position: relative;
     z-index: 1;
     isolation: isolate;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     min-height: 0;
     min-width: 0;
 }
@@ -53,6 +54,7 @@ main {
         -webkit-overflow-scrolling: touch;
         overflow-x: hidden;
         overflow-y: auto;
+        display: block;
         flex: 1 1 auto;
         height: auto;
         min-height: 0;
@@ -122,8 +124,8 @@ main {
     }
 
     .top-row {
-        position: sticky;
-        top: 0;
+        flex: 0 0 auto;
+        position: relative;
         z-index: 1000;
     }
 
@@ -139,8 +141,12 @@ main {
     }
 
     article {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
         position: relative;
         z-index: 0;
+        min-height: 0;
         min-width: 0;
         width: 100%;
         box-sizing: border-box;
