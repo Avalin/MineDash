@@ -41,6 +41,7 @@ main {
     flex: 1;
     position: relative;
     z-index: 1;
+    isolation: isolate;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
@@ -71,9 +72,7 @@ main {
 }
 
 .top-row {
-    background: linear-gradient(90deg, 
-        rgba(45, 45, 45, 0.95) 0%, 
-        rgba(35, 35, 35, 0.98) 100%);
+    background: linear-gradient(90deg, #2d2d2d 0%, #232323 100%);
     backdrop-filter: blur(10px);
     border-bottom: 2px solid rgba(124, 179, 66, 0.2);
     justify-content: flex-end;
@@ -82,7 +81,7 @@ main {
     align-items: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     position: relative;
-    z-index: 2;
+    z-index: 1000;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
@@ -125,7 +124,7 @@ main {
     .top-row {
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: 1000;
     }
 
     .top-row.auth ::deep a:first-child {
@@ -141,7 +140,7 @@ main {
 
     article {
         position: relative;
-        z-index: 1;
+        z-index: 0;
         min-width: 0;
         width: 100%;
         box-sizing: border-box;
