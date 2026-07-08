@@ -77,8 +77,8 @@
                         <code>/srv/minecraft/creatamon</code>). MineDash assumes the latest log and
                         <code>server.properties</code> live under this folder.
                     </div>
-                    <input class="form-control" placeholder="/srv/minecraft/creatamon" @bind="_editServer.LogPath" />
-                    <div class="log-path-actions">
+                    <div class="server-path-control">
+                        <input class="form-control" placeholder="/srv/minecraft/creatamon" @bind="_editServer.LogPath" />
                         <button class="btn btn-sm btn-outline-light" type="button" disabled="@_testingServerAccess" @onclick="TestServerAccess">
                             @(_testingServerAccess ? "Testing..." : "Test server access")
                         </button>
@@ -89,8 +89,8 @@
                             @foreach (var check in _serverAccessTestResult.Checks)
                             {
                                 <div class="server-access-check @(check.Succeeded ? "success" : "error")">
-                                    <span class="server-access-check-label">@check.Label</span>
-                                    <span class="server-access-check-mark">@(check.Succeeded ? "✓" : "✗")</span>
+                                    <span class="server-access-check-label @(check.Succeeded ? "success" : "error")">@check.Label</span>
+                                    <span class="server-access-check-mark @(check.Succeeded ? "success" : "error")">@(check.Succeeded ? "✓" : "✗")</span>
                                 </div>
                             }
                         </div>
