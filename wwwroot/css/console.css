@@ -82,21 +82,16 @@
 
     .console-header-buttons {
         width: 100%;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
 
-    .console-header-buttons .filter-dropdown {
-        width: 100%;
-        flex-basis: 100%;
-    }
-
-    .console-header-buttons .filter-dropdown-btn {
-        width: 100%;
-        justify-content: space-between;
+    .console-options-dropdown {
+        flex: 0 0 auto;
     }
 
     .toggle-buttons-row {
-        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .toggle-buttons-row .console-toggle-btn {
@@ -130,12 +125,12 @@
 @media (max-width: 768px) {
     .console-header-buttons {
         gap: 0.4rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
     
-    /* Mobile: toggle buttons row takes full width and buttons stretch */
     .toggle-buttons-row {
-        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
     }
     
     .toggle-buttons-row .console-toggle-btn {
@@ -312,6 +307,79 @@
     cursor: pointer;
     margin: 0;
     flex-shrink: 0;
+}
+
+.console-options-dropdown {
+    margin-left: auto;
+}
+
+.console-options-btn {
+    min-width: 44px;
+    justify-content: center;
+}
+
+.console-options-menu {
+    left: auto;
+    right: 0;
+    min-width: min(330px, calc(100vw - 2rem));
+    max-width: min(380px, calc(100vw - 2rem));
+    max-height: min(520px, calc(100vh - 8rem));
+    padding: 0;
+}
+
+.console-options-section {
+    padding: 0.45rem;
+    border-bottom: 1px solid #333;
+}
+
+.console-options-section:last-child {
+    border-bottom: 0;
+}
+
+.console-options-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.35rem 0.4rem 0.45rem;
+    color: #eee;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.console-options-section-title:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.console-options-section-title > span:nth-child(2) {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .console-options-label {
+        display: none;
+    }
+
+    .console-options-btn {
+        padding: 0.5rem;
+    }
+
+    .console-options-menu {
+        position: fixed;
+        top: auto;
+        right: 1rem;
+        left: 1rem;
+        bottom: 1rem;
+        width: auto;
+        max-width: none;
+        max-height: min(75vh, 560px);
+        border-radius: 8px;
+    }
 }
 
 .console-title {

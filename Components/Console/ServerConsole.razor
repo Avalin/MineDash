@@ -33,179 +33,6 @@
             </div>
         </div>
         <div class="console-header-buttons">
-            @if (State.ShowLogs)
-            {
-                <div class="filter-dropdown">
-                    <button class="filter-dropdown-btn has-filter"
-                            type="button"
-                            @onclick="@(() => ToggleFilterDropdown("time"))"
-                            @onclick:stopPropagation="true">
-                        <span class="bi bi-clock-history"></span>
-                        <span>Time</span>
-                        <span class="filter-badge">@LogRetention.FormatTimeShort(State.LogHistoryMinutes)</span>
-                    </button>
-                    @if (State.OpenFilterDropdown == "time")
-                    {
-                        <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
-                            @foreach (var preset in LogHistoryPresets.Time)
-                            {
-                                <label class="filter-dropdown-item">
-                                    <input type="radio"
-                                           name="@($"log-time-{State.ServerId}")"
-                                           checked="@(State.LogHistoryMinutes == preset.Minutes)"
-                                           @onchange="@(() => OnTimeLimitChanged(preset.Minutes))" />
-                                    <span>@preset.Label</span>
-                                </label>
-                            }
-                        </div>
-                    }
-                </div>
-
-                <div class="filter-dropdown">
-                    <button class="filter-dropdown-btn has-filter"
-                            type="button"
-                            @onclick="@(() => ToggleFilterDropdown("lines"))"
-                            @onclick:stopPropagation="true">
-                        <span class="bi bi-list-ol"></span>
-                        <span>Lines</span>
-                        <span class="filter-badge">@LogRetention.FormatLineShort(State.LogLineLimit)</span>
-                    </button>
-                    @if (State.OpenFilterDropdown == "lines")
-                    {
-                        <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
-                            @foreach (var preset in LogHistoryPresets.Lines)
-                            {
-                                <label class="filter-dropdown-item">
-                                    <input type="radio"
-                                           name="@($"log-lines-{State.ServerId}")"
-                                           checked="@(State.LogLineLimit == preset.Lines)"
-                                           @onchange="@(() => OnLineLimitChanged(preset.Lines))" />
-                                    <span>@preset.Label</span>
-                                </label>
-                            }
-                        </div>
-                    }
-                </div>
-            }
-
-            <div class="filter-dropdown">
-                <button class="filter-dropdown-btn @(State.AutoscrollMode != ConsoleAutoscrollMode.Off ? "has-filter" : "")"
-                        type="button"
-                        @onclick="@(() => ToggleFilterDropdown("scroll"))"
-                        @onclick:stopPropagation="true">
-                    <span class="bi bi-arrow-down-circle"></span>
-                    <span>Scroll</span>
-                    <span class="filter-badge">@ConsoleAutoscrollPresets.GetShortLabel(State.AutoscrollMode)</span>
-                </button>
-                @if (State.OpenFilterDropdown == "scroll")
-                {
-                    <div class="filter-dropdown-menu history-menu" @onclick:stopPropagation="true">
-                        @foreach (var preset in ConsoleAutoscrollPresets.Modes)
-                        {
-                            <label class="filter-dropdown-item" title="@preset.Description">
-                                <input type="radio"
-                                       name="@($"autoscroll-{State.ServerId}")"
-                                       checked="@(State.AutoscrollMode == preset.Mode)"
-                                       @onchange="@(() => OnAutoscrollModeChanged(preset.Mode))" />
-                                <span>@preset.Label</span>
-                            </label>
-                        }
-                    </div>
-                }
-            </div>
-
-            @if (State.ShowLogs && State.LiveLogs.Any())
-            {
-                var availableLevels = LogFilters.GetAvailableLevels(State);
-                var availableThreads = LogFilters.GetAvailableThreads(State);
-
-                @if (availableLevels.Any())
-                {
-                    <div class="filter-dropdown">
-                        <button class="filter-dropdown-btn @(LogFilters.IsLevelFilterRestricting(State) ? "has-filter" : "")"
-                                type="button"
-                                @onclick="@(() => ToggleFilterDropdown("levels"))"
-                                @onclick:stopPropagation="true">
-                            <span class="bi bi-funnel"></span>
-                            <span>Levels</span>
-                            <span class="filter-badge">@LogFilters.GetLevelBadgeCount(State)</span>
-                        </button>
-                        @if (State.OpenFilterDropdown == "levels")
-                        {
-                            <div class="filter-dropdown-menu" @onclick:stopPropagation="true">
-                                @foreach (var level in availableLevels.OrderBy(l => l))
-                                {
-                                    var isChecked = !State.LevelFilterActive || State.SelectedLogLevels.Contains(level);
-                                    <label class="filter-dropdown-item">
-                                        <input type="checkbox"
-                                               checked="@isChecked"
-                                               @onchange="@((ChangeEventArgs e) => ToggleLogLevel(level, e.Value?.ToString() == "True"))" />
-                                        <span>@level</span>
-                                    </label>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-
-                @if (availableThreads.Any())
-                {
-                    var threadsForUi = LogFilters.GetThreadsForFilterUi(State);
-                    var pinnedThreads = threadsForUi.Where(ConsoleThreadNormalizer.IsPinnedThread).ToList();
-                    var otherThreads = threadsForUi.Where(t => !ConsoleThreadNormalizer.IsPinnedThread(t)).ToList();
-                    <div class="filter-dropdown">
-                        <button class="filter-dropdown-btn @(LogFilters.IsThreadFilterRestricting(State) ? "has-filter" : "")"
-                                type="button"
-                                @onclick="@(() => ToggleFilterDropdown("threads"))"
-                                @onclick:stopPropagation="true">
-                            <span class="bi bi-funnel"></span>
-                            <span>Threads</span>
-                            <span class="filter-badge">@LogFilters.GetThreadBadgeCount(State)</span>
-                        </button>
-                        @if (State.OpenFilterDropdown == "threads")
-                        {
-                            <div class="filter-dropdown-menu filter-dropdown-menu-threads" @onclick:stopPropagation="true">
-                                <div class="filter-dropdown-actions">
-                                    <button type="button" class="filter-dropdown-action" @onclick="SelectAllThreads">
-                                        Select all
-                                    </button>
-                                    <button type="button" class="filter-dropdown-action" @onclick="DeselectAllThreads">
-                                        Deselect all
-                                    </button>
-                                </div>
-                                @foreach (var thread in pinnedThreads)
-                                {
-                                    var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
-                                    var isAbsent = !availableThreads.Contains(thread);
-                                    <label class="filter-dropdown-item filter-dropdown-item-pinned @(isAbsent ? "filter-dropdown-item-absent" : "")"
-                                           title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
-                                        <input type="checkbox"
-                                               checked="@isChecked"
-                                               @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
-                                        <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
-                                    </label>
-                                }
-                                @if (pinnedThreads.Count > 0 && otherThreads.Count > 0)
-                                {
-                                    <div class="filter-dropdown-divider" role="separator"></div>
-                                }
-                                @foreach (var thread in otherThreads)
-                                {
-                                    var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
-                                    <label class="filter-dropdown-item"
-                                           title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
-                                        <input type="checkbox"
-                                               checked="@isChecked"
-                                               @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
-                                        <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
-                                    </label>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-            }
-
             <div class="toggle-buttons-row">
                 <button class="console-toggle-btn @(State.ShowLogs ? "active" : "")"
                         title="@(State.ShowLogs ? "Hide logs" : "Show logs")"
@@ -219,6 +46,194 @@
                         @onclick="ToggleCommands">
                     <span class="bi bi-terminal"></span>
                 </button>
+            </div>
+
+            @{
+                IReadOnlyCollection<string> availableLevels = State.ShowLogs && State.LiveLogs.Any()
+                    ? LogFilters.GetAvailableLevels(State)
+                    : Array.Empty<string>();
+                IReadOnlyCollection<string> availableThreads = State.ShowLogs && State.LiveLogs.Any()
+                    ? LogFilters.GetAvailableThreads(State)
+                    : Array.Empty<string>();
+                IReadOnlyList<string> threadsForUi = availableThreads.Any()
+                    ? LogFilters.GetThreadsForFilterUi(State)
+                    : Array.Empty<string>();
+                var pinnedThreads = threadsForUi.Where(ConsoleThreadNormalizer.IsPinnedThread).ToList();
+                var otherThreads = threadsForUi.Where(t => !ConsoleThreadNormalizer.IsPinnedThread(t)).ToList();
+                var activeOptionCount = GetActiveOptionCount();
+            }
+            <div class="filter-dropdown console-options-dropdown">
+                <button class="filter-dropdown-btn console-options-btn @(activeOptionCount > 0 ? "has-filter" : "")"
+                        type="button"
+                        title="Console options"
+                        aria-label="Console options"
+                        @onclick="@(() => ToggleFilterDropdown("options"))"
+                        @onclick:stopPropagation="true">
+                    <span class="bi bi-three-dots-vertical"></span>
+                    <span class="console-options-label">Options</span>
+                    @if (activeOptionCount > 0)
+                    {
+                        <span class="filter-badge">@activeOptionCount</span>
+                    }
+                </button>
+                @if (State.OpenFilterDropdown == "options")
+                {
+                    <div class="filter-dropdown-menu console-options-menu" @onclick:stopPropagation="true">
+                        @if (State.ShowLogs)
+                        {
+                            <div class="console-options-section">
+                                <button class="console-options-section-title"
+                                        type="button"
+                                        @onclick="@(() => ToggleOptionSection("time"))">
+                                    <span class="bi bi-clock-history"></span>
+                                    <span>Log history</span>
+                                    <span class="filter-badge">@LogRetention.FormatTimeShort(State.LogHistoryMinutes)</span>
+                                    <span class="bi @GetOptionSectionChevron("time")"></span>
+                                </button>
+                                @if (IsOptionSectionExpanded("time"))
+                                {
+                                    @foreach (var preset in LogHistoryPresets.Time)
+                                    {
+                                        <label class="filter-dropdown-item">
+                                            <input type="radio"
+                                                   name="@($"log-time-{State.ServerId}")"
+                                                   checked="@(State.LogHistoryMinutes == preset.Minutes)"
+                                                   @onchange="@(() => OnTimeLimitChanged(preset.Minutes))" />
+                                            <span>@preset.Label</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+
+                            <div class="console-options-section">
+                                <button class="console-options-section-title"
+                                        type="button"
+                                        @onclick="@(() => ToggleOptionSection("lines"))">
+                                    <span class="bi bi-list-ol"></span>
+                                    <span>Line limit</span>
+                                    <span class="filter-badge">@LogRetention.FormatLineShort(State.LogLineLimit)</span>
+                                    <span class="bi @GetOptionSectionChevron("lines")"></span>
+                                </button>
+                                @if (IsOptionSectionExpanded("lines"))
+                                {
+                                    @foreach (var preset in LogHistoryPresets.Lines)
+                                    {
+                                        <label class="filter-dropdown-item">
+                                            <input type="radio"
+                                                   name="@($"log-lines-{State.ServerId}")"
+                                                   checked="@(State.LogLineLimit == preset.Lines)"
+                                                   @onchange="@(() => OnLineLimitChanged(preset.Lines))" />
+                                            <span>@preset.Label</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        }
+
+                        <div class="console-options-section">
+                            <button class="console-options-section-title"
+                                    type="button"
+                                    @onclick="@(() => ToggleOptionSection("scroll"))">
+                                <span class="bi bi-arrow-down-circle"></span>
+                                <span>Autoscroll</span>
+                                <span class="filter-badge">@ConsoleAutoscrollPresets.GetShortLabel(State.AutoscrollMode)</span>
+                                <span class="bi @GetOptionSectionChevron("scroll")"></span>
+                            </button>
+                            @if (IsOptionSectionExpanded("scroll"))
+                            {
+                                @foreach (var preset in ConsoleAutoscrollPresets.Modes)
+                                {
+                                    <label class="filter-dropdown-item" title="@preset.Description">
+                                        <input type="radio"
+                                               name="@($"autoscroll-{State.ServerId}")"
+                                               checked="@(State.AutoscrollMode == preset.Mode)"
+                                               @onchange="@(() => OnAutoscrollModeChanged(preset.Mode))" />
+                                        <span>@preset.Label</span>
+                                    </label>
+                                }
+                            }
+                        </div>
+
+                        @if (availableLevels.Any())
+                        {
+                            <div class="console-options-section">
+                                <button class="console-options-section-title"
+                                        type="button"
+                                        @onclick="@(() => ToggleOptionSection("levels"))">
+                                    <span class="bi bi-funnel"></span>
+                                    <span>Log levels</span>
+                                    <span class="filter-badge">@LogFilters.GetLevelBadgeCount(State)</span>
+                                    <span class="bi @GetOptionSectionChevron("levels")"></span>
+                                </button>
+                                @if (IsOptionSectionExpanded("levels"))
+                                {
+                                    @foreach (var level in availableLevels.OrderBy(l => l))
+                                    {
+                                        var isChecked = !State.LevelFilterActive || State.SelectedLogLevels.Contains(level);
+                                        <label class="filter-dropdown-item">
+                                            <input type="checkbox"
+                                                   checked="@isChecked"
+                                                   @onchange="@((ChangeEventArgs e) => ToggleLogLevel(level, e.Value?.ToString() == "True"))" />
+                                            <span>@level</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        }
+
+                        @if (availableThreads.Any())
+                        {
+                            <div class="console-options-section">
+                                <button class="console-options-section-title"
+                                        type="button"
+                                        @onclick="@(() => ToggleOptionSection("threads"))">
+                                    <span class="bi bi-funnel"></span>
+                                    <span>Threads</span>
+                                    <span class="filter-badge">@LogFilters.GetThreadBadgeCount(State)</span>
+                                    <span class="bi @GetOptionSectionChevron("threads")"></span>
+                                </button>
+                                @if (IsOptionSectionExpanded("threads"))
+                                {
+                                    <div class="filter-dropdown-actions">
+                                        <button type="button" class="filter-dropdown-action" @onclick="SelectAllThreads">
+                                            Select all
+                                        </button>
+                                        <button type="button" class="filter-dropdown-action" @onclick="DeselectAllThreads">
+                                            Deselect all
+                                        </button>
+                                    </div>
+                                    @foreach (var thread in pinnedThreads)
+                                    {
+                                        var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
+                                        var isAbsent = !availableThreads.Contains(thread);
+                                        <label class="filter-dropdown-item filter-dropdown-item-pinned @(isAbsent ? "filter-dropdown-item-absent" : "")"
+                                               title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
+                                            <input type="checkbox"
+                                                   checked="@isChecked"
+                                                   @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
+                                            <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
+                                        </label>
+                                    }
+                                    @if (pinnedThreads.Count > 0 && otherThreads.Count > 0)
+                                    {
+                                        <div class="filter-dropdown-divider" role="separator"></div>
+                                    }
+                                    @foreach (var thread in otherThreads)
+                                    {
+                                        var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
+                                        <label class="filter-dropdown-item"
+                                               title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
+                                            <input type="checkbox"
+                                                   checked="@isChecked"
+                                                   @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
+                                            <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -353,6 +368,7 @@
     private int _statusCheckRunning;
     private bool _stickToBottomForAuto;
     private DateTime _lastFullRconCheckUtc = DateTime.MinValue;
+    private readonly HashSet<string> _expandedOptionSections = new(StringComparer.Ordinal);
     private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan FullRconCheckInterval = TimeSpan.FromSeconds(90);
     private string OutputElementId => $"console-output-{State.ServerId}";
@@ -516,6 +532,33 @@
         State.OpenFilterDropdown = State.OpenFilterDropdown == dropdownType ? null : dropdownType;
         StateHasChanged();
     }
+
+    private int GetActiveOptionCount()
+    {
+        var count = 0;
+        if (State.AutoscrollMode != ConsoleAutoscrollMode.Off)
+            count++;
+
+        if (LogFilters.IsLevelFilterRestricting(State))
+            count++;
+
+        if (LogFilters.IsThreadFilterRestricting(State))
+            count++;
+
+        return count;
+    }
+
+    private bool IsOptionSectionExpanded(string section) =>
+        _expandedOptionSections.Contains(section);
+
+    private void ToggleOptionSection(string section)
+    {
+        if (!_expandedOptionSections.Add(section))
+            _expandedOptionSections.Remove(section);
+    }
+
+    private string GetOptionSectionChevron(string section) =>
+        IsOptionSectionExpanded(section) ? "bi-chevron-up" : "bi-chevron-down";
 
     private async Task ToggleLogLevel(string level, bool isChecked)
     {
