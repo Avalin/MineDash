@@ -1,3 +1,9 @@
+.page-layout-container[b-r3v39eobk4] {
+    container-type: inline-size;
+    container-name: home-layout;
+    width: 100%;
+}
+
 .page-layout[b-r3v39eobk4] {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -7,6 +13,37 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+}
+
+/* Hide commands only when keeping them would make the console area narrower than the panel (320px) */
+@container home-layout (max-width: 655px) {
+    .page-layout.layout-cols-1[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .page-layout.layout-cols-1 .help-panel[b-r3v39eobk4] {
+        display: none;
+    }
+}
+
+@container home-layout (max-width: 975px) {
+    .page-layout.layout-cols-2[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .page-layout.layout-cols-2 .help-panel[b-r3v39eobk4] {
+        display: none;
+    }
+}
+
+@container home-layout (max-width: 1295px) {
+    .page-layout.layout-cols-3[b-r3v39eobk4] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .page-layout.layout-cols-3 .help-panel[b-r3v39eobk4] {
+        display: none;
+    }
 }
 
 /* Mobile: stack layout vertically, hide help panel by default */

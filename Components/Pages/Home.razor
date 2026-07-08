@@ -16,7 +16,8 @@
 
 <PageTitle>MineDash</PageTitle>
 
-<div class="page-layout" @onclick="CloseAllFilterDropdowns">
+<div class="page-layout-container">
+<div class="page-layout layout-cols-@EffectiveColumnCount" @onclick="CloseAllFilterDropdowns">
     <div class="command-panel">
         <div class="console-toolbar">
             @if (ShouldShowAddConsoleToolbar())
@@ -178,6 +179,7 @@
             </div>
         }
     </div>
+</div>
 </div>
 
 @code {
