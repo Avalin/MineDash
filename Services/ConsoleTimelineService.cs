@@ -33,12 +33,13 @@ public sealed class ConsoleTimelineService : IConsoleTimelineService
 
         if (state.ShowLogs)
         {
+            var threadLogCounts = _filters.GetThreadLogCounts(state);
             foreach (var log in state.LiveLogs)
             {
                 if (!_retention.IsWithinWindow(state, log.Timestamp))
                     continue;
 
-                if (!_filters.LevelMatches(log.Level, state) || !_filters.ThreadMatches(log.Thread, state))
+                if (!_filters.LevelMatches(log.Level, state) || !_filters.ThreadMatches(log.Thread, state, threadLogCounts))
                     continue;
 
                 entries.Add(new ConsoleMergedEntry

@@ -192,11 +192,12 @@
                                 @foreach (var thread in otherThreads)
                                 {
                                     var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
-                                    <label class="filter-dropdown-item">
+                                    <label class="filter-dropdown-item"
+                                           title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
                                         <input type="checkbox"
                                                checked="@isChecked"
                                                @onchange="@((ChangeEventArgs e) => ToggleThread(thread, e.Value?.ToString() == "True"))" />
-                                        <span>@thread</span>
+                                        <span>@ConsoleThreadNormalizer.GetThreadDisplayName(thread)</span>
                                     </label>
                                 }
                             </div>

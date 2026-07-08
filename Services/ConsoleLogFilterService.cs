@@ -11,8 +11,10 @@ public interface IConsoleLogFilterService
     int GetThreadBadgeCount(ConsoleState state);
     bool LevelMatches(string? level, ConsoleState state);
     bool ThreadMatches(string? thread, ConsoleState state);
+    bool ThreadMatches(string? thread, ConsoleState state, IReadOnlyDictionary<string, int> threadLogCounts);
     HashSet<string> GetAvailableLevels(ConsoleState state);
     HashSet<string> GetAvailableThreads(ConsoleState state);
+    IReadOnlyDictionary<string, int> GetThreadLogCounts(ConsoleState state);
     IReadOnlyList<string> GetThreadsForFilterUi(ConsoleState state);
     void SyncFilterSelections(ConsoleState state);
     void ToggleLevel(ConsoleState state, string level, bool isChecked);
@@ -93,6 +95,7 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
             }
             else if (state.ThreadFilterInitialized)
             {
+                MigrateThreadSelectionsToGroupKeys(state, GetThreadLogCounts(state));
                 state.SelectedThreads.RemoveWhere(thread =>
                     !availableThreads.Contains(thread)
                     && !ConsoleThreadNormalizer.IsPinnedThread(thread));
@@ -144,7 +147,10 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
             : state.SelectedLogLevels.Contains(key);
     }
 
-    public bool ThreadMatches(string? thread, ConsoleState state)
+    public bool ThreadMatches(string? thread, ConsoleState state) =>
+        ThreadMatches(thread, state, GetThreadLogCounts(state));
+
+    public bool ThreadMatches(string? thread, ConsoleState state, IReadOnlyDictionary<string, int> threadLogCounts)
     {
         if (!state.ThreadFilterActive)
             return true;
@@ -152,7 +158,25 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         if (string.IsNullOrEmpty(thread))
             return state.SelectedThreads.Contains(string.Empty);
 
-        return state.SelectedThreads.Contains(GetThreadFilterKey(thread));
+        var normalizedKey = GetThreadFilterKey(thread);
+        var groupKey = GetThreadGroupKey(normalizedKey, threadLogCounts);
+        return state.SelectedThreads.Contains(groupKey);
+    }
+
+    public IReadOnlyDictionary<string, int> GetThreadLogCounts(ConsoleState state)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var log in state.LiveLogs)
+        {
+            if (string.IsNullOrEmpty(log.Thread))
+                continue;
+
+            var key = GetThreadFilterKey(log.Thread);
+            counts.TryGetValue(key, out var count);
+            counts[key] = count + 1;
+        }
+
+        return counts;
     }
 
     public HashSet<string> GetAvailableLevels(ConsoleState state)
@@ -169,12 +193,10 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
 
     public HashSet<string> GetAvailableThreads(ConsoleState state)
     {
-        var threads = new HashSet<string>();
-        foreach (var log in state.LiveLogs)
-        {
-            if (!string.IsNullOrEmpty(log.Thread))
-                threads.Add(GetThreadFilterKey(log.Thread));
-        }
+        var counts = GetThreadLogCounts(state);
+        var threads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in counts.Keys)
+            threads.Add(GetThreadGroupKey(key, counts));
 
         return threads;
     }
@@ -302,5 +324,30 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
         state.SelectedThreads.Clear();
         foreach (var thread in ConsoleThreadNormalizer.DefaultSelectedThreads)
             state.SelectedThreads.Add(thread);
+    }
+
+    private static string GetThreadGroupKey(string normalizedKey, IReadOnlyDictionary<string, int> threadLogCounts)
+    {
+        var count = threadLogCounts.TryGetValue(normalizedKey, out var logCount) ? logCount : 0;
+        return ConsoleThreadNormalizer.GetFilterGroupKey(normalizedKey, count);
+    }
+
+    private static void MigrateThreadSelectionsToGroupKeys(
+        ConsoleState state,
+        IReadOnlyDictionary<string, int> threadLogCounts)
+    {
+        var miscMembers = threadLogCounts
+            .Where(kvp => ConsoleThreadNormalizer.IsMiscGrouped(kvp.Key, kvp.Value))
+            .Select(kvp => kvp.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (miscMembers.Count == 0)
+            return;
+
+        if (!state.SelectedThreads.Any(miscMembers.Contains))
+            return;
+
+        state.SelectedThreads.RemoveWhere(miscMembers.Contains);
+        state.SelectedThreads.Add(ConsoleThreadNormalizer.MiscellaneousKey);
     }
 }

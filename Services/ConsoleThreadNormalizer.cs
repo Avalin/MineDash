@@ -7,6 +7,9 @@ namespace MineDash.Services;
 /// </summary>
 public static class ConsoleThreadNormalizer
 {
+    public const string MiscellaneousKey = "Miscellaneous";
+    public const int MiscellaneousMaxLogCount = 3;
+
     private static readonly Regex[] SuffixPatterns =
     [
         new(@"\s*-\s*#\d+$", RegexOptions.Compiled),
@@ -23,7 +26,7 @@ public static class ConsoleThreadNormalizer
         (new(@"^VoiceChat", RegexOptions.Compiled | RegexOptions.IgnoreCase), "Voice Chat"),
         (new(@"^modloading", RegexOptions.Compiled | RegexOptions.IgnoreCase), "Mod Loading"),
         (new(@"^ForkJoinPool", RegexOptions.Compiled | RegexOptions.IgnoreCase), "ForkJoin Pool"),
-        (new(@"^pool$", RegexOptions.Compiled | RegexOptions.IgnoreCase), "Pool"),
+        (new(@"^pool$", RegexOptions.Compiled | RegexOptions.IgnoreCase), "ForkJoin Pool"),
     ];
 
     private static readonly Regex RconFamilyRegex = new(
@@ -57,6 +60,7 @@ public static class ConsoleThreadNormalizer
             ["main"] = ("Mod Loader", "Java main thread — mod/plugin loading and startup logs (main)"),
             ["Server thread"] = ("Server Core", "Primary Minecraft server tick loop (Server thread)"),
             ["Async Chat Thread"] = ("Player Chat", "In-game chat and player messages (Async Chat Thread)"),
+            [MiscellaneousKey] = ("Miscellaneous", "Low-volume threads with 1–3 log lines"),
         };
 
     public static string GetThreadDisplayName(string normalizedKey) =>
@@ -70,10 +74,27 @@ public static class ConsoleThreadNormalizer
     public static bool IsPinnedThread(string normalizedKey) =>
         DefaultFilterThreads.Contains(normalizedKey, StringComparer.OrdinalIgnoreCase);
 
+    public static bool IsMiscGrouped(string normalizedKey, int logCount) =>
+        !IsPinnedThread(normalizedKey)
+        && logCount >= 1
+        && logCount <= MiscellaneousMaxLogCount;
+
+    public static string GetFilterGroupKey(string normalizedKey, int logCount)
+    {
+        if (IsPinnedThread(normalizedKey))
+            return normalizedKey;
+
+        if (IsMiscGrouped(normalizedKey, logCount))
+            return MiscellaneousKey;
+
+        return normalizedKey;
+    }
+
     public static IReadOnlyList<string> OrderForFilterUi(IEnumerable<string> available)
     {
         var remaining = new HashSet<string>(available, StringComparer.OrdinalIgnoreCase);
         var ordered = new List<string>();
+        var hasMiscellaneous = remaining.Remove(MiscellaneousKey);
 
         foreach (var pinned in DefaultFilterThreads)
         {
@@ -82,6 +103,10 @@ public static class ConsoleThreadNormalizer
         }
 
         ordered.AddRange(remaining.OrderBy(t => t, StringComparer.OrdinalIgnoreCase));
+
+        if (hasMiscellaneous)
+            ordered.Add(MiscellaneousKey);
+
         return ordered;
     }
 
