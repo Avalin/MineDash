@@ -1075,27 +1075,47 @@
     box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
 }
 
+.command-input-row .command-input.form-control {
+    color: #f5f5f5;
+    background-color: #2a2a2a;
+    border-color: #555;
+}
+
 .command-input {
     flex: 1;
     min-width: 0;
     background-color: #2a2a2a;
     border-color: #555;
-    color: #eee;
+    color: #f5f5f5;
     font-family: Consolas, monospace;
     font-size: 0.85rem;
+}
+
+.command-input::placeholder {
+    color: #a8a8a8;
+    opacity: 1;
+}
+
+.command-input::-webkit-input-placeholder {
+    color: #a8a8a8;
+    opacity: 1;
 }
 
 .command-input:focus {
     background-color: #2a2a2a;
     border-color: #4ea3ff;
-    color: #eee;
+    color: #fff;
     box-shadow: 0 0 0 0.15rem rgba(78, 163, 255, 0.25);
 }
 
 .command-input:disabled {
     background-color: #1a1a1a;
-    color: #666;
+    color: #888;
     cursor: not-allowed;
+}
+
+.command-input:disabled::placeholder {
+    color: #777;
 }
 
 .command-send-btn {

@@ -19,37 +19,48 @@
 <div class="page-layout" @onclick="CloseAllFilterDropdowns">
     <div class="command-panel">
         <div class="console-toolbar">
-            @if (CanAddMoreConsoles())
+            @if (ShouldShowAddConsoleToolbar())
             {
+                var canAdd = CanAddMoreConsoles();
                 var availableToAdd = GetServersAvailableToAdd().ToList();
-                <div class="toolbar-section add-console-section @(_addConsoleExpanded ? "expanded" : "")">
-                    <button type="button"
-                            class="add-console-toggle"
-                            aria-expanded="@_addConsoleExpanded"
-                            @onclick="ToggleAddConsole">
-                        <span class="bi @(_addConsoleExpanded ? "bi-chevron-down" : "bi-plus-lg")" aria-hidden="true"></span>
-                        <span>Add console</span>
-                    </button>
+                <div class="toolbar-section add-console-section @(_addConsoleExpanded || !IsMobileViewport ? "expanded" : "")">
+                    @if (IsMobileViewport)
+                    {
+                        <button type="button"
+                                class="add-console-toggle"
+                                aria-expanded="@_addConsoleExpanded"
+                                @onclick="ToggleAddConsole">
+                            <span class="bi @(_addConsoleExpanded ? "bi-chevron-down" : "bi-plus-lg")" aria-hidden="true"></span>
+                            <span>Add console</span>
+                        </button>
+                    }
 
                     <div class="add-console-form">
-                        <div class="add-console-row">
-                            <select class="form-select form-select-sm"
-                                    @bind="_selectedAddServerId"
-                                    aria-label="Server to add">
-                                @foreach (var s in availableToAdd)
-                                {
-                                    <option value="@s.Id">
-                                        @s.Name (@s.Host:@s.RconPort)
-                                    </option>
-                                }
-                            </select>
+                        @if (canAdd)
+                        {
+                            <div class="add-console-row">
+                                <select class="form-select form-select-sm"
+                                        @bind="_selectedAddServerId"
+                                        aria-label="Server to add">
+                                    @foreach (var s in availableToAdd)
+                                    {
+                                        <option value="@s.Id">
+                                            @s.Name (@s.Host:@s.RconPort)
+                                        </option>
+                                    }
+                                </select>
 
-                            <button class="btn btn-sm btn-outline-light"
-                                    @onclick="AddConsole"
-                                    disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
-                                Add console
-                            </button>
-                        </div>
+                                <button class="btn btn-sm btn-outline-light"
+                                        @onclick="AddConsole"
+                                        disabled="@string.IsNullOrEmpty(_selectedAddServerId)">
+                                    Add console
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="add-console-hint">All servers are open.</p>
+                        }
                     </div>
                 </div>
             }
@@ -179,6 +190,7 @@
     private int _layoutColumns = 1;
     private long _closeFiltersTick;
     private bool _addConsoleExpanded;
+    private bool _isMobileViewport;
     private int _viewportDefaultLineLimit = LogHistoryPresets.DefaultLineLimit;
     private bool _viewportLineLimitResolved;
     private readonly HashSet<string> _consolesAwaitingLineLimit = new();
@@ -225,6 +237,7 @@
         try
         {
             var width = await JSRuntime.InvokeAsync<int>("eval", "window.innerWidth");
+            _isMobileViewport = width < 768;
             _viewportDefaultLineLimit = LogHistoryPresets.GetDefaultLineLimitForViewport(width);
             stateChanged = await ApplyDefaultOpenConsolesAsync(width);
         }
@@ -336,6 +349,11 @@
         StateHasChanged();
     }
 
+    private bool IsMobileViewport => _isMobileViewport;
+
+    private bool ShouldShowAddConsoleToolbar() =>
+        _servers is { Count: > 0 } && (_isMobileViewport || CanAddMoreConsoles());
+
     private IEnumerable<ServerConfig> GetServersAvailableToAdd() =>
         _servers?.Where(s => !_openConsoleIds.Contains(s.Id)) ?? Enumerable.Empty<ServerConfig>();
 
@@ -371,7 +389,7 @@
         var addedId = _selectedAddServerId;
         _openConsoleIds.Add(addedId);
         GetConsoleState(addedId).MobileExpanded = true;
-        _addConsoleExpanded = false;
+        _addConsoleExpanded = IsMobileViewport;
         SyncSelectedAddServerId();
         await SavePersistedState();
         StateHasChanged();

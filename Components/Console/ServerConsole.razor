@@ -427,6 +427,7 @@
     private long _lastCloseFiltersTick;
     private int _statusCheckRunning;
     private bool _stickToBottomForAuto;
+    private bool _pendingInitialScroll;
     private DateTime _lastFullRconCheckUtc = DateTime.MinValue;
     private readonly HashSet<string> _expandedOptionSections = new(StringComparer.Ordinal);
     private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
@@ -442,12 +443,15 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            _stickToBottomForAuto = true;
-            await Task.Delay(100);
-            await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
-        }
+        if (!_pendingInitialScroll && !firstRender)
+            return;
+
+        if (_pendingInitialScroll)
+            _pendingInitialScroll = false;
+
+        _stickToBottomForAuto = true;
+        await Task.Delay(firstRender ? 100 : 50);
+        await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
     }
 
     protected override void OnParametersSet()
@@ -488,6 +492,7 @@
 
         await LogSession.LoadRecentLogsAsync(Server, State);
         StartLogPolling();
+        _pendingInitialScroll = true;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -703,6 +708,7 @@
     {
         LogRetention.NormalizeLimits(State);
         await LogSession.LoadRecentLogsAsync(Server, State);
+        _pendingInitialScroll = true;
         await OnPersistRequested.InvokeAsync();
         StateHasChanged();
     }
@@ -711,7 +717,10 @@
     {
         State.ShowLogs = !State.ShowLogs;
         if (State.ShowLogs)
+        {
             await LogSession.LoadRecentLogsAsync(Server, State);
+            _pendingInitialScroll = true;
+        }
 
         StartLogPolling();
         await OnPersistRequested.InvokeAsync();

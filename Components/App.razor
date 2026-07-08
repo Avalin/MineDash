@@ -26,9 +26,13 @@
     <script>
         window.scrollToBottom = (elementId) => {
             const element = document.getElementById(elementId);
-            if (element) {
-                element.scrollTop = element.scrollHeight;
-            }
+            if (!element) return;
+            const scroll = () => { element.scrollTop = element.scrollHeight; };
+            scroll();
+            requestAnimationFrame(() => {
+                scroll();
+                requestAnimationFrame(scroll);
+            });
         };
 
         window.isConsoleAtBottom = (elementId, threshold = 48) => {
