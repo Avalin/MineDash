@@ -60,8 +60,17 @@
                         @foreach (var player in _result.Players)
                         {
                             <li class="player-row">
-                                <img src="@GetAvatarUrl(player.Name)" alt="" class="player-avatar" aria-hidden="true" />
-                                <span class="player-name">@player.Name</span>
+                                <img src="@GetAvatarUrl(player.Name)" alt="" class="player-avatar @(player.IsOp ? "player-avatar-op" : null)" aria-hidden="true" />
+                                <div class="player-info">
+                                    <span class="player-name">@player.Name</span>
+                                    @if (player.IsOp)
+                                    {
+                                        <span class="player-op-pill" title="Server operator">
+                                            <span class="bi bi-star-fill" aria-hidden="true"></span>
+                                            <span>OP</span>
+                                        </span>
+                                    }
+                                </div>
                                 <span class="player-status-pill @(player.IsOnline ? "status-online" : "status-offline")">
                                     <span class="player-status-dot" aria-hidden="true"></span>
                                     <span>@(player.IsOnline ? "Online" : "Offline")</span>

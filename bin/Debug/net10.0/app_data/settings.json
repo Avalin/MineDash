@@ -1,3 +1,4 @@
 {
-  "AutoDisableTimeoutMinutes": 10
+  "AutoDisableTimeoutMinutes": 10,
+  "EnablePlayerAvatars": true
 }

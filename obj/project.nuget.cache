@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+OntVOhl3no=",
+  "dgSpecHash": "2LauSSHVuBI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
+  "projectFilePath": "c:\\Users\\Avalin\\Documents\\Code Experiments\\MineDash\\MineDash.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Avalin\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\Avalin\\.nuget\\packages\\corercon\\5.4.2\\corercon.5.4.2.nupkg.sha512",

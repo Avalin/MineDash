@@ -15,6 +15,7 @@ public sealed class ServerPlayerInfo
 {
     public required string Name { get; init; }
     public bool IsOnline { get; init; }
+    public bool IsOp { get; init; }
 }
 
 public sealed class ServerPlayersResult
@@ -38,15 +39,18 @@ public sealed class ServerPlayerService : IServerPlayerService
     private readonly ILogService _logService;
     private readonly IRconService _rconService;
     private readonly ILogPlayerHighlighter _playerHighlighter;
+    private readonly IServerOpsService _opsService;
 
     public ServerPlayerService(
         ILogService logService,
         IRconService rconService,
-        ILogPlayerHighlighter playerHighlighter)
+        ILogPlayerHighlighter playerHighlighter,
+        IServerOpsService opsService)
     {
         _logService = logService;
         _rconService = rconService;
         _playerHighlighter = playerHighlighter;
+        _opsService = opsService;
     }
 
     public async Task<ServerPlayersResult> GetPlayersAsync(
@@ -68,12 +72,15 @@ public sealed class ServerPlayerService : IServerPlayerService
 
         var logTask = CollectFromLogsAsync(server, connectedNames, ct);
         var rconTask = CollectOnlinePlayersAsync(server, onlineNames, connectedNames, ct);
+        var opsTask = _opsService.GetOperatorNamesAsync(server, liveLogs, ct);
 
+        IReadOnlySet<string> opNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            await Task.WhenAll(logTask, rconTask);
+            await Task.WhenAll(logTask, rconTask, opsTask);
             hasLogData = hasLogData || await logTask;
             rconError = await rconTask;
+            opNames = await opsTask;
         }
         catch (OperationCanceledException)
         {
@@ -81,12 +88,15 @@ public sealed class ServerPlayerService : IServerPlayerService
         }
 
         var players = connectedNames
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
             .Select(n => new ServerPlayerInfo
             {
                 Name = n,
-                IsOnline = onlineNames.Contains(n)
+                IsOnline = onlineNames.Contains(n),
+                IsOp = opNames.Contains(n)
             })
+            .OrderByDescending(p => p.IsOp)
+            .ThenByDescending(p => p.IsOnline)
+            .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         return new ServerPlayersResult

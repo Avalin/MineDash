@@ -176,6 +176,18 @@
     flex-shrink: 0;
 }
 
+.players-dialog-list .player-avatar-op {
+    box-shadow: 0 0 0 1px rgba(240, 192, 64, 0.55), 0 0 8px rgba(240, 192, 64, 0.25);
+}
+
+.players-dialog-list .player-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
 .players-dialog-list .player-name {
     flex: 1;
     min-width: 0;
@@ -184,6 +196,29 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.players-dialog-list .player-op-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.12rem 0.4rem 0.12rem 0.32rem;
+    border-radius: 999px;
+    border: 1px solid rgba(240, 192, 64, 0.4);
+    background: rgba(240, 192, 64, 0.1);
+    color: #f0c040;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.players-dialog-list .player-op-pill .bi {
+    font-size: 0.55rem;
+    line-height: 1;
 }
 
 .players-dialog-list .player-status-pill {
