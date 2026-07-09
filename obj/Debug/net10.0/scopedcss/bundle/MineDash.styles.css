@@ -1257,6 +1257,7 @@ main[b-l3n58rr43k] {
 .login-card .alert-danger[b-rgq29ntfvr] {
     border-color: rgba(220, 53, 69, 0.5);
     background-color: rgba(220, 53, 69, 0.1);
+    color: #f8d7da;
 }
 
 .login-card .alert-info[b-rgq29ntfvr] {
