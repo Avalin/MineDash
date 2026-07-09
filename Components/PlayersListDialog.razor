@@ -17,69 +17,69 @@
                     <span class="bi bi-x-lg"></span>
                 </button>
             </div>
+
+            <div class="players-dialog-tabs" role="tablist" aria-label="Player lists">
+                <button type="button"
+                        class="players-dialog-tab @(_activeTab == PlayersTab.Players ? "active" : null)"
+                        role="tab"
+                        aria-selected="@(_activeTab == PlayersTab.Players)"
+                        @onclick="() => SelectTab(PlayersTab.Players)">
+                    Players
+                </button>
+                <button type="button"
+                        class="players-dialog-tab @(_activeTab == PlayersTab.Whitelist ? "active" : null)"
+                        role="tab"
+                        aria-selected="@(_activeTab == PlayersTab.Whitelist)"
+                        @onclick="() => SelectTab(PlayersTab.Whitelist)">
+                    Whitelist
+                </button>
+                <button type="button"
+                        class="players-dialog-tab @(_activeTab == PlayersTab.Banned ? "active" : null)"
+                        role="tab"
+                        aria-selected="@(_activeTab == PlayersTab.Banned)"
+                        @onclick="() => SelectTab(PlayersTab.Banned)">
+                    Banned
+                </button>
+            </div>
+
             <div class="players-dialog-body">
-                @if (_loading && _result is null)
+                @if (_loading && _overview is null)
                 {
                     <div class="players-dialog-status">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         <span>Loading players…</span>
                     </div>
                 }
-                else if (_result is null)
+                else if (_overview is null)
                 {
                     <div class="players-dialog-status players-dialog-error">
                         Could not load player data.
                     </div>
                 }
-                else if (!_result.Players.Any())
-                {
-                    <div class="players-dialog-status">
-                        No players have connected to this server yet.
-                        @if (!_result.HasLogData && _result.OnlineLookupError is not null)
-                        {
-                            <span class="players-dialog-hint">Could not read logs or query RCON.</span>
-                        }
-                    </div>
-                }
                 else
                 {
-                    <div class="players-dialog-summary">
-                        @_result.OnlineCount online · @_result.Players.Count total
-                        @if (_refreshing)
-                        {
-                            <span class="players-dialog-live" aria-live="polite">Updating…</span>
-                        }
-                    </div>
-                    @if (_result.OnlineLookupError is not null)
+                    @if (_refreshing)
                     {
-                        <div class="players-dialog-warning">
-                            Online status unavailable — showing players from logs only.
+                        <div class="players-dialog-summary">
+                            <span class="players-dialog-live" aria-live="polite">Updating…</span>
                         </div>
                     }
-                    <ul class="players-dialog-list">
-                        @foreach (var player in _result.Players)
-                        {
-                            <li class="player-row">
-                                <img src="@GetAvatarUrl(player.Name)" alt="" class="player-avatar @(player.IsOp ? "player-avatar-op" : null)" aria-hidden="true" />
-                                <div class="player-info">
-                                    <span class="player-name">@player.Name</span>
-                                    @if (player.IsOp)
-                                    {
-                                        <span class="player-op-pill" title="Server operator">
-                                            <span class="bi bi-star-fill" aria-hidden="true"></span>
-                                            <span>OP</span>
-                                        </span>
-                                    }
-                                </div>
-                                <span class="player-status-pill @(player.IsOnline ? "status-online" : "status-offline")">
-                                    <span class="player-status-dot" aria-hidden="true"></span>
-                                    <span>@(player.IsOnline ? "Online" : "Offline")</span>
-                                </span>
-                            </li>
-                        }
-                    </ul>
+
+                    @switch (_activeTab)
+                    {
+                        case PlayersTab.Players:
+                            @RenderPlayersTab(_overview);
+                            break;
+                        case PlayersTab.Whitelist:
+                            @RenderWhitelistTab(_overview);
+                            break;
+                        case PlayersTab.Banned:
+                            @RenderBannedTab(_overview);
+                            break;
+                    }
                 }
             </div>
+
             <div class="players-dialog-footer">
                 <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
             </div>
@@ -93,6 +93,13 @@
     [Parameter] public IEnumerable<LogEntry>? LiveLogs { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    private enum PlayersTab
+    {
+        Players,
+        Whitelist,
+        Banned
+    }
+
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
 
     private bool _loading;
@@ -100,7 +107,8 @@
     private bool _wasShown;
     private bool _playerAvatarsEnabled = true;
     private int _lastLiveLogCount = -1;
-    private ServerPlayersResult? _result;
+    private PlayersTab _activeTab = PlayersTab.Players;
+    private ServerPlayersOverview? _overview;
     private CancellationTokenSource? _pollCts;
 
     protected override async Task OnParametersSetAsync()
@@ -109,6 +117,7 @@
         {
             _wasShown = false;
             _lastLiveLogCount = -1;
+            _activeTab = PlayersTab.Players;
             StopPolling();
             return;
         }
@@ -131,6 +140,8 @@
             await LoadAsync(initial: false);
         }
     }
+
+    private void SelectTab(PlayersTab tab) => _activeTab = tab;
 
     private void StartPolling()
     {
@@ -177,12 +188,12 @@
 
         try
         {
-            _result = await PlayerService.GetPlayersAsync(Server, LiveLogs);
+            _overview = await PlayerService.GetPlayersOverviewAsync(Server, LiveLogs);
         }
         catch
         {
             if (initial)
-                _result = null;
+                _overview = null;
         }
         finally
         {
@@ -208,4 +219,148 @@
         StopPolling();
         await Task.CompletedTask;
     }
+
+    private RenderFragment RenderPlayersTab(ServerPlayersOverview overview) => __builder =>
+    {
+        if (!overview.Players.Any())
+        {
+            <div class="players-dialog-status">
+                No players have connected to this server yet.
+                @if (!overview.HasLogData && overview.OnlineLookupError is not null)
+                {
+                    <span class="players-dialog-hint">Could not read logs or query RCON.</span>
+                }
+            </div>
+            return;
+        }
+
+        <div class="players-dialog-summary">
+            @overview.OnlineCount online · @overview.Players.Count total
+        </div>
+        @if (overview.OnlineLookupError is not null)
+        {
+            <div class="players-dialog-warning">
+                Online status unavailable — showing players from logs only.
+            </div>
+        }
+        <ul class="players-dialog-list">
+            @foreach (var player in overview.Players)
+            {
+                <li class="player-row">
+                    <img src="@GetAvatarUrl(player.Name)" alt="" class="player-avatar @(player.IsOp ? "player-avatar-op" : null)" aria-hidden="true" />
+                    <div class="player-info">
+                        <span class="player-name">@player.Name</span>
+                        @if (player.IsOp)
+                        {
+                            <span class="player-op-pill" title="Server operator">
+                                <span class="bi bi-star-fill" aria-hidden="true"></span>
+                                <span>OP</span>
+                            </span>
+                        }
+                    </div>
+                    <span class="player-status-pill @(player.IsOnline ? "status-online" : "status-offline")">
+                        <span class="player-status-dot" aria-hidden="true"></span>
+                        <span>@(player.IsOnline ? "Online" : "Offline")</span>
+                    </span>
+                </li>
+            }
+        </ul>
+    };
+
+    private RenderFragment RenderWhitelistTab(ServerPlayersOverview overview) => __builder =>
+    {
+        if (!overview.Whitelist.Any())
+        {
+            <div class="players-dialog-status">
+                No players on the whitelist.
+            </div>
+            return;
+        }
+
+        var joined = overview.Whitelist.Count(e => e.Status != WhitelistPlayerStatus.Inactive);
+        var online = overview.Whitelist.Count(e => e.Status == WhitelistPlayerStatus.Online);
+        var inactive = overview.Whitelist.Count(e => e.Status == WhitelistPlayerStatus.Inactive);
+
+        <div class="players-dialog-summary">
+            @online online · @joined joined · @overview.Whitelist.Count total
+            @if (inactive > 0)
+            {
+                <span>· @inactive inactive</span>
+            }
+        </div>
+        <ul class="players-dialog-list">
+            @foreach (var entry in overview.Whitelist)
+            {
+                <li class="player-row">
+                    <img src="@GetAvatarUrl(entry.DisplayName)" alt="" class="player-avatar @(entry.IsOp ? "player-avatar-op" : null)" aria-hidden="true" />
+                    <div class="player-info">
+                        <span class="player-name">@entry.DisplayName</span>
+                        @if (entry.IsOp)
+                        {
+                            <span class="player-op-pill" title="Server operator">
+                                <span class="bi bi-star-fill" aria-hidden="true"></span>
+                                <span>OP</span>
+                            </span>
+                        }
+                    </div>
+                    @RenderWhitelistStatus(entry.Status)
+                </li>
+            }
+        </ul>
+    };
+
+    private RenderFragment RenderBannedTab(ServerPlayersOverview overview) => __builder =>
+    {
+        if (!overview.Bans.Any())
+        {
+            <div class="players-dialog-status">
+                No banned players.
+            </div>
+            return;
+        }
+
+        <div class="players-dialog-summary">
+            @overview.Bans.Count banned
+        </div>
+        <ul class="players-dialog-list">
+            @foreach (var entry in overview.Bans)
+            {
+                <li class="player-row player-row-ban">
+                    <img src="@GetAvatarUrl(entry.DisplayName)" alt="" class="player-avatar" aria-hidden="true" />
+                    <div class="player-info player-info-ban">
+                        <span class="player-name">@entry.DisplayName</span>
+                        @if (!string.IsNullOrWhiteSpace(entry.Reason))
+                        {
+                            <span class="player-ban-reason" title="@entry.Reason">@entry.Reason</span>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    };
+
+    private RenderFragment RenderWhitelistStatus(WhitelistPlayerStatus status) => __builder =>
+    {
+        switch (status)
+        {
+            case WhitelistPlayerStatus.Inactive:
+                <span class="player-status-pill status-inactive">
+                    <span class="player-status-dot" aria-hidden="true"></span>
+                    <span>Inactive</span>
+                </span>
+                break;
+            case WhitelistPlayerStatus.Online:
+                <span class="player-status-pill status-online">
+                    <span class="player-status-dot" aria-hidden="true"></span>
+                    <span>Online</span>
+                </span>
+                break;
+            default:
+                <span class="player-status-pill status-offline">
+                    <span class="player-status-dot" aria-hidden="true"></span>
+                    <span>Offline</span>
+                </span>
+                break;
+        }
+    };
 }

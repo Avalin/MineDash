@@ -39,6 +39,8 @@ builder.Services.AddSingleton<IConsoleTimelineService, ConsoleTimelineService>()
 builder.Services.AddSingleton<IConsoleLogSessionService, ConsoleLogSessionService>();
 builder.Services.AddSingleton<ILogPlayerHighlighter, LogPlayerHighlighter>();
 builder.Services.AddSingleton<IServerOpsService, ServerOpsService>();
+builder.Services.AddSingleton<IServerUserCacheService, ServerUserCacheService>();
+builder.Services.AddSingleton<IServerAccessListService, ServerAccessListService>();
 builder.Services.AddScoped<IServerPlayerService, ServerPlayerService>();
 builder.Services.AddScoped<IConsoleSessionPersistence, BrowserConsoleSessionPersistence>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();

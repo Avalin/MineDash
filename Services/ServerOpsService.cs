@@ -8,52 +8,9 @@ public interface IServerOpsService
 {
     Task<ServerOperatorIndex> GetOperatorIndexAsync(
         ServerConfig server,
+        ServerUserCacheIndex userCache,
         IEnumerable<LogEntry>? liveLogs = null,
         CancellationToken ct = default);
-}
-
-internal sealed class UserCacheIndex
-{
-    public static UserCacheIndex Empty { get; } = new([], []);
-
-    private readonly Dictionary<string, string> _nameToUuid;
-
-    private UserCacheIndex(
-        Dictionary<string, string> uuidToName,
-        Dictionary<string, string> nameToUuid)
-    {
-        _ = uuidToName;
-        _nameToUuid = nameToUuid;
-    }
-
-    public static UserCacheIndex From(IEnumerable<UserCacheEntry> entries)
-    {
-        var uuidToName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var nameToUuid = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var entry in entries)
-        {
-            if (string.IsNullOrWhiteSpace(entry.Uuid) || string.IsNullOrWhiteSpace(entry.Name))
-                continue;
-
-            var uuid = entry.Uuid.Replace("-", string.Empty, StringComparison.Ordinal);
-            var name = entry.Name.Trim();
-
-            uuidToName[uuid] = name;
-            nameToUuid[name] = uuid;
-        }
-
-        return new UserCacheIndex(uuidToName, nameToUuid);
-    }
-
-    public string? ResolveUuid(string name) =>
-        _nameToUuid.TryGetValue(name.Trim(), out var uuid) ? uuid : null;
-
-    internal sealed class UserCacheEntry
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Uuid { get; set; } = string.Empty;
-    }
 }
 
 public sealed class ServerOperatorIndex
@@ -61,16 +18,16 @@ public sealed class ServerOperatorIndex
     internal static ServerOperatorIndex Empty { get; } = new(
         new HashSet<string>(StringComparer.OrdinalIgnoreCase),
         new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-        UserCacheIndex.Empty);
+        ServerUserCacheIndex.Empty);
 
     private readonly HashSet<string> _uuids;
     private readonly HashSet<string> _nameFallbacks;
-    private readonly UserCacheIndex _userCache;
+    private readonly ServerUserCacheIndex _userCache;
 
     internal ServerOperatorIndex(
         HashSet<string> uuids,
         HashSet<string> nameFallbacks,
-        UserCacheIndex userCache)
+        ServerUserCacheIndex userCache)
     {
         _uuids = uuids;
         _nameFallbacks = nameFallbacks;
@@ -87,6 +44,19 @@ public sealed class ServerOperatorIndex
 
         var uuid = _userCache.ResolveUuid(playerName);
         return uuid is not null && _uuids.Contains(uuid);
+    }
+
+    public bool IsOperatorUuid(string uuid)
+    {
+        if (string.IsNullOrWhiteSpace(uuid))
+            return false;
+
+        var normalized = ServerUserCacheIndex.NormalizeUuid(uuid);
+        if (_uuids.Contains(normalized))
+            return true;
+
+        var name = _userCache.ResolveName(normalized);
+        return name is not null && _nameFallbacks.Contains(name);
     }
 }
 
@@ -120,12 +90,12 @@ public sealed class ServerOpsService : IServerOpsService
 
     public async Task<ServerOperatorIndex> GetOperatorIndexAsync(
         ServerConfig server,
+        ServerUserCacheIndex userCache,
         IEnumerable<LogEntry>? liveLogs = null,
         CancellationToken ct = default)
     {
         var opUuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var nameFallbacks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var userCache = await LoadUserCacheAsync(server, ct);
 
         await LoadFromOpsFileAsync(server, opUuids, nameFallbacks, ct);
         await LoadFromLogsAsync(server, liveLogs, nameFallbacks, ct);
@@ -156,7 +126,7 @@ public sealed class ServerOpsService : IServerOpsService
                 {
                     if (!string.IsNullOrWhiteSpace(entry.Uuid))
                     {
-                        opUuids.Add(NormalizeUuid(entry.Uuid));
+                        opUuids.Add(ServerUserCacheIndex.NormalizeUuid(entry.Uuid));
                         continue;
                     }
 
@@ -244,38 +214,9 @@ public sealed class ServerOpsService : IServerOpsService
         }
     }
 
-    private static async Task<UserCacheIndex> LoadUserCacheAsync(ServerConfig server, CancellationToken ct)
-    {
-        foreach (var path in ServerPathResolver.GetUserCacheCandidates(server))
-        {
-            ct.ThrowIfCancellationRequested();
-            if (!File.Exists(path))
-                continue;
-
-            try
-            {
-                await using var stream = File.OpenRead(path);
-                var entries = await JsonSerializer.DeserializeAsync<List<UserCacheIndex.UserCacheEntry>>(stream, JsonOptions, ct);
-                if (entries is null || entries.Count == 0)
-                    continue;
-
-                return UserCacheIndex.From(entries);
-            }
-            catch
-            {
-                // Try the next candidate path.
-            }
-        }
-
-        return UserCacheIndex.Empty;
-    }
-
     private static bool IsValidPlayerName(string name) =>
         name.Length is >= 3 and <= 16
         && name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_');
-
-    private static string NormalizeUuid(string uuid) =>
-        uuid.Replace("-", string.Empty, StringComparison.Ordinal);
 
     private sealed class OpsEntry
     {

@@ -184,4 +184,4 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\scopedcss\Components\Pages\Settings.razor.rz.scp.css
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-2zvophbovf-2zvophbovf.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-2zvophbovf-2zvophbovf.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-1mu3l10m0j-1mu3l10m0j.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-5q6r9ou3bq-5q6r9ou3bq.gz
