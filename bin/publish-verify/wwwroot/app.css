@@ -1,0 +1,114 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #e0e0e0;
+}
+
+body {
+    background: #1a1a1a;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+@media (max-width: 768px) {
+    html, body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main:has(.page-layout) {
+        overflow: visible;
+        display: block;
+        height: auto;
+    }
+
+    article.content:has(.page-layout) {
+        overflow: visible;
+        display: block;
+        height: auto;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(30, 30, 30, 0.5);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(124, 179, 66, 0.4);
+    border-radius: 5px;
+    border: 2px solid rgba(30, 30, 30, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 179, 66, 0.6);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    /* Improve touch targets for interactive elements */
+    button:not(.console-toggle-btn):not(.console-close-btn):not(.filter-dropdown-btn):not(.help-command-btn),
+    .btn:not(.btn-sm),
+    a.nav-link,
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-height: 44px;
+    }
+    
+    /* Ensure buttons have adequate touch area */
+    .btn-sm {
+        min-height: 36px;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    /* Better text selection on mobile */
+    * {
+        -webkit-tap-highlight-color: rgba(124, 179, 66, 0.3);
+    }
+    
+    /* Prevent text size adjustment on iOS */
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+    
+    /* Improve form inputs on mobile - 16px prevents zoom on iOS */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="email"],
+    select,
+    textarea {
+        font-size: 16px;
+    }
+    
+    /* Better scrolling on mobile */
+    body {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent horizontal scroll */
+    body, html {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+}

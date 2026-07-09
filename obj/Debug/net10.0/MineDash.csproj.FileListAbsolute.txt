@@ -146,7 +146,6 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check2\MineDash.pd
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check2\BCrypt.Net-Next.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check2\CoreRCON.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check2\YamlDotNet.dll
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-dmvh0caz2p-dmvh0caz2p.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-twdrsy5eqs-twdrsy5eqs.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-twdrsy5eqs-twdrsy5eqs.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check3\appsettings.Development.json
@@ -183,4 +182,5 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\MineDash.pd
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\BCrypt.Net-Next.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\CoreRCON.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\YamlDotNet.dll
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-0p2w2zdq15-0p2w2zdq15.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-3r0nh2dp23-3r0nh2dp23.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-ng87sc2ebm-ng87sc2ebm.gz

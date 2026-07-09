@@ -68,6 +68,10 @@
 
 .console-header {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "title actions"
+        "buttons buttons";
     gap: 0.35rem;
     margin-bottom: 0.35rem;
     position: relative;
@@ -77,73 +81,52 @@
 }
 
 .console-header-title {
+    grid-area: title;
     min-width: 0;
     overflow: hidden;
 }
 
-/* Narrow card: title + actions on row 1, View/Filters split 50/50 on row 2 */
-@container (max-width: 479px) {
-    .console-header {
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas:
-            "title actions"
-            "buttons buttons";
-    }
-
-    .console-header-title {
-        grid-area: title;
-    }
-
-    .console-header-buttons {
-        grid-area: buttons;
-    }
-
-    .console-header-actions {
-        grid-area: actions;
-    }
-
-    .console-header-buttons .console-options-label {
-        display: inline;
-    }
+.console-header-actions {
+    grid-area: actions;
+    align-self: start;
 }
 
-@container (max-width: 280px) {
+.console-header-buttons {
+    grid-area: buttons;
+    position: relative;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.console-header-buttons > .filter-dropdown {
+    min-width: 0;
+    width: auto;
+    max-width: none;
+}
+
+.console-header-buttons .filter-dropdown-btn {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
+}
+
+@container (max-width: 360px) {
     .console-header-buttons .console-options-label {
         display: none;
     }
 }
 
-/* Wide card: title, buttons, and status/close on one line */
-@container (min-width: 480px) {
-    .console-header {
-        grid-template-columns: minmax(0, 1fr) auto auto;
-        grid-template-areas: "title buttons actions";
-        gap: 0.5rem;
-    }
-
-    .console-header-title {
-        grid-area: title;
-    }
-
-    .console-header-buttons {
-        grid-area: buttons;
-    }
-
-    .console-header-actions {
-        grid-area: actions;
-    }
-
-    .console-header-buttons .console-options-label {
-        display: inline;
-    }
-}
-
-/* Medium-width cards: menus span full toolbar, not just one button */
-@container (min-width: 480px) and (max-width: 560px) {
-    .console-header-buttons {
-        position: relative;
-    }
-
+/* Medium-width cards: menus span full toolbar */
+@container (min-width: 361px) and (max-width: 560px) {
     .console-header-buttons > .filter-dropdown {
         position: static;
     }
@@ -176,33 +159,14 @@
         border-bottom: 1px solid #333;
     }
 
+    .console-card.mobile-collapsed .console-header-buttons {
+        display: none;
+    }
+
     .console-endpoint {
         font-size: 0.72rem;
         color: #999;
     }
-}
-
-.console-header-buttons {
-    position: relative;
-    overflow: visible;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 0.35rem;
-    width: 100%;
-}
-
-.console-header-buttons > .filter-dropdown {
-    flex: 1 1 0;
-    min-width: 0;
-    width: auto;
-}
-
-.console-header-buttons .filter-dropdown-btn {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
 }
 
 /* Desktop: toggle buttons row should be inline, not stretched */
@@ -1216,8 +1180,17 @@
 
     .command-panel .console-header-buttons > .filter-dropdown {
         width: auto;
-        flex: 1 1 0;
-        flex-basis: 0;
+        max-width: none;
+        flex: none;
+        flex-basis: auto;
+    }
+
+    .command-panel .console-header-buttons .filter-dropdown-btn {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        padding: 0.45rem 0.35rem;
+        font-size: 0.8rem;
     }
 
     .command-panel .filter-dropdown-menu {
@@ -1228,7 +1201,7 @@
         max-width: none;
     }
 
-    .command-panel .filter-dropdown-btn {
+    .command-panel .filter-dropdown-btn:not(.console-options-btn) {
         width: 100%;
         min-width: auto;
         font-size: 0.9rem;

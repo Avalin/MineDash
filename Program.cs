@@ -57,7 +57,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.MapStaticAssets();
 app.UseAntiforgery();
 app.UseSession();
 
@@ -178,6 +178,7 @@ app.MapPost("/api/logout", async (HttpRequest request, IAuthService authService,
 .WithName("Logout");
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .WithStaticAssets();
 
 app.Run();

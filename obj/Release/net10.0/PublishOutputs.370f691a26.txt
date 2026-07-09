@@ -1,0 +1,15 @@
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\MineDash.exe
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\appsettings.Development.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\appsettings.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\app_data\servers.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\app_data\settings.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\app_data\timed-commands.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\app_data\users.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\app_data\users\cb1e406459604239b36e2057997b994a\commands.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\MineDash.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\MineDash.runtimeconfig.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\MineDash.pdb
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\BCrypt.Net-Next.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\CoreRCON.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\YamlDotNet.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\publish-verify\MineDash.deps.json

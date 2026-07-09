@@ -1,5 +1,6 @@
 @using MineDash.Models
 @using MineDash.Services
+@implements IAsyncDisposable
 @inject IServerPlayerService PlayerService
 
 @if (Show)
@@ -16,7 +17,7 @@
                 </button>
             </div>
             <div class="players-dialog-body">
-                @if (_loading)
+                @if (_loading && _result is null)
                 {
                     <div class="players-dialog-status">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -43,6 +44,10 @@
                 {
                     <div class="players-dialog-summary">
                         @_result.OnlineCount online · @_result.Players.Count total
+                        @if (_refreshing)
+                        {
+                            <span class="players-dialog-live" aria-live="polite">Updating…</span>
+                        }
                     </div>
                     @if (_result.OnlineLookupError is not null)
                     {
@@ -67,9 +72,6 @@
             </div>
             <div class="players-dialog-footer">
                 <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
-                <button type="button" class="btn btn-primary" @onclick="RefreshAsync" disabled="@_loading">
-                    Refresh
-                </button>
             </div>
         </div>
     </div>
@@ -81,26 +83,84 @@
     [Parameter] public IEnumerable<LogEntry>? LiveLogs { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
+
     private bool _loading;
+    private bool _refreshing;
     private bool _wasShown;
+    private int _lastLiveLogCount = -1;
     private ServerPlayersResult? _result;
+    private CancellationTokenSource? _pollCts;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Show && !_wasShown)
+        if (!Show)
         {
-            _wasShown = true;
-            await LoadAsync();
+            _wasShown = false;
+            _lastLiveLogCount = -1;
+            StopPolling();
+            return;
         }
 
-        if (!Show)
-            _wasShown = false;
+        if (!_wasShown)
+        {
+            _wasShown = true;
+            _lastLiveLogCount = LiveLogs?.Count() ?? 0;
+            await LoadAsync(initial: true);
+            StartPolling();
+            return;
+        }
+
+        var logCount = LiveLogs?.Count() ?? 0;
+        if (logCount != _lastLiveLogCount)
+        {
+            _lastLiveLogCount = logCount;
+            await LoadAsync(initial: false);
+        }
     }
 
-    private async Task LoadAsync()
+    private void StartPolling()
     {
-        _loading = true;
-        StateHasChanged();
+        StopPolling();
+        _pollCts = new CancellationTokenSource();
+        _ = PollLoopAsync(_pollCts.Token);
+    }
+
+    private void StopPolling()
+    {
+        if (_pollCts is null)
+            return;
+
+        _pollCts.Cancel();
+        _pollCts.Dispose();
+        _pollCts = null;
+    }
+
+    private async Task PollLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(PollInterval);
+            while (await timer.WaitForNextTickAsync(ct))
+                await LoadAsync(initial: false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadAsync(bool initial)
+    {
+        if (initial)
+        {
+            _loading = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            _refreshing = true;
+            await InvokeAsync(StateHasChanged);
+        }
 
         try
         {
@@ -108,20 +168,26 @@
         }
         catch
         {
-            _result = null;
+            if (initial)
+                _result = null;
         }
         finally
         {
             _loading = false;
-            StateHasChanged();
+            _refreshing = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
-
-    private async Task RefreshAsync() => await LoadAsync();
 
     private async Task Close()
     {
         if (OnClose.HasDelegate)
             await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        StopPolling();
+        await Task.CompletedTask;
     }
 }

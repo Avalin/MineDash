@@ -119,12 +119,25 @@
 }
 
 .players-dialog-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     font-size: 0.8rem;
     color: #9a9a9a;
     margin-bottom: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-weight: 600;
+}
+
+.players-dialog-live {
+    font-size: 0.7rem;
+    color: #888;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
 }
 
 .players-dialog-warning {

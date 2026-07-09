@@ -37,7 +37,6 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\scopedcs
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\scopedcss\Components\Pages\UserManagement.razor.rz.scp.css
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\scopedcss\bundle\MineDash.styles.css
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\scopedcss\projectbundle\MineDash.bundle.scp.css
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\m5f3f58ufo-{0}-3cd23jgp43-3cd23jgp43.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\h1jhhtblr2-{0}-bqjiyaj88i-bqjiyaj88i.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\0yddfqa337-{0}-c2jlpeoesf-c2jlpeoesf.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\y27g54eixv-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -95,7 +94,11 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\refint\M
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\MineDash.pdb
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\MineDash.genruntimeconfig.cache
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\ref\MineDash.dll
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\ru2qxa4l8x-{0}-w38n0ywy20-w38n0ywy20.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\j3cl8ro38s-{0}-8m2z3bzulz-8m2z3bzulz.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\jse9o5rgwq-{0}-beiflfsuhm-beiflfsuhm.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\xbp7fbvo66-{0}-beiflfsuhm-beiflfsuhm.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Release\net10.0\MineDash.exe
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Release\net10.0\YamlDotNet.dll
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\ru2qxa4l8x-{0}-nuyo7ssoc3-nuyo7ssoc3.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\jse9o5rgwq-{0}-twdrsy5eqs-twdrsy5eqs.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\xbp7fbvo66-{0}-twdrsy5eqs-twdrsy5eqs.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\m5f3f58ufo-{0}-3r0nh2dp23-3r0nh2dp23.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Release\net10.0\compressed\4aldibwq2e-{0}-ng87sc2ebm-ng87sc2ebm.gz

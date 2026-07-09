@@ -30,17 +30,6 @@
                 <span class="bi bi-x-lg"></span>
             </button>
         </div>
-    </div>
-
-    <button class="console-mobile-toggle"
-            type="button"
-            aria-expanded="@State.MobileExpanded"
-            @onclick="ToggleMobileExpanded">
-        <span class="bi @(State.MobileExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></span>
-        <span>Console</span>
-    </button>
-
-    <div class="console-card-body">
         <div class="console-header-buttons">
             @{
                 IReadOnlyCollection<string> availableLevels = State.ShowLogs && State.LiveLogs.Any()
@@ -307,7 +296,17 @@
                 </button>
             </div>
         </div>
+    </div>
 
+    <button class="console-mobile-toggle"
+            type="button"
+            aria-expanded="@State.MobileExpanded"
+            @onclick="ToggleMobileExpanded">
+        <span class="bi @(State.MobileExpanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></span>
+        <span>Console</span>
+    </button>
+
+    <div class="console-card-body">
         <div class="console-output" id="@OutputElementId">
         @{
             var mergedEntries = Timeline.BuildMergedEntries(State, ConsoleActivity.GetHistory(State.ServerId));
