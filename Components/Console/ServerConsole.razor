@@ -391,15 +391,16 @@
 
     @{
         var selectedCmd = MinecraftCommandSyntax.GetSelectedCommand(State, Commands, DefaultSayCommandId);
-        var argsHint = selectedCmd is not null ? MinecraftCommandSyntax.GetArgumentsHint(selectedCmd) : string.Empty;
-        var acceptsArgs = selectedCmd is not null && MinecraftCommandSyntax.AcceptsArguments(selectedCmd);
+        var commandSchema = selectedCmd is not null ? MinecraftCommandSyntax.GetSchema(selectedCmd) : null;
     }
         <div class="command-input-row">
+            <div class="command-input-fields">
             <div class="command-select-wrap"
                  data-value="@(selectedCmd is not null ? MinecraftCommandSyntax.GetDisplayName(selectedCmd) : "say")">
                 <select class="form-select command-select"
                         value="@MinecraftCommandSyntax.ResolveSelectedCommandId(State, Commands, DefaultSayCommandId)"
-                        @onchange="OnCommandTypeChanged">
+                        @onchange="OnCommandTypeChanged"
+                        @onkeydown="HandleKeyDown">
                     @foreach (var cmd in MinecraftCommandSyntax.OrderForDisplay(Commands))
                     {
                         <option value="@cmd.Id" title="@cmd.Description">@MinecraftCommandSyntax.GetDisplayName(cmd)</option>
@@ -407,12 +408,54 @@
                 </select>
             </div>
 
-            <input class="form-control command-input"
-                   placeholder="@(acceptsArgs ? argsHint : "No arguments needed")"
-                   value="@State.CommandArguments"
-                   disabled="@(!acceptsArgs)"
-                   @oninput="OnCommandArgumentsChanged"
-                   @onkeydown="HandleKeyDown" />
+            @if (commandSchema is not null)
+            {
+                @foreach (var arg in commandSchema.Args)
+                {
+                    switch (arg.Kind)
+                    {
+                        case CommandArgKind.Literal:
+                            <span class="command-arg-literal" title="Fixed argument">@arg.Literal</span>
+                            break;
+
+                        case CommandArgKind.Choice:
+                            <div class="command-arg-select-wrap" data-value="@arg.ChoiceSizerText">
+                                <select class="form-select command-arg-select"
+                                        value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
+                                        @onchange="e => OnArgValueChanged(arg.Index, e)"
+                                        @onkeydown="HandleKeyDown">
+                                    @if (arg.IsOptional)
+                                    {
+                                        <option value="">@arg.InputPlaceholder</option>
+                                    }
+                                    @foreach (var choice in arg.Choices ?? Array.Empty<string>())
+                                    {
+                                        <option value="@choice">@choice</option>
+                                    }
+                                </select>
+                            </div>
+                            break;
+
+                        case CommandArgKind.Text:
+                            <input class="form-control command-input command-arg-input"
+                                   placeholder="@arg.InputPlaceholder"
+                                   value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
+                                   @oninput="e => OnArgValueChanged(arg.Index, e)"
+                                   @onkeydown="HandleKeyDown" />
+                            break;
+
+                        case CommandArgKind.Message:
+                            <textarea class="form-control command-input command-arg-message"
+                                      placeholder="@arg.InputPlaceholder"
+                                      rows="1"
+                                      value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
+                                      @oninput="e => OnArgValueChanged(arg.Index, e)"
+                                      @onkeydown="e => HandleArgKeyDown(e, isMessage: true)"></textarea>
+                            break;
+                    }
+                }
+            }
+            </div>
 
             <button class="btn btn-primary command-send-btn"
                     @onclick="SendCommand"
@@ -472,6 +515,10 @@
             State.OpenFilterDropdown = null;
             _lastCloseFiltersTick = CloseFiltersTick;
         }
+
+        var cmd = MinecraftCommandSyntax.GetSelectedCommand(State, Commands, DefaultSayCommandId);
+        if (cmd is not null)
+            MinecraftCommandSyntax.EnsureDefaultArgValues(State, cmd);
     }
 
     public async ValueTask DisposeAsync()
@@ -755,11 +802,27 @@
     private void OnCommandTypeChanged(ChangeEventArgs e)
     {
         State.SelectedCommandId = e.Value?.ToString() ?? DefaultSayCommandId ?? string.Empty;
-        State.CommandArguments = string.Empty;
+        var cmd = MinecraftCommandSyntax.GetSelectedCommand(State, Commands, DefaultSayCommandId);
+        if (cmd is not null)
+            MinecraftCommandSyntax.ResetArgumentsForCommand(State, cmd);
     }
 
-    private void OnCommandArgumentsChanged(ChangeEventArgs e) =>
-        State.CommandArguments = e.Value?.ToString() ?? string.Empty;
+    private void OnArgValueChanged(int index, ChangeEventArgs e)
+    {
+        MinecraftCommandSyntax.SetArgValue(State, index, e.Value?.ToString());
+        StateHasChanged();
+    }
+
+    private async Task HandleArgKeyDown(KeyboardEventArgs e, bool isMessage = false)
+    {
+        if (e.Key == "Enter" && (!isMessage || !e.ShiftKey))
+        {
+            await SendCommand();
+            return;
+        }
+
+        await HandleKeyDown(e);
+    }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
@@ -788,7 +851,7 @@
             else
             {
                 State.HistoryIndex = State.CommandHistoryOnly.Count;
-                State.CommandArguments = string.Empty;
+                MinecraftCommandSyntax.ClearArguments(State);
             }
         }
     }
@@ -832,7 +895,10 @@
             });
         }
 
-        State.CommandArguments = string.Empty;
+        if (selectedCmd is not null)
+            MinecraftCommandSyntax.ResetArgumentsForCommand(State, selectedCmd);
+        else
+            MinecraftCommandSyntax.ClearArguments(State);
         StateHasChanged();
         await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
 

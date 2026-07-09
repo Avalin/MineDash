@@ -36,6 +36,7 @@ public sealed class ConsoleState
     public string ServerId { get; }
     public string SelectedCommandId { get; set; } = string.Empty;
     public string CommandArguments { get; set; } = string.Empty;
+    public Dictionary<int, string> CommandArgValues { get; } = new();
     public List<string> CommandHistoryOnly { get; } = new();
     public int HistoryIndex { get; set; } = -1;
     public bool ShowLogs { get; set; }

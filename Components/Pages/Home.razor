@@ -436,7 +436,7 @@
         {
             var state = GetConsoleState(serverId);
             state.SelectedCommandId = cmd.Id;
-            state.CommandArguments = string.Empty;
+            MinecraftCommandSyntax.ResetArgumentsForCommand(state, cmd);
         }
 
         StateHasChanged();

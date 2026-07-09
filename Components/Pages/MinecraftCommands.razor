@@ -38,7 +38,9 @@
                 <div class="field-row">
                     <div class="field-label">Command Syntax</div>
                     <div class="field-hint">
-                        The command syntax (e.g., <code>/say &lt;message&gt;</code> or <code>/list</code>).
+                        The command syntax (e.g., <code>/say &lt;message&gt;</code>, <code>/time set day|night|noon|midnight</code>, or <code>/list</code>).
+                        Use <code>word|word</code> for dropdown choices, plain words like <code>set</code> as fixed literals,
+                        <code>&lt;message&gt;</code> / <code>&lt;reason&gt;</code> for multi-line text, and <code>[...]</code> for optional args.
                     </div>
                     <input class="form-control" value="@_editCommand.Syntax" @oninput="OnSyntaxInput" />
                     @if (!string.IsNullOrEmpty(_syntaxValidationError))

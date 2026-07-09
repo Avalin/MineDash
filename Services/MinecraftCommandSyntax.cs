@@ -4,24 +4,16 @@ namespace MineDash.Services;
 
 public static class MinecraftCommandSyntax
 {
-    public static string GetCommandName(MinecraftCommand cmd)
-    {
-        var syntax = NormalizeSyntax(cmd.Syntax);
-        var delimiter = syntax.IndexOfAny([' ', '<']);
-        return delimiter > 0 ? syntax[..delimiter] : syntax;
-    }
+    public static CommandSyntaxSchema GetSchema(MinecraftCommand cmd) =>
+        CommandSyntaxParser.Parse(cmd.Syntax);
 
-    public static string GetArgumentsHint(MinecraftCommand cmd)
-    {
-        var syntax = NormalizeSyntax(cmd.Syntax);
-        var space = syntax.IndexOf(' ');
-        return space < 0 ? string.Empty : syntax[(space + 1)..];
-    }
+    public static string GetCommandName(MinecraftCommand cmd) =>
+        GetSchema(cmd).CommandName;
 
     public static string GetDisplayName(MinecraftCommand cmd) => GetCommandName(cmd);
 
     public static bool AcceptsArguments(MinecraftCommand cmd) =>
-        NormalizeSyntax(cmd.Syntax).Contains(' ');
+        GetSchema(cmd).HasUserInput;
 
     public static IEnumerable<MinecraftCommand> OrderForDisplay(IEnumerable<MinecraftCommand> commands) =>
         commands
@@ -79,9 +71,7 @@ public static class MinecraftCommandSyntax
         if (cmd is null)
             return string.Empty;
 
-        var name = GetCommandName(cmd);
-        var args = state.CommandArguments.Trim();
-        return string.IsNullOrEmpty(args) ? name : $"{name} {args}";
+        return CommandSyntaxParser.BuildCommand(GetSchema(cmd), state.CommandArgValues);
     }
 
     public static bool CanSend(ConsoleState state, MinecraftCommand? cmd)
@@ -89,7 +79,42 @@ public static class MinecraftCommandSyntax
         if (cmd is null)
             return false;
 
-        return !AcceptsArguments(cmd) || !string.IsNullOrWhiteSpace(state.CommandArguments);
+        return CommandSyntaxParser.CanSend(GetSchema(cmd), state.CommandArgValues);
+    }
+
+    public static void ClearArguments(ConsoleState state)
+    {
+        state.CommandArguments = string.Empty;
+        state.CommandArgValues.Clear();
+    }
+
+    public static void ResetArgumentsForCommand(ConsoleState state, MinecraftCommand cmd)
+    {
+        ClearArguments(state);
+        EnsureDefaultArgValues(state, cmd);
+    }
+
+    public static void EnsureDefaultArgValues(ConsoleState state, MinecraftCommand cmd)
+    {
+        foreach (var arg in GetSchema(cmd).Args)
+        {
+            if (arg.Kind != CommandArgKind.Choice || !arg.RequiresUserInput || arg.Choices is not { Length: > 0 })
+                continue;
+
+            if (!state.CommandArgValues.ContainsKey(arg.Index))
+                SetArgValue(state, arg.Index, arg.Choices[0]);
+        }
+    }
+
+    public static string GetArgValue(ConsoleState state, int index) =>
+        state.CommandArgValues.TryGetValue(index, out var value) ? value : string.Empty;
+
+    public static void SetArgValue(ConsoleState state, int index, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            state.CommandArgValues.Remove(index);
+        else
+            state.CommandArgValues[index] = value;
     }
 
     public static void ApplyHistoryCommand(
@@ -106,23 +131,28 @@ public static class MinecraftCommandSyntax
         if (best is not null)
         {
             state.SelectedCommandId = best.Id;
-            var name = GetCommandName(best);
-            state.CommandArguments = historyCmd.Equals(name, StringComparison.OrdinalIgnoreCase)
-                ? string.Empty
-                : historyCmd[(name.Length + 1)..];
+            var schema = GetSchema(best);
+            if (!CommandSyntaxParser.TryApplyHistory(historyCmd, schema, state.CommandArgValues))
+            {
+                ClearArguments(state);
+                var name = schema.CommandName;
+                state.CommandArguments = historyCmd.Equals(name, StringComparison.OrdinalIgnoreCase)
+                    ? string.Empty
+                    : historyCmd[(name.Length + 1)..];
+            }
+            else
+            {
+                state.CommandArguments = string.Empty;
+            }
+
             return;
         }
 
         if (defaultSayCommandId is not null)
         {
             state.SelectedCommandId = defaultSayCommandId;
+            ClearArguments(state);
             state.CommandArguments = historyCmd;
         }
-    }
-
-    private static string NormalizeSyntax(string syntax)
-    {
-        syntax = syntax.Trim();
-        return syntax.StartsWith('/') ? syntax[1..] : syntax;
     }
 }

@@ -6,7 +6,6 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\app_data\t
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\app_data\users.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.staticwebassets.runtime.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.staticwebassets.endpoints.json
-c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.exe
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.deps.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.runtimeconfig.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.dll
@@ -180,8 +179,9 @@ C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\MineDash.pd
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\BCrypt.Net-Next.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\CoreRCON.dll
 C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check4\YamlDotNet.dll
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-3r0nh2dp23-3r0nh2dp23.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\scopedcss\Components\Pages\Settings.razor.rz.scp.css
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-2zvophbovf-2zvophbovf.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-2zvophbovf-2zvophbovf.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-5q6r9ou3bq-5q6r9ou3bq.gz
+c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-8h6zelmvf2-8h6zelmvf2.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.exe
