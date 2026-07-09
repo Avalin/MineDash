@@ -11,6 +11,7 @@
 @inject IConsoleLogSessionService LogSession
 @inject IConsoleLogRetentionService LogRetention
 @inject ILogPlayerHighlighter PlayerHighlighter
+@inject IServerPlayerService PlayerService
 @inject ITimeDisplayService TimeDisplay
 @inject IJSRuntime JSRuntime
 
@@ -437,11 +438,30 @@
                             break;
 
                         case CommandArgKind.Text:
-                            <input class="form-control command-input command-arg-input"
-                                   placeholder="@arg.InputPlaceholder"
-                                   value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
-                                   @oninput="e => OnArgValueChanged(arg.Index, e)"
-                                   @onkeydown="HandleKeyDown" />
+                            @if (arg.PlayerSuggestions != PlayerSuggestionScope.None)
+                            {
+                                var playerListId = GetPlayerDatalistId(arg);
+                                <input class="form-control command-input command-arg-input"
+                                       list="@playerListId"
+                                       placeholder="@arg.InputPlaceholder"
+                                       value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
+                                       @oninput="e => OnArgValueChanged(arg.Index, e)"
+                                       @onkeydown="HandleKeyDown" />
+                                <datalist id="@playerListId">
+                                    @foreach (var playerName in GetPlayerSuggestions(arg))
+                                    {
+                                        <option value="@playerName"></option>
+                                    }
+                                </datalist>
+                            }
+                            else
+                            {
+                                <input class="form-control command-input command-arg-input"
+                                       placeholder="@arg.InputPlaceholder"
+                                       value="@MinecraftCommandSyntax.GetArgValue(State, arg.Index)"
+                                       @oninput="e => OnArgValueChanged(arg.Index, e)"
+                                       @onkeydown="HandleKeyDown" />
+                            }
                             break;
 
                         case CommandArgKind.Message:
@@ -486,12 +506,17 @@
     private readonly HashSet<string> _expandedOptionSections = new(StringComparer.Ordinal);
     private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan ReconnectBackoff = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan PlayerPollInterval = TimeSpan.FromSeconds(5);
     private string OutputElementId => $"console-output-{State.ServerId}";
+    private ServerPlayersOverview? _playersOverview;
+    private CancellationTokenSource? _playerPollCts;
+    private int _lastLiveLogCountForPlayers = -1;
 
     protected override async Task OnInitializedAsync()
     {
         ConsoleActivity.HistoryChanged += OnHistoryChanged;
         StartStatusPolling();
+        StartPlayerPolling();
         await StartLogWatchingAsync();
     }
 
@@ -519,6 +544,13 @@
         var cmd = MinecraftCommandSyntax.GetSelectedCommand(State, Commands, DefaultSayCommandId);
         if (cmd is not null)
             MinecraftCommandSyntax.EnsureDefaultArgValues(State, cmd);
+
+        var logCount = State.LiveLogs?.Count ?? 0;
+        if (logCount != _lastLiveLogCountForPlayers)
+        {
+            _lastLiveLogCountForPlayers = logCount;
+            _ = LoadPlayersAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -526,6 +558,7 @@
         ConsoleActivity.HistoryChanged -= OnHistoryChanged;
         StopLogPolling();
         StopStatusPolling();
+        StopPlayerPolling();
         await Task.CompletedTask;
     }
 
@@ -1054,4 +1087,55 @@
         ServerOnlineStatus.Checking => "Checking RCON connection…",
         _ => "Server status unknown",
     };
+
+    private string GetPlayerDatalistId(CommandArgPart arg) =>
+        $"player-suggestions-{State.ServerId}-{arg.Index}";
+
+    private IEnumerable<string> GetPlayerSuggestions(CommandArgPart arg) =>
+        _playersOverview is null || arg.PlayerSuggestions == PlayerSuggestionScope.None
+            ? []
+            : CommandPlayerSuggestions.GetNames(_playersOverview, arg.PlayerSuggestions);
+
+    private void StartPlayerPolling()
+    {
+        StopPlayerPolling();
+        _playerPollCts = new CancellationTokenSource();
+        _ = LoadPlayersAsync();
+        _ = PlayerPollLoopAsync(_playerPollCts.Token);
+    }
+
+    private void StopPlayerPolling()
+    {
+        if (_playerPollCts is null)
+            return;
+
+        _playerPollCts.Cancel();
+        _playerPollCts.Dispose();
+        _playerPollCts = null;
+    }
+
+    private async Task PlayerPollLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(PlayerPollInterval);
+            while (await timer.WaitForNextTickAsync(ct))
+                await LoadPlayersAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadPlayersAsync()
+    {
+        try
+        {
+            _playersOverview = await PlayerService.GetPlayersOverviewAsync(Server, State.LiveLogs);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+        }
+    }
 }

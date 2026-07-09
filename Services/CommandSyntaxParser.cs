@@ -16,6 +16,7 @@ public sealed class CommandArgPart
     public string[]? Choices { get; init; }
     public string? Placeholder { get; init; }
     public int Index { get; init; }
+    public PlayerSuggestionScope PlayerSuggestions { get; init; }
 
     public bool RequiresUserInput =>
         Kind is not CommandArgKind.Literal && !IsOptional;
@@ -68,7 +69,7 @@ public static class CommandSyntaxParser
 
         for (var i = 1; i < tokens.Count; i++)
         {
-            var part = ParseToken(tokens[i], userArgIndex);
+            var part = ParseToken(tokens[i], userArgIndex, commandName);
             if (part.Kind != CommandArgKind.Literal)
                 userArgIndex++;
 
@@ -189,7 +190,7 @@ public static class CommandSyntaxParser
         return true;
     }
 
-    private static CommandArgPart ParseToken(string token, int userArgIndex)
+    private static CommandArgPart ParseToken(string token, int userArgIndex, string commandName)
     {
         if (token.StartsWith('[') && token.EndsWith(']'))
         {
@@ -203,18 +204,25 @@ public static class CommandSyntaxParser
                 Kind = kind,
                 IsOptional = true,
                 Placeholder = inner,
-                Index = userArgIndex
+                Index = userArgIndex,
+                PlayerSuggestions = kind == CommandArgKind.Text
+                    ? CommandPlayerSuggestions.Resolve(commandName, inner)
+                    : PlayerSuggestionScope.None
             };
         }
 
         if (token.StartsWith('<') && token.EndsWith('>'))
         {
             var name = token[1..^1].Trim();
+            var kind = IsMessagePlaceholder(name) ? CommandArgKind.Message : CommandArgKind.Text;
             return new CommandArgPart
             {
-                Kind = IsMessagePlaceholder(name) ? CommandArgKind.Message : CommandArgKind.Text,
+                Kind = kind,
                 Placeholder = name,
-                Index = userArgIndex
+                Index = userArgIndex,
+                PlayerSuggestions = kind == CommandArgKind.Text
+                    ? CommandPlayerSuggestions.Resolve(commandName, name)
+                    : PlayerSuggestionScope.None
             };
         }
 
