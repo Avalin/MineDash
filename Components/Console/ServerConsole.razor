@@ -440,10 +440,10 @@
     private int _statusCheckRunning;
     private bool _stickToBottomForAuto;
     private bool _pendingInitialScroll;
-    private DateTime _lastFullRconCheckUtc = DateTime.MinValue;
+    private DateTime _lastReconnectAttemptUtc = DateTime.MinValue;
     private readonly HashSet<string> _expandedOptionSections = new(StringComparer.Ordinal);
     private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan FullRconCheckInterval = TimeSpan.FromSeconds(90);
+    private static readonly TimeSpan ReconnectBackoff = TimeSpan.FromSeconds(30);
     private string OutputElementId => $"console-output-{State.ServerId}";
 
     protected override async Task OnInitializedAsync()
@@ -839,8 +839,6 @@
 
         if (State.ShowLogs)
             _ = RefreshLogsAfterCommandAsync();
-
-        _ = CheckServerStatusAsync(initial: false, forceFullRcon: true);
     }
 
     private async Task RecordCommandAsync(CommandHistoryItem item)
@@ -895,7 +893,7 @@
         await ScrollToBottom();
     }
 
-    private async Task CheckServerStatusAsync(bool initial, bool forceFullRcon = false)
+    private async Task CheckServerStatusAsync(bool initial)
     {
         if (Interlocked.CompareExchange(ref _statusCheckRunning, 1, 0) != 0)
             return;
@@ -910,23 +908,22 @@
                 await InvokeAsync(StateHasChanged);
             }
 
-            var needsFullRcon = forceFullRcon
-                || initial
-                || DateTime.UtcNow - _lastFullRconCheckUtc >= FullRconCheckInterval;
-
             ServerOnlineStatus next;
             try
             {
-                if (needsFullRcon)
+                if (initial)
                 {
-                    next = await Rcon.PingAsync(Server);
-                    _lastFullRconCheckUtc = DateTime.UtcNow;
+                    next = await Rcon.EnsureConnectedAsync(Server);
                 }
                 else
                 {
                     next = await Rcon.CheckReachabilityAsync(Server);
-                    if (next == ServerOnlineStatus.Online && previous == ServerOnlineStatus.AuthError)
-                        next = ServerOnlineStatus.AuthError;
+                    if (next != ServerOnlineStatus.Online
+                        && DateTime.UtcNow - _lastReconnectAttemptUtc >= ReconnectBackoff)
+                    {
+                        _lastReconnectAttemptUtc = DateTime.UtcNow;
+                        next = await Rcon.EnsureConnectedAsync(Server);
+                    }
                 }
             }
             catch

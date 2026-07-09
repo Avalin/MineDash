@@ -29,7 +29,7 @@ builder.Services.AddSingleton<IDockerComposeImportService, DockerComposeImportSe
 builder.Services.AddScoped<ICommandStore, JsonCommandStore>();
 builder.Services.AddSingleton<ITimedCommandStore, JsonTimedCommandStore>();
 builder.Services.AddSingleton<IAppSettingsStore, JsonAppSettingsStore>();
-builder.Services.AddScoped<IRconService, RconService>();
+builder.Services.AddSingleton<IRconService, RconService>();
 builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton<ITimeDisplayService, TimeDisplayService>();
 builder.Services.AddSingleton<IConsoleActivityStore, JsonConsoleActivityStore>();
