@@ -58,13 +58,6 @@
                 }
                 else
                 {
-                    @if (_refreshing)
-                    {
-                        <div class="players-dialog-summary">
-                            <span class="players-dialog-live" aria-live="polite">Updating…</span>
-                        </div>
-                    }
-
                     @switch (_activeTab)
                     {
                         case PlayersTab.Players:
@@ -103,7 +96,6 @@
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
 
     private bool _loading;
-    private bool _refreshing;
     private bool _wasShown;
     private bool _playerAvatarsEnabled = true;
     private int _lastLiveLogCount = -1;
@@ -180,11 +172,6 @@
             _loading = true;
             await InvokeAsync(StateHasChanged);
         }
-        else
-        {
-            _refreshing = true;
-            await InvokeAsync(StateHasChanged);
-        }
 
         try
         {
@@ -198,7 +185,6 @@
         finally
         {
             _loading = false;
-            _refreshing = false;
             await InvokeAsync(StateHasChanged);
         }
     }
