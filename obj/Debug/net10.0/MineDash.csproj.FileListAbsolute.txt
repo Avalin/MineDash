@@ -96,7 +96,6 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\MineDash.g
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\ref\MineDash.dll
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\appsettings.Development.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\appsettings.json
-c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\app_data\commands.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\app_data\servers.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\app_data\settings.json
 c:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\app_data\timed-commands.json
@@ -128,6 +127,9 @@ C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.runtimeconfig.
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.dll
 C:\Users\Avalin\AppData\Local\Temp\MineDash-build-verify\MineDash.pdb
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\ru2qxa4l8x-{0}-nuyo7ssoc3-nuyo7ssoc3.gz
-c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-3b1dmwdto7-3b1dmwdto7.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-twdrsy5eqs-twdrsy5eqs.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-twdrsy5eqs-twdrsy5eqs.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\scopedcss\Components\PlayersListDialog.razor.rz.scp.css
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-uanl2p4eir-uanl2p4eir.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\jse9o5rgwq-{0}-r2j3omp031-r2j3omp031.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-r2j3omp031-r2j3omp031.gz
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\app_data\users\cb1e406459604239b36e2057997b994a\commands.json
+C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\build-check\YamlDotNet.dll

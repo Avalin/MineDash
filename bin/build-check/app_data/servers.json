@@ -1,10 +1,22 @@
 [
   {
-    "Id": "6d61fd9f6954432b80aa91de74edb747",
-    "Name": "minecraft-creatamon",
-    "Host": "minecraft-creatamon",
+    "Id": "9921dc5b6d734e178fd82475ffb6952a",
+    "Name": "New Minecraft Server",
+    "ConfigSource": 0,
+    "Host": "localhost",
     "RconPort": 25575,
-    "RconPassword": "minecraft-creatamon",
-    "LogPath": "/srv/minecraft/creatamon/data/logs/latest.log"
+    "RconPassword": "",
+    "LogPath": "/srv/minecraft/creatamon",
+    "LogTimeZoneId": "UTC"
+  },
+  {
+    "Id": "3f983844b4b54e419cbf95da61d67be4",
+    "Name": "New Minecraft Serverss",
+    "ConfigSource": 0,
+    "Host": "localhost",
+    "RconPort": 25575,
+    "RconPassword": "",
+    "LogPath": "/srv/minecraft/creatamon",
+    "LogTimeZoneId": "UTC"
   }
 ]

@@ -97,7 +97,7 @@
     .console-header-buttons {
         grid-area: buttons;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 0.35rem;
         width: 100%;
     }
@@ -255,6 +255,17 @@
     background-color: rgba(255, 255, 255, 0.15);
     border-color: #888;
     color: #ddd;
+}
+
+.players-btn-icon {
+    width: 18px;
+    height: 18px;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.console-players-btn .players-btn-icon {
+    margin-top: -1px;
 }
 
 .filter-dropdown-btn.has-filter {

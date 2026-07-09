@@ -82,3 +82,7 @@ build_metadata.AdditionalFiles.CssScope = b-sh18b65bck
 [C:/Users/Avalin/Documents/Code Experiments/MineDash/Components/Pages/UserManagement.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xVc2VyTWFuYWdlbWVudC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-ucepf0ugy7
+
+[C:/Users/Avalin/Documents/Code Experiments/MineDash/Components/PlayersListDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQbGF5ZXJzTGlzdERpYWxvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-rmu3w7pmzv

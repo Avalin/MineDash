@@ -6,6 +6,7 @@ namespace MineDash.Services;
 public interface ILogPlayerHighlighter
 {
     IReadOnlySet<string> CollectPlayerNames(IEnumerable<LogEntry> logs);
+    IReadOnlySet<string> CollectConnectedPlayerNames(IEnumerable<LogEntry> logs);
     string Highlight(string message, IReadOnlySet<string> playerNames);
 }
 
@@ -25,6 +26,14 @@ public sealed class LogPlayerHighlighter : ILogPlayerHighlighter
         (new(@"(?:with player|player:)\s+(?<name>\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase), 1),
     ];
 
+    private static readonly (Regex Pattern, int Group)[] ConnectionPatterns =
+    [
+        (new(@"^(?<name>.+?) joined the game$", RegexOptions.Compiled), 1),
+        (new(@"^(?<name>.+?) left the game$", RegexOptions.Compiled), 1),
+        (new(@"^(?<name>.+?) lost connection", RegexOptions.Compiled), 1),
+        (new(@"Disconnecting client (?<name>\S+)", RegexOptions.Compiled), 1),
+    ];
+
     public IReadOnlySet<string> CollectPlayerNames(IEnumerable<LogEntry> logs)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -36,6 +45,23 @@ public sealed class LogPlayerHighlighter : ILogPlayerHighlighter
                 continue;
 
             foreach (var name in ExtractNames(message))
+                names.Add(name);
+        }
+
+        return names;
+    }
+
+    public IReadOnlySet<string> CollectConnectedPlayerNames(IEnumerable<LogEntry> logs)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var log in logs)
+        {
+            var message = GetMessageText(log);
+            if (string.IsNullOrWhiteSpace(message))
+                continue;
+
+            foreach (var name in ExtractConnectionNames(message))
                 names.Add(name);
         }
 
@@ -76,6 +102,22 @@ public sealed class LogPlayerHighlighter : ILogPlayerHighlighter
         var cleaned = CleanMessage(message);
 
         foreach (var (pattern, group) in ExtractionPatterns)
+        {
+            var match = pattern.Match(cleaned);
+            if (!match.Success)
+                continue;
+
+            var name = match.Groups[group].Value.Trim();
+            if (IsValidPlayerName(name))
+                yield return name;
+        }
+    }
+
+    private static IEnumerable<string> ExtractConnectionNames(string message)
+    {
+        var cleaned = CleanMessage(message);
+
+        foreach (var (pattern, group) in ConnectionPatterns)
         {
             var match = pattern.Match(cleaned);
             if (!match.Success)

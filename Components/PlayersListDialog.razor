@@ -1,0 +1,127 @@
+@using MineDash.Models
+@using MineDash.Services
+@inject IServerPlayerService PlayerService
+
+@if (Show)
+{
+    <div class="players-dialog-overlay" @onclick="Close">
+        <div class="players-dialog" @onclick:stopPropagation="true">
+            <div class="players-dialog-header">
+                <div class="players-dialog-title-group">
+                    <img src="/images/steve.png" alt="" class="players-dialog-title-icon" aria-hidden="true" />
+                    <h5 class="players-dialog-title">Players — @Server.Name</h5>
+                </div>
+                <button type="button" class="players-dialog-close" aria-label="Close" @onclick="Close">
+                    <span class="bi bi-x-lg"></span>
+                </button>
+            </div>
+            <div class="players-dialog-body">
+                @if (_loading)
+                {
+                    <div class="players-dialog-status">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span>Loading players…</span>
+                    </div>
+                }
+                else if (_result is null)
+                {
+                    <div class="players-dialog-status players-dialog-error">
+                        Could not load player data.
+                    </div>
+                }
+                else if (!_result.Players.Any())
+                {
+                    <div class="players-dialog-status">
+                        No players have connected to this server yet.
+                        @if (!_result.HasLogData && _result.OnlineLookupError is not null)
+                        {
+                            <span class="players-dialog-hint">Could not read logs or query RCON.</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="players-dialog-summary">
+                        @_result.OnlineCount online · @_result.Players.Count total
+                    </div>
+                    @if (_result.OnlineLookupError is not null)
+                    {
+                        <div class="players-dialog-warning">
+                            Online status unavailable — showing players from logs only.
+                        </div>
+                    }
+                    <ul class="players-dialog-list">
+                        @foreach (var player in _result.Players)
+                        {
+                            <li class="player-row">
+                                <img src="/images/steve.png" alt="" class="player-avatar" aria-hidden="true" />
+                                <span class="player-name">@player.Name</span>
+                                <span class="player-status-pill @(player.IsOnline ? "status-online" : "status-offline")">
+                                    <span class="player-status-dot" aria-hidden="true"></span>
+                                    <span>@(player.IsOnline ? "Online" : "Offline")</span>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div class="players-dialog-footer">
+                <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="RefreshAsync" disabled="@_loading">
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ServerConfig Server { get; set; } = null!;
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public IEnumerable<LogEntry>? LiveLogs { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _loading;
+    private bool _wasShown;
+    private ServerPlayersResult? _result;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Show && !_wasShown)
+        {
+            _wasShown = true;
+            await LoadAsync();
+        }
+
+        if (!Show)
+            _wasShown = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            _result = await PlayerService.GetPlayersAsync(Server, LiveLogs);
+        }
+        catch
+        {
+            _result = null;
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshAsync() => await LoadAsync();
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+}
