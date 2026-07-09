@@ -2,6 +2,7 @@
 @using MineDash.Services
 @implements IAsyncDisposable
 @inject IServerPlayerService PlayerService
+@inject IAppSettingsStore AppSettingsStore
 
 @if (Show)
 {
@@ -59,7 +60,7 @@
                         @foreach (var player in _result.Players)
                         {
                             <li class="player-row">
-                                <img src="/images/steve.png" alt="" class="player-avatar" aria-hidden="true" />
+                                <img src="@GetAvatarUrl(player.Name)" alt="" class="player-avatar" aria-hidden="true" />
                                 <span class="player-name">@player.Name</span>
                                 <span class="player-status-pill @(player.IsOnline ? "status-online" : "status-offline")">
                                     <span class="player-status-dot" aria-hidden="true"></span>
@@ -88,6 +89,7 @@
     private bool _loading;
     private bool _refreshing;
     private bool _wasShown;
+    private bool _playerAvatarsEnabled = true;
     private int _lastLiveLogCount = -1;
     private ServerPlayersResult? _result;
     private CancellationTokenSource? _pollCts;
@@ -106,6 +108,8 @@
         {
             _wasShown = true;
             _lastLiveLogCount = LiveLogs?.Count() ?? 0;
+            var settings = await AppSettingsStore.GetAsync();
+            _playerAvatarsEnabled = settings.EnablePlayerAvatars;
             await LoadAsync(initial: true);
             StartPolling();
             return;
@@ -184,6 +188,11 @@
         if (OnClose.HasDelegate)
             await OnClose.InvokeAsync();
     }
+
+    private string GetAvatarUrl(string playerName) =>
+        _playerAvatarsEnabled
+            ? $"/api/players/{Uri.EscapeDataString(playerName)}/avatar"
+            : "/images/steve.png";
 
     public async ValueTask DisposeAsync()
     {

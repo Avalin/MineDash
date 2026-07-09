@@ -1,0 +1,77 @@
+@page "/settings"
+@rendermode InteractiveServer
+@using MineDash.Models
+@using MineDash.Services
+@inject IAppSettingsStore AppSettingsStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Settings</PageTitle>
+
+<div class="settings-layout">
+    <div class="settings-header">
+        <div>
+            <h2>Settings</h2>
+            <p class="settings-subtitle">
+                Global MineDash preferences.
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-panel">
+        <div class="settings-panel-header">
+            <span class="bi bi-person-badge-fill"></span>
+            <span>Player list</span>
+        </div>
+        <div class="settings-panel-body">
+            <div class="settings-row">
+                <label class="settings-toggle">
+                    <input type="checkbox"
+                           checked="@_settings.EnablePlayerAvatars"
+                           @onchange="OnPlayerAvatarsChanged" />
+                    <span class="settings-toggle-label">Show player skin avatars</span>
+                </label>
+                <div class="settings-description">
+                    @if (_settings.EnablePlayerAvatars)
+                    {
+                        <span>
+                            MineDash looks up each player's Minecraft skin face the first time they appear,
+                            caches the image under <code>app_data/skin-cache</code>, and reuses it afterward.
+                            No plugins are required on your Minecraft servers.
+                        </span>
+                    }
+                    else
+                    {
+                        <span>
+                            Avatar lookups are disabled. The player list uses the default Steve icon and
+                            MineDash does not contact external skin services.
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AppSettings _settings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        _settings = await AppSettingsStore.GetAsync();
+    }
+
+    private async Task OnPlayerAvatarsChanged(ChangeEventArgs e)
+    {
+        var enabled = e.Value is bool b && b;
+        _settings.EnablePlayerAvatars = enabled;
+        await AppSettingsStore.SaveAsync(_settings);
+        StateHasChanged();
+    }
+}

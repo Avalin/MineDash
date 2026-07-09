@@ -41,6 +41,7 @@ builder.Services.AddSingleton<ILogPlayerHighlighter, LogPlayerHighlighter>();
 builder.Services.AddScoped<IServerPlayerService, ServerPlayerService>();
 builder.Services.AddScoped<IConsoleSessionPersistence, BrowserConsoleSessionPersistence>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();
+builder.Services.AddHttpClient<IPlayerAvatarService, PlayerAvatarService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, SessionAuthenticationStateProvider>();
 
@@ -176,6 +177,37 @@ app.MapPost("/api/logout", async (HttpRequest request, IAuthService authService,
     return Results.Redirect("/login");
 })
 .WithName("Logout");
+
+app.MapGet("/api/players/{playerName}/avatar", async (
+    string playerName,
+    IAuthService authService,
+    IAppSettingsStore appSettingsStore,
+    IPlayerAvatarService avatarService,
+    IWebHostEnvironment env) =>
+{
+    if (!await authService.IsAuthenticatedAsync())
+        return Results.Unauthorized();
+
+    var stevePath = Path.Combine(env.WebRootPath, "images", "steve.png");
+    var settings = await appSettingsStore.GetAsync();
+
+    if (!settings.EnablePlayerAvatars)
+        return Results.File(stevePath, "image/png");
+
+    try
+    {
+        var avatarPath = await avatarService.GetAvatarPathAsync(playerName);
+        if (avatarPath is null)
+            return Results.File(stevePath, "image/png");
+
+        return Results.File(avatarPath, "image/png");
+    }
+    catch
+    {
+        return Results.File(stevePath, "image/png");
+    }
+})
+.WithName("PlayerAvatar");
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
