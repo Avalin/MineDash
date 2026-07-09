@@ -72,15 +72,15 @@ public sealed class ServerPlayerService : IServerPlayerService
 
         var logTask = CollectFromLogsAsync(server, connectedNames, ct);
         var rconTask = CollectOnlinePlayersAsync(server, onlineNames, connectedNames, ct);
-        var opsTask = _opsService.GetOperatorNamesAsync(server, liveLogs, ct);
+        var opsTask = _opsService.GetOperatorIndexAsync(server, liveLogs, ct);
 
-        IReadOnlySet<string> opNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ServerOperatorIndex operators = ServerOperatorIndex.Empty;
         try
         {
             await Task.WhenAll(logTask, rconTask, opsTask);
             hasLogData = hasLogData || await logTask;
             rconError = await rconTask;
-            opNames = await opsTask;
+            operators = await opsTask;
         }
         catch (OperationCanceledException)
         {
@@ -92,7 +92,7 @@ public sealed class ServerPlayerService : IServerPlayerService
             {
                 Name = n,
                 IsOnline = onlineNames.Contains(n),
-                IsOp = opNames.Contains(n)
+                IsOp = operators.IsOperator(n)
             })
             .OrderByDescending(p => p.IsOp)
             .ThenByDescending(p => p.IsOnline)
