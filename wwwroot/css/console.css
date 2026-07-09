@@ -96,20 +96,6 @@
 
     .console-header-buttons {
         grid-area: buttons;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 0.35rem;
-        width: 100%;
-    }
-
-    .console-header-buttons .filter-dropdown {
-        min-width: 0;
-    }
-
-    .console-header-buttons .filter-dropdown-btn {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
     }
 
     .console-header-actions {
@@ -141,10 +127,6 @@
 
     .console-header-buttons {
         grid-area: buttons;
-        display: flex;
-        gap: 0.35rem;
-        align-items: center;
-        flex-wrap: nowrap;
     }
 
     .console-header-actions {
@@ -203,6 +185,24 @@
 .console-header-buttons {
     position: relative;
     overflow: visible;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.35rem;
+    width: 100%;
+}
+
+.console-header-buttons > .filter-dropdown {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+}
+
+.console-header-buttons .filter-dropdown-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
 }
 
 /* Desktop: toggle buttons row should be inline, not stretched */
@@ -258,10 +258,16 @@
 }
 
 .players-btn-icon {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
+    max-width: 14px;
+    max-height: 14px;
+    min-width: 14px;
+    min-height: 14px;
+    object-fit: contain;
     image-rendering: pixelated;
-    flex-shrink: 0;
+    flex: 0 0 14px;
+    display: block;
 }
 
 .console-players-btn .players-btn-icon {
@@ -1206,6 +1212,12 @@
     .command-panel .filter-dropdown {
         width: 100%;
         flex-basis: 100%;
+    }
+
+    .command-panel .console-header-buttons > .filter-dropdown {
+        width: auto;
+        flex: 1 1 0;
+        flex-basis: 0;
     }
 
     .command-panel .filter-dropdown-menu {

@@ -1,18 +1,17 @@
-.players-dialog-overlay[b-rmu3w7pmzv] {
+/* Global — modals must not rely on scoped CSS inside the console grid */
+
+.players-dialog-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1050;
+    z-index: 2000;
     backdrop-filter: blur(2px);
 }
 
-.players-dialog[b-rmu3w7pmzv] {
+.players-dialog {
     background-color: var(--bs-dark);
     border: 1px solid var(--bs-border-color);
     border-radius: 8px;
@@ -22,10 +21,10 @@
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    animation: playersDialogFadeIn-b-rmu3w7pmzv 0.2s ease-out;
+    animation: playersDialogFadeIn 0.2s ease-out;
 }
 
-@keyframes playersDialogFadeIn-b-rmu3w7pmzv {
+@keyframes playersDialogFadeIn {
     from {
         opacity: 0;
         transform: scale(0.95);
@@ -36,7 +35,7 @@
     }
 }
 
-.players-dialog-header[b-rmu3w7pmzv] {
+.players-dialog-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -45,21 +44,21 @@
     gap: 0.75rem;
 }
 
-.players-dialog-title-group[b-rmu3w7pmzv] {
+.players-dialog-title-group {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     min-width: 0;
 }
 
-.players-dialog-title-icon[b-rmu3w7pmzv] {
+.players-dialog-title-icon {
     width: 28px;
     height: 28px;
     image-rendering: pixelated;
     flex-shrink: 0;
 }
 
-.players-dialog-title[b-rmu3w7pmzv] {
+.players-dialog-title {
     margin: 0;
     font-size: 1.15rem;
     font-weight: 600;
@@ -69,7 +68,7 @@
     text-overflow: ellipsis;
 }
 
-.players-dialog-close[b-rmu3w7pmzv] {
+.players-dialog-close {
     background: none;
     border: none;
     color: #adb5bd;
@@ -86,12 +85,12 @@
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.players-dialog-close:hover[b-rmu3w7pmzv] {
+.players-dialog-close:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
 }
 
-.players-dialog-body[b-rmu3w7pmzv] {
+.players-dialog-body {
     padding: 1rem 1.25rem;
     color: #e9ecef;
     flex: 1;
@@ -99,7 +98,7 @@
     min-height: 120px;
 }
 
-.players-dialog-status[b-rmu3w7pmzv] {
+.players-dialog-status {
     display: flex;
     align-items: center;
     gap: 0.6rem;
@@ -108,18 +107,18 @@
     padding: 1rem 0;
 }
 
-.players-dialog-error[b-rmu3w7pmzv] {
+.players-dialog-error {
     color: #f07070;
 }
 
-.players-dialog-hint[b-rmu3w7pmzv] {
+.players-dialog-hint {
     display: block;
     margin-top: 0.35rem;
     font-size: 0.85rem;
     color: #888;
 }
 
-.players-dialog-summary[b-rmu3w7pmzv] {
+.players-dialog-summary {
     font-size: 0.8rem;
     color: #9a9a9a;
     margin-bottom: 0.75rem;
@@ -128,7 +127,7 @@
     font-weight: 600;
 }
 
-.players-dialog-warning[b-rmu3w7pmzv] {
+.players-dialog-warning {
     font-size: 0.85rem;
     color: #e8b84a;
     background: rgba(232, 184, 74, 0.1);
@@ -138,7 +137,7 @@
     margin-bottom: 0.75rem;
 }
 
-.players-dialog-list[b-rmu3w7pmzv] {
+.players-dialog-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -147,7 +146,7 @@
     gap: 0.35rem;
 }
 
-.player-row[b-rmu3w7pmzv] {
+.players-dialog-list .player-row {
     display: flex;
     align-items: center;
     gap: 0.65rem;
@@ -157,14 +156,14 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.player-avatar[b-rmu3w7pmzv] {
+.players-dialog-list .player-avatar {
     width: 24px;
     height: 24px;
     image-rendering: pixelated;
     flex-shrink: 0;
 }
 
-.player-name[b-rmu3w7pmzv] {
+.players-dialog-list .player-name {
     flex: 1;
     min-width: 0;
     font-weight: 500;
@@ -174,7 +173,7 @@
     white-space: nowrap;
 }
 
-.player-status-pill[b-rmu3w7pmzv] {
+.players-dialog-list .player-status-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -191,7 +190,7 @@
     flex-shrink: 0;
 }
 
-.player-status-dot[b-rmu3w7pmzv] {
+.players-dialog-list .player-status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
@@ -199,23 +198,23 @@
     flex-shrink: 0;
 }
 
-.player-status-pill.status-online[b-rmu3w7pmzv] {
+.players-dialog-list .player-status-pill.status-online {
     color: #8fd14f;
     border-color: rgba(124, 179, 66, 0.45);
     background: rgba(124, 179, 66, 0.12);
 }
 
-.player-status-pill.status-online .player-status-dot[b-rmu3w7pmzv] {
+.players-dialog-list .player-status-pill.status-online .player-status-dot {
     box-shadow: 0 0 5px rgba(124, 179, 66, 0.75);
 }
 
-.player-status-pill.status-offline[b-rmu3w7pmzv] {
+.players-dialog-list .player-status-pill.status-offline {
     color: #9a9a9a;
     border-color: rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.04);
 }
 
-.players-dialog-footer[b-rmu3w7pmzv] {
+.players-dialog-footer {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -224,6 +223,6 @@
     border-top: 1px solid var(--bs-border-color);
 }
 
-.players-dialog-footer .btn[b-rmu3w7pmzv] {
+.players-dialog-footer .btn {
     min-width: 80px;
 }

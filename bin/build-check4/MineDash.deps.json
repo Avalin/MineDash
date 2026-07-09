@@ -1,0 +1,73 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MineDash/1.0.0": {
+        "dependencies": {
+          "BCrypt.Net-Next": "4.0.3",
+          "CoreRCON": "5.4.2",
+          "YamlDotNet": "18.1.0"
+        },
+        "runtime": {
+          "MineDash.dll": {}
+        }
+      },
+      "BCrypt.Net-Next/4.0.3": {
+        "runtime": {
+          "lib/net6.0/BCrypt.Net-Next.dll": {
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.0.3.0"
+          }
+        }
+      },
+      "CoreRCON/5.4.2": {
+        "runtime": {
+          "lib/netstandard2.0/CoreRCON.dll": {
+            "assemblyVersion": "5.4.2.0",
+            "fileVersion": "5.4.2.0"
+          }
+        }
+      },
+      "YamlDotNet/18.1.0": {
+        "runtime": {
+          "lib/net10.0/YamlDotNet.dll": {
+            "assemblyVersion": "18.0.0.0",
+            "fileVersion": "18.1.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MineDash/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BCrypt.Net-Next/4.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-W+U9WvmZQgi5cX6FS5GDtDoPzUCV4LkBLkywq/kRZhuDwcbavOzcDAr3LXJFqHUi952Yj3LEYoWW0jbEUQChsA==",
+      "path": "bcrypt.net-next/4.0.3",
+      "hashPath": "bcrypt.net-next.4.0.3.nupkg.sha512"
+    },
+    "CoreRCON/5.4.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ABT6wgmUVPF/edtoxYG+n1umaVBPfU0mCXFrKO/vRe3L5s6BmcO3zs/12SKe5fEoeK2eHCC2w0YOAcodVvv57A==",
+      "path": "corercon/5.4.2",
+      "hashPath": "corercon.5.4.2.nupkg.sha512"
+    },
+    "YamlDotNet/18.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5K+9KFg2TdTl7VXv88Qzi/0lqK6JFoNP3lRuImPYGRV7K/QYklDyTrj4+A+KAki1JsQi6qKY+hDyY7d6WRqjrw==",
+      "path": "yamldotnet/18.1.0",
+      "hashPath": "yamldotnet.18.1.0.nupkg.sha512"
+    }
+  }
+}

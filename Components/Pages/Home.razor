@@ -143,6 +143,7 @@
                                        DefaultSayCommandId="@_defaultSayCommandId"
                                        CloseFiltersTick="@_closeFiltersTick"
                                        OnClose="@(() => CloseConsole(serverId))"
+                                       OnPlayersClick="@(() => OpenPlayersDialog(server))"
                                        OnPersistRequested="SavePersistedState" />
                     </div>
                 }
@@ -182,6 +183,14 @@
 </div>
 </div>
 
+@if (_playersDialogServer is not null)
+{
+    <PlayersListDialog Show="@_showPlayersDialog"
+                       Server="_playersDialogServer"
+                       LiveLogs="@GetConsoleState(_playersDialogServer.Id).LiveLogs"
+                       OnClose="ClosePlayersDialog" />
+}
+
 @code {
     private List<ServerConfig>? _servers;
     private List<MinecraftCommand>? _commands;
@@ -196,6 +205,8 @@
     private int _viewportDefaultLineLimit = LogHistoryPresets.DefaultLineLimit;
     private bool _viewportLineLimitResolved;
     private readonly HashSet<string> _consolesAwaitingLineLimit = new();
+    private bool _showPlayersDialog;
+    private ServerConfig? _playersDialogServer;
 
     private string GridColumnStyle =>
         $"grid-template-columns: repeat({EffectiveColumnCount}, minmax(0, 1fr));";
@@ -399,6 +410,9 @@
 
     private async Task CloseConsole(string serverId)
     {
+        if (_playersDialogServer?.Id == serverId)
+            ClosePlayersDialog();
+
         _openConsoleIds.Remove(serverId);
         SyncSelectedAddServerId();
         _addConsoleExpanded = true;
@@ -440,6 +454,21 @@
     private void CloseAllFilterDropdowns()
     {
         _closeFiltersTick++;
+        StateHasChanged();
+    }
+
+    private void OpenPlayersDialog(ServerConfig server)
+    {
+        _playersDialogServer = server;
+        _showPlayersDialog = true;
+        _closeFiltersTick++;
+        StateHasChanged();
+    }
+
+    private void ClosePlayersDialog()
+    {
+        _showPlayersDialog = false;
+        _playersDialogServer = null;
         StateHasChanged();
     }
 

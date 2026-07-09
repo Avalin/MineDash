@@ -295,15 +295,17 @@
                     </div>
                 }
             </div>
-            <button class="filter-dropdown-btn console-options-btn console-players-btn"
-                    type="button"
-                    title="Players"
-                    aria-label="Players"
-                    @onclick="OpenPlayersDialog"
-                    @onclick:stopPropagation="true">
-                <img src="/images/steve.png" alt="" class="players-btn-icon" aria-hidden="true" />
-                <span class="console-options-label">Players</span>
-            </button>
+            <div class="filter-dropdown console-options-dropdown">
+                <button class="filter-dropdown-btn console-options-btn console-players-btn"
+                        type="button"
+                        title="Players"
+                        aria-label="Players"
+                        @onclick="OpenPlayersDialog"
+                        @onclick:stopPropagation="true">
+                    <img src="/images/steve.png" alt="" class="players-btn-icon" width="14" height="14" aria-hidden="true" />
+                    <span class="console-options-label">Players</span>
+                </button>
+            </div>
         </div>
 
         <div class="console-output" id="@OutputElementId">
@@ -422,11 +424,6 @@
     </div>
 </div>
 
-<PlayersListDialog Show="@_showPlayersDialog"
-                   Server="Server"
-                   LiveLogs="State.LiveLogs"
-                   OnClose="ClosePlayersDialog" />
-
 @code {
     [Parameter, EditorRequired] public ServerConfig Server { get; set; } = null!;
     [Parameter, EditorRequired] public ConsoleState State { get; set; } = null!;
@@ -434,13 +431,13 @@
     [Parameter] public string? DefaultSayCommandId { get; set; }
     [Parameter] public long CloseFiltersTick { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnPlayersClick { get; set; }
     [Parameter] public EventCallback OnPersistRequested { get; set; }
 
     private CancellationTokenSource? _pollCts;
     private CancellationTokenSource? _statusCts;
     private long _lastCloseFiltersTick;
     private int _statusCheckRunning;
-    private bool _showPlayersDialog;
     private bool _stickToBottomForAuto;
     private bool _pendingInitialScroll;
     private DateTime _lastFullRconCheckUtc = DateTime.MinValue;
@@ -619,17 +616,11 @@
         StateHasChanged();
     }
 
-    private void OpenPlayersDialog()
+    private async Task OpenPlayersDialog()
     {
         State.OpenFilterDropdown = null;
-        _showPlayersDialog = true;
-        StateHasChanged();
-    }
-
-    private void ClosePlayersDialog()
-    {
-        _showPlayersDialog = false;
-        StateHasChanged();
+        if (OnPlayersClick.HasDelegate)
+            await OnPlayersClick.InvokeAsync();
     }
 
     private async Task ToggleMobileExpanded()
