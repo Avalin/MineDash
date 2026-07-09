@@ -501,6 +501,7 @@
     private int _statusCheckRunning;
     private bool _stickToBottomForAuto;
     private bool _pendingInitialScroll;
+    private bool _initialScrollDone;
     private DateTime _lastReconnectAttemptUtc = DateTime.MinValue;
     private readonly HashSet<string> _expandedOptionSections = new(StringComparer.Ordinal);
     private static readonly TimeSpan StatusCheckInterval = TimeSpan.FromSeconds(3);
@@ -517,20 +518,29 @@
         StartStatusPolling();
         StartPlayerPolling();
         await StartLogWatchingAsync();
+        if (!_initialScrollDone)
+            _pendingInitialScroll = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_pendingInitialScroll && !firstRender)
+        if (!_pendingInitialScroll)
             return;
 
-        if (_pendingInitialScroll)
-            _pendingInitialScroll = false;
+        if (!HasDisplayableEntries())
+            return;
 
-        _stickToBottomForAuto = true;
-        await Task.Delay(firstRender ? 100 : 50);
-        await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
+        _pendingInitialScroll = false;
+        await ScrollToBottom(initial: true);
+        _initialScrollDone = true;
+
+        if (State.AutoscrollMode == ConsoleAutoscrollMode.Auto)
+            _stickToBottomForAuto = await IsAtBottomAsync();
     }
+
+    private bool HasDisplayableEntries() =>
+        (State.ShowLogs && State.LiveLogs.Any())
+        || (State.ShowCommands && ConsoleActivity.GetHistory(State.ServerId).Any());
 
     protected override void OnParametersSet()
     {
@@ -571,7 +581,7 @@
             await PrepareAutoscrollCheckAsync();
             await LogSession.PollLogsAsync(Server, State);
             StateHasChanged();
-            await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: true);
+            await AfterContentUpdateAsync(contentAdded: true, legacyOffScroll: false);
         });
     }
 
@@ -582,7 +592,8 @@
 
         await LogSession.LoadRecentLogsAsync(Server, State);
         StartLogPolling();
-        _pendingInitialScroll = true;
+        if (!_initialScrollDone)
+            _pendingInitialScroll = true;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -660,6 +671,13 @@
 
         if (State.ShowLogs)
             await InvokeAsync(StateHasChanged);
+
+        if (!_initialScrollDone && contentAdded)
+        {
+            _pendingInitialScroll = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
 
         await AfterContentUpdateAsync(contentAdded, legacyOffScroll);
     }
@@ -945,11 +963,11 @@
         State.HistoryIndex = State.CommandHistoryOnly.Count;
     }
 
-    private async Task ScrollToBottom()
+    private async Task ScrollToBottom(bool initial = false)
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("scrollToBottom", OutputElementId);
+            await JSRuntime.InvokeVoidAsync("scrollToBottom", OutputElementId, initial);
         }
         catch
         {
@@ -986,7 +1004,6 @@
         if (!shouldScroll)
             return;
 
-        await Task.Delay(50);
         await ScrollToBottom();
     }
 

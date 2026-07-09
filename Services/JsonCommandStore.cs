@@ -129,13 +129,13 @@ public class JsonCommandStore : ICommandStore
     [
         new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/say <message>", Description = "Broadcast a message" },
         new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/list", Description = "List players" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/kick <player> [<reason>]", Description = "" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/ban <player> [<reason>]", Description = "" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/op <player>", Description = "" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/deop <player>", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/kick <player:online> [<reason>]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/ban <player:all> [<reason>]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/op <player:all>", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/deop <player:all>", Description = "" },
         new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/time set day|night|noon|midnight", Description = "" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/gamemode survival|creative|adventure|spectator [player]", Description = "" },
-        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/tp <target> <destination>", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/gamemode survival|creative|adventure|spectator [player:all]", Description = "" },
+        new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/tp <target:online> <destination:online>", Description = "" },
         new() { Id = Guid.NewGuid().ToString("N"), Syntax = "/stop", Description = "Stop the server" }
     ];
 

@@ -198,32 +198,13 @@ public static class CommandSyntaxParser
             if (inner.StartsWith('<') && inner.EndsWith('>'))
                 inner = inner[1..^1].Trim();
 
-            var kind = IsMessagePlaceholder(inner) ? CommandArgKind.Message : CommandArgKind.Text;
-            return new CommandArgPart
-            {
-                Kind = kind,
-                IsOptional = true,
-                Placeholder = inner,
-                Index = userArgIndex,
-                PlayerSuggestions = kind == CommandArgKind.Text
-                    ? CommandPlayerSuggestions.Resolve(commandName, inner)
-                    : PlayerSuggestionScope.None
-            };
+            return CreatePlaceholderArgPart(inner, commandName, userArgIndex, isOptional: true);
         }
 
         if (token.StartsWith('<') && token.EndsWith('>'))
         {
             var name = token[1..^1].Trim();
-            var kind = IsMessagePlaceholder(name) ? CommandArgKind.Message : CommandArgKind.Text;
-            return new CommandArgPart
-            {
-                Kind = kind,
-                Placeholder = name,
-                Index = userArgIndex,
-                PlayerSuggestions = kind == CommandArgKind.Text
-                    ? CommandPlayerSuggestions.Resolve(commandName, name)
-                    : PlayerSuggestionScope.None
-            };
+            return CreatePlaceholderArgPart(name, commandName, userArgIndex, isOptional: false);
         }
 
         if (token.Contains('|', StringComparison.Ordinal))
@@ -293,6 +274,27 @@ public static class CommandSyntaxParser
 
         tokens.Add(current.ToString());
         current.Clear();
+    }
+
+    private static CommandArgPart CreatePlaceholderArgPart(
+        string rawPlaceholder,
+        string commandName,
+        int userArgIndex,
+        bool isOptional)
+    {
+        var displayName = CommandPlayerSuggestions.GetDisplayName(rawPlaceholder);
+        var kind = IsMessagePlaceholder(displayName) ? CommandArgKind.Message : CommandArgKind.Text;
+
+        return new CommandArgPart
+        {
+            Kind = kind,
+            IsOptional = isOptional,
+            Placeholder = displayName,
+            Index = userArgIndex,
+            PlayerSuggestions = kind == CommandArgKind.Text
+                ? CommandPlayerSuggestions.Resolve(commandName, rawPlaceholder)
+                : PlayerSuggestionScope.None
+        };
     }
 
     private static bool IsMessagePlaceholder(string name) =>

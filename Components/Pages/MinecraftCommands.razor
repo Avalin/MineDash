@@ -41,7 +41,9 @@
                         The command syntax (e.g., <code>/say &lt;message&gt;</code>, <code>/time set day|night|noon|midnight</code>, or <code>/list</code>).
                         Use <code>word|word</code> for dropdown choices, plain words like <code>set</code> as fixed literals,
                         <code>&lt;message&gt;</code> / <code>&lt;reason&gt;</code> for multi-line text,
-                        <code>&lt;player&gt;</code> for player suggestions, and <code>[...]</code> for optional args.
+                        <code>&lt;player:online&gt;</code> / <code>&lt;player:all&gt;</code> for player suggestions
+                        (<code>&lt;player&gt;</code> still works and guesses from the command name),
+                        and <code>[...]</code> for optional args.
                     </div>
                     <input class="form-control" value="@_editCommand.Syntax" @oninput="OnSyntaxInput" />
                     @if (!string.IsNullOrEmpty(_syntaxValidationError))

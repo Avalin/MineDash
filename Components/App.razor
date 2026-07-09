@@ -25,15 +25,21 @@
     </CascadingAuthenticationState>
     <script src="_framework/blazor.web.js"></script>
     <script>
-        window.scrollToBottom = (elementId) => {
+        window.scrollToBottom = (elementId, initial = false) => {
             const element = document.getElementById(elementId);
             if (!element) return;
+
             const scroll = () => { element.scrollTop = element.scrollHeight; };
+
             scroll();
             requestAnimationFrame(() => {
                 scroll();
                 requestAnimationFrame(scroll);
             });
+
+            if (initial) {
+                [50, 150].forEach((delay) => setTimeout(scroll, delay));
+            }
         };
 
         window.isConsoleAtBottom = (elementId, threshold = 48) => {
