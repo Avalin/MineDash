@@ -255,8 +255,7 @@
                                     @foreach (var thread in pinnedThreads)
                                     {
                                         var isChecked = !State.ThreadFilterActive || State.SelectedThreads.Contains(thread);
-                                        var isAbsent = !availableThreads.Contains(thread);
-                                        <label class="filter-dropdown-item filter-dropdown-item-pinned @(isAbsent ? "filter-dropdown-item-absent" : "")"
+                                        <label class="filter-dropdown-item filter-dropdown-item-pinned"
                                                title="@ConsoleThreadNormalizer.GetThreadTooltip(thread)">
                                             <input type="checkbox"
                                                    checked="@isChecked"

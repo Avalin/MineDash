@@ -184,4 +184,3 @@ c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\xbp7fbvo66-{0}-2zvophbovf-2zvophbovf.gz
 C:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\4aldibwq2e-{0}-5q6r9ou3bq-5q6r9ou3bq.gz
 c:\Users\Avalin\Documents\Code Experiments\MineDash\obj\Debug\net10.0\compressed\m5f3f58ufo-{0}-8h6zelmvf2-8h6zelmvf2.gz
-C:\Users\Avalin\Documents\Code Experiments\MineDash\bin\Debug\net10.0\MineDash.exe

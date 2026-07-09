@@ -98,8 +98,8 @@ public static class ConsoleThreadNormalizer
 
         foreach (var pinned in DefaultFilterThreads)
         {
-            ordered.Add(pinned);
-            remaining.Remove(pinned);
+            if (remaining.Remove(pinned))
+                ordered.Add(pinned);
         }
 
         ordered.AddRange(remaining.OrderBy(t => t, StringComparer.OrdinalIgnoreCase));

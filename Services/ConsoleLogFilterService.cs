@@ -96,9 +96,7 @@ public sealed class ConsoleLogFilterService : IConsoleLogFilterService
             else if (state.ThreadFilterInitialized)
             {
                 MigrateThreadSelectionsToGroupKeys(state, GetThreadLogCounts(state));
-                state.SelectedThreads.RemoveWhere(thread =>
-                    !availableThreads.Contains(thread)
-                    && !ConsoleThreadNormalizer.IsPinnedThread(thread));
+                state.SelectedThreads.RemoveWhere(thread => !availableThreads.Contains(thread));
             }
 
             if (availableThreads.Count > 0
